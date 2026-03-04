@@ -157,7 +157,7 @@ const Dashboard = () => {
               <Pie data={categoryData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
                 {categoryData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Pie>
-              <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(240, 6%, 92%)', fontSize: '12px', fontFamily: 'var(--font-sans)' }} />
+              <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(240, 6%, 92%)', fontSize: '12px', fontFamily: 'var(--font-sans)' }} formatter={(value: number) => formatCurrency(value)} />
             </PieChart>
           </ResponsiveContainer>
           <div className="mt-2 space-y-1.5">

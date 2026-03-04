@@ -246,8 +246,8 @@ const ReportsPage = () => {
           )}
           {period === 'custom' && (
             <>
-              <Input type="date" className="h-8 w-36 text-xs" value={customStart} onChange={e => setCustomStart(e.target.value)} />
-              <Input type="date" className="h-8 w-36 text-xs" value={customEnd} onChange={e => setCustomEnd(e.target.value)} />
+              <DatePicker value={customStart} onChange={setCustomStart} placeholder="Data início" className="w-44" />
+              <DatePicker value={customEnd} onChange={setCustomEnd} placeholder="Data fim" className="w-44" />
             </>
           )}
           <Select value={filterCategory} onValueChange={setFilterCategory}>

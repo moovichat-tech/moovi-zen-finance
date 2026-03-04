@@ -249,7 +249,7 @@ const IncomePage = () => {
               </div>
               <div className="space-y-1.5">
                 <Label>{t.common.date}</Label>
-                <Input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
+                <DatePicker value={form.date} onChange={v => setForm({ ...form, date: v })} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">

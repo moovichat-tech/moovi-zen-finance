@@ -174,8 +174,8 @@ const IncomePage = () => {
         )}
         {period === 'custom' && (
           <>
-            <Input type="date" className="w-36" value={customStart} onChange={e => setCustomStart(e.target.value)} />
-            <Input type="date" className="w-36" value={customEnd} onChange={e => setCustomEnd(e.target.value)} />
+            <DatePicker value={customStart} onChange={setCustomStart} placeholder="Data início" className="w-44" />
+            <DatePicker value={customEnd} onChange={setCustomEnd} placeholder="Data fim" className="w-44" />
           </>
         )}
       </div>

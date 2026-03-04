@@ -1,7 +1,7 @@
 import { useI18n } from '@/i18n/context';
 import { localeNames, localeFlags, type Locale, type Currency } from '@/i18n/translations';
 import { Globe, Coins, Sun, Moon } from 'lucide-react';
-import { useTheme } from 'next-themes';
+import { useTheme } from '@/hooks/use-theme';
 import { Button } from '@/components/ui/button';
 import {
   Select,

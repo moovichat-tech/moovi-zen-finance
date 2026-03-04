@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import translations, { type Locale, type Currency, type TranslationKey, currencyLocales } from './translations';
 
+type Translations = typeof translations['pt'];
+
 interface I18nContextType {
   locale: Locale;
   currency: Currency;
-  t: TranslationKey;
+  t: Translations;
   setLocale: (locale: Locale) => void;
   setCurrency: (currency: Currency) => void;
   formatCurrency: (value: number) => string;

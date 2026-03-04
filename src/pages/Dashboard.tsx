@@ -12,7 +12,7 @@ import {
   PieChart, Pie, Cell, BarChart, Bar,
 } from 'recharts';
 
-const COLORS = ['hsl(234, 62%, 52%)', 'hsl(152, 60%, 42%)', 'hsl(38, 92%, 50%)', 'hsl(280, 60%, 55%)', 'hsl(200, 70%, 50%)', 'hsl(0, 72%, 51%)'];
+const COLORS = ['hsl(145, 63%, 32%)', 'hsl(152, 60%, 42%)', 'hsl(38, 92%, 50%)', 'hsl(170, 50%, 40%)', 'hsl(200, 70%, 50%)', 'hsl(120, 40%, 55%)'];
 
 const Dashboard = () => {
   const { t, formatCurrency } = useI18n();

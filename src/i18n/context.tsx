@@ -46,10 +46,12 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [currency, baseCurrency]);
 
   const formatCurrency = useCallback((value: number) => {
-    const converted = convertValue(value);
+    const converted = Math.round(convertValue(value) * 100) / 100;
     return new Intl.NumberFormat(currencyLocales[currency], {
       style: 'currency',
       currency: currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(converted);
   }, [currency, convertValue]);
 

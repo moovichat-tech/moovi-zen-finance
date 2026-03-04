@@ -89,7 +89,7 @@ export function TransactionFormDialog({ type, open, onOpenChange, editingId, ini
     } else {
       const inst = form.installments ? parseInt(form.installments) : undefined;
       if (inst && inst > 1) {
-        const amount = parseFloat(form.amount) / inst;
+        const amount = Math.round((parseFloat(form.amount) / inst) * 100) / 100;
         for (let i = 0; i < inst; i++) {
           const date = new Date(form.date);
           date.setMonth(date.getMonth() + i);

@@ -39,7 +39,7 @@ interface AppSidebarProps {
 }
 
 export const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
 

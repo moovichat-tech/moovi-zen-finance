@@ -16,6 +16,7 @@ import ReportsPage from "@/pages/ReportsPage";
 import AIPage from "@/pages/AIPage";
 import SettingsPage from "@/pages/SettingsPage";
 import SubscriptionPage from "@/pages/SubscriptionPage";
+import CategoriesPage from "@/pages/CategoriesPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
                 <Route path="/ai" element={<AIPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/subscription" element={<SubscriptionPage />} />
+                <Route path="/categories" element={<CategoriesPage />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

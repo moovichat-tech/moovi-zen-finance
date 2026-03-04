@@ -12,6 +12,7 @@ import {
   Settings,
   LogOut,
   Crown,
+  Tag,
 } from 'lucide-react';
 
 const navItems = [
@@ -21,6 +22,7 @@ const navItems = [
   { key: 'cards', path: '/cards', icon: CreditCard },
   { key: 'accounts', path: '/accounts', icon: Landmark },
   { key: 'budget', path: '/budget', icon: Target },
+  { key: 'categories', path: '/categories', icon: Tag },
   { key: 'reports', path: '/reports', icon: BarChart3 },
   { key: 'ai', path: '/ai', icon: Sparkles },
 ] as const;
@@ -29,6 +31,18 @@ export const AppSidebar = () => {
   const { t } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
+
+  const navLabels: Record<string, string> = {
+    dashboard: t.nav.dashboard,
+    income: t.nav.income,
+    expenses: t.nav.expenses,
+    cards: t.nav.cards,
+    accounts: t.nav.accounts,
+    budget: t.nav.budget,
+    categories: 'Categorias',
+    reports: t.nav.reports,
+    ai: t.nav.ai,
+  };
 
   return (
     <aside className="fixed left-0 top-0 z-30 flex h-screen w-60 flex-col border-r border-sidebar-border bg-sidebar">
@@ -55,7 +69,7 @@ export const AppSidebar = () => {
               }`}
             >
               <Icon className="h-4 w-4" />
-              {t.nav[key as keyof typeof t.nav]}
+              {navLabels[key]}
             </button>
           );
         })}

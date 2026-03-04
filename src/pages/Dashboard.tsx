@@ -12,7 +12,7 @@ import {
   PieChart, Pie, Cell, BarChart, Bar,
 } from 'recharts';
 
-const COLORS = ['hsl(234, 62%, 52%)', 'hsl(152, 60%, 42%)', 'hsl(38, 92%, 50%)', 'hsl(280, 60%, 55%)', 'hsl(200, 70%, 50%)', 'hsl(0, 72%, 51%)'];
+const COLORS = ['hsl(145, 63%, 32%)', 'hsl(152, 60%, 42%)', 'hsl(38, 92%, 50%)', 'hsl(170, 50%, 40%)', 'hsl(200, 70%, 50%)', 'hsl(120, 40%, 55%)'];
 
 const Dashboard = () => {
   const { t, formatCurrency } = useI18n();
@@ -141,9 +141,9 @@ const Dashboard = () => {
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(240, 6%, 92%)" />
             <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: 'var(--font-sans)' }} stroke="hsl(240, 4%, 46%)" />
             <YAxis tick={{ fontSize: 11, fontFamily: 'var(--font-sans)' }} stroke="hsl(240, 4%, 46%)" />
-            <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(240, 6%, 92%)', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontSize: '12px', fontFamily: 'var(--font-sans)' }} />
-            <Area type="monotone" dataKey="income" stroke="hsl(152, 60%, 42%)" fill="url(#incomeGrad)" strokeWidth={2} />
-            <Area type="monotone" dataKey="expense" stroke="hsl(0, 72%, 51%)" fill="url(#expenseGrad)" strokeWidth={2} />
+            <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(240, 6%, 92%)', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontSize: '12px', fontFamily: 'var(--font-sans)' }} formatter={(value: number) => formatCurrency(value)} />
+            <Area type="monotone" dataKey="income" stroke="hsl(152, 60%, 42%)" fill="url(#incomeGrad)" strokeWidth={2} name={t.dashboard.monthIncome} />
+            <Area type="monotone" dataKey="expense" stroke="hsl(0, 72%, 51%)" fill="url(#expenseGrad)" strokeWidth={2} name={t.dashboard.monthExpense} />
           </AreaChart>
         </ResponsiveContainer>
       </Card>
@@ -157,7 +157,7 @@ const Dashboard = () => {
               <Pie data={categoryData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
                 {categoryData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Pie>
-              <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(240, 6%, 92%)', fontSize: '12px', fontFamily: 'var(--font-sans)' }} />
+              <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(240, 6%, 92%)', fontSize: '12px', fontFamily: 'var(--font-sans)' }} formatter={(value: number) => formatCurrency(value)} />
             </PieChart>
           </ResponsiveContainer>
           <div className="mt-2 space-y-1.5">
@@ -180,9 +180,9 @@ const Dashboard = () => {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(240, 6%, 92%)" />
               <XAxis dataKey="category" tick={{ fontSize: 10, fontFamily: 'var(--font-sans)' }} stroke="hsl(240, 4%, 46%)" />
               <YAxis tick={{ fontSize: 10, fontFamily: 'var(--font-sans)' }} stroke="hsl(240, 4%, 46%)" />
-              <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(240, 6%, 92%)', fontSize: '12px', fontFamily: 'var(--font-sans)' }} />
-              <Bar dataKey="previous" fill="hsl(240, 5%, 88%)" radius={[3, 3, 0, 0]} barSize={16} />
-              <Bar dataKey="current" fill="hsl(234, 62%, 52%)" radius={[3, 3, 0, 0]} barSize={16} />
+              <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(240, 6%, 92%)', fontSize: '12px', fontFamily: 'var(--font-sans)' }} formatter={(value: number) => formatCurrency(value)} />
+              <Bar dataKey="previous" fill="hsl(140, 8%, 80%)" radius={[3, 3, 0, 0]} barSize={16} name={t.dashboard.comparison + ' (anterior)'} />
+              <Bar dataKey="current" fill="hsl(145, 63%, 32%)" radius={[3, 3, 0, 0]} barSize={16} name={t.dashboard.comparison + ' (atual)'} />
             </BarChart>
           </ResponsiveContainer>
         </Card>

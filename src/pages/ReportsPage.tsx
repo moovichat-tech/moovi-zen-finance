@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { FileText, FileSpreadsheet, Download, ArrowUpDown } from 'lucide-react';
 
-const COLORS = ['hsl(234, 62%, 52%)', 'hsl(152, 60%, 42%)', 'hsl(38, 92%, 50%)', 'hsl(280, 60%, 55%)', 'hsl(200, 70%, 50%)', 'hsl(0, 72%, 51%)'];
+const COLORS = ['hsl(145, 63%, 32%)', 'hsl(152, 60%, 42%)', 'hsl(38, 92%, 50%)', 'hsl(170, 50%, 40%)', 'hsl(200, 70%, 50%)', 'hsl(120, 40%, 55%)'];
 
 type DetailSortKey = 'description' | 'category' | 'date' | 'amount' | 'type';
 
@@ -118,10 +118,20 @@ const ReportsPage = () => {
 
   const exportCSV = () => {
     const BOM = '\uFEFF';
-    const headers = 'Tipo;Descrição;Valor;Categoria;Data;Status;Conta\n';
+    const sep = ',';
+    const esc = (s: string) => `"${s.replace(/"/g, '""')}"`;
+    const headers = ['Tipo', 'Descrição', 'Valor', 'Categoria', 'Data', 'Status', 'Conta'].map(esc).join(sep) + '\n';
     const rows = filteredTransactions.map(tr => {
       const acc = accounts.find(a => a.id === tr.accountId)?.name || '';
-      return `${tr.type === 'income' ? 'Receita' : 'Despesa'};${tr.description};${tr.amount};${tr.category};${tr.date};${tr.status};${acc}`;
+      return [
+        tr.type === 'income' ? 'Receita' : 'Despesa',
+        tr.description,
+        tr.amount.toFixed(2),
+        tr.category,
+        tr.date,
+        tr.status,
+        acc,
+      ].map(esc).join(sep);
     }).join('\n');
     const blob = new Blob([BOM + headers + rows], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -131,13 +141,26 @@ const ReportsPage = () => {
   };
 
   const exportExcel = () => {
-    const BOM = '\uFEFF';
-    const headers = 'Tipo\tDescrição\tValor\tCategoria\tData\tStatus\tConta\n';
-    const rows = filteredTransactions.map(tr => {
+    const xmlHeader = '<?xml version="1.0" encoding="UTF-8"?>\n<?mso-application progid="Excel.Sheet"?>\n';
+    const workbookStart = '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n<Worksheet ss:Name="Relatório"><Table>\n';
+    const workbookEnd = '</Table></Worksheet></Workbook>';
+    const headerRow = '<Row>' + ['Tipo', 'Descrição', 'Valor', 'Categoria', 'Data', 'Status', 'Conta']
+      .map(h => `<Cell><Data ss:Type="String">${h}</Data></Cell>`).join('') + '</Row>\n';
+    const dataRows = filteredTransactions.map(tr => {
       const acc = accounts.find(a => a.id === tr.accountId)?.name || '';
-      return `${tr.type === 'income' ? 'Receita' : 'Despesa'}\t${tr.description}\t${tr.amount}\t${tr.category}\t${tr.date}\t${tr.status}\t${acc}`;
+      const cells = [
+        { v: tr.type === 'income' ? 'Receita' : 'Despesa', t: 'String' },
+        { v: tr.description, t: 'String' },
+        { v: tr.amount.toFixed(2), t: 'Number' },
+        { v: tr.category, t: 'String' },
+        { v: tr.date, t: 'String' },
+        { v: tr.status, t: 'String' },
+        { v: acc, t: 'String' },
+      ];
+      return '<Row>' + cells.map(c => `<Cell><Data ss:Type="${c.t}">${c.v}</Data></Cell>`).join('') + '</Row>';
     }).join('\n');
-    const blob = new Blob([BOM + headers + rows], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const xml = xmlHeader + workbookStart + headerRow + dataRows + '\n' + workbookEnd;
+    const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = 'moovi-relatorio.xls'; a.click();
@@ -152,14 +175,15 @@ const ReportsPage = () => {
       return `<tr>
         <td style="padding:6px 10px;border-bottom:1px solid #eee">${tr.type === 'income' ? 'Receita' : 'Despesa'}</td>
         <td style="padding:6px 10px;border-bottom:1px solid #eee">${tr.description}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:right">${tr.amount.toFixed(2)}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:right">${formatCurrency(tr.amount)}</td>
         <td style="padding:6px 10px;border-bottom:1px solid #eee">${tr.category}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee">${tr.date}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee">${formatDate(tr.date)}</td>
         <td style="padding:6px 10px;border-bottom:1px solid #eee">${acc}</td>
       </tr>`;
     }).join('');
-    printWindow.document.write(`
+    printWindow.document.write(`<!DOCTYPE html>
       <html><head><title>Relatório Moovi</title>
+      <meta charset="utf-8">
       <style>body{font-family:'DM Sans',sans-serif;padding:40px;color:#1a1a2e}
       h1{font-size:20px;margin-bottom:4px}p{color:#666;font-size:13px;margin-bottom:20px}
       table{width:100%;border-collapse:collapse;font-size:13px}
@@ -172,9 +196,9 @@ const ReportsPage = () => {
       <h1>Relatório Financeiro — Moovi</h1>
       <p>Período: ${period === 'month' ? selectedMonth : period === 'year' ? selectedYear : `${customStart} a ${customEnd}`}</p>
       <div class="summary">
-        <div><span>Total Receitas</span><div class="val green">R$ ${totalIncome.toFixed(2)}</div></div>
-        <div><span>Total Despesas</span><div class="val red">R$ ${totalExpenses.toFixed(2)}</div></div>
-        <div><span>Resultado</span><div class="val ${totalIncome - totalExpenses >= 0 ? 'green' : 'red'}">R$ ${(totalIncome - totalExpenses).toFixed(2)}</div></div>
+        <div><span>Total Receitas</span><div class="val green">${formatCurrency(totalIncome)}</div></div>
+        <div><span>Total Despesas</span><div class="val red">${formatCurrency(totalExpenses)}</div></div>
+        <div><span>Resultado</span><div class="val ${totalIncome - totalExpenses >= 0 ? 'green' : 'red'}">${formatCurrency(totalIncome - totalExpenses)}</div></div>
       </div>
       <table><thead><tr><th>Tipo</th><th>Descrição</th><th style="text-align:right">Valor</th><th>Categoria</th><th>Data</th><th>Conta</th></tr></thead>
       <tbody>${rows}</tbody></table>
@@ -292,7 +316,7 @@ const ReportsPage = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', fontSize: '12px' }} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', fontSize: '12px' }} formatter={(value: number) => formatCurrency(value)} />
                   <Bar dataKey="income" fill="hsl(152, 60%, 42%)" radius={[4, 4, 0, 0]} barSize={20} name="Receitas" />
                   <Bar dataKey="expense" fill="hsl(0, 72%, 51%)" radius={[4, 4, 0, 0]} barSize={20} name="Despesas" />
                 </BarChart>
@@ -305,7 +329,7 @@ const ReportsPage = () => {
                   <Pie data={categoryBreakdown} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
                     {categoryBreakdown.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
-                  <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} formatter={(value: number) => formatCurrency(value)} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="mt-2 space-y-1.5">
@@ -332,8 +356,8 @@ const ReportsPage = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis type="number" tick={{ fontSize: 11 }} />
                   <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={100} />
-                  <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
-                  <Bar dataKey="value" fill="hsl(234, 62%, 52%)" radius={[0, 4, 4, 0]} barSize={16} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} formatter={(value: number) => formatCurrency(value)} />
+                  <Bar dataKey="value" fill="hsl(145, 63%, 32%)" radius={[0, 4, 4, 0]} barSize={16} />
                 </BarChart>
               </ResponsiveContainer>
             </Card>

@@ -332,8 +332,8 @@ const ReportsPage = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis type="number" tick={{ fontSize: 11 }} />
                   <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={100} />
-                  <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
-                  <Bar dataKey="value" fill="hsl(234, 62%, 52%)" radius={[0, 4, 4, 0]} barSize={16} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} formatter={(value: number) => formatCurrency(value)} />
+                  <Bar dataKey="value" fill="hsl(145, 63%, 32%)" radius={[0, 4, 4, 0]} barSize={16} />
                 </BarChart>
               </ResponsiveContainer>
             </Card>

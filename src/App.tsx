@@ -18,6 +18,7 @@ import AIPage from "@/pages/AIPage";
 import SettingsPage from "@/pages/SettingsPage";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import CategoriesPage from "@/pages/CategoriesPage";
+import PayablesReceivablesPage from "@/pages/PayablesReceivablesPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => (
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/subscription" element={<SubscriptionPage />} />
                   <Route path="/categories" element={<CategoriesPage />} />
+                  <Route path="/payables" element={<PayablesReceivablesPage />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>

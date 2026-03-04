@@ -1,25 +1,21 @@
 import { useState, useMemo } from 'react';
 import { useI18n } from '@/i18n/context';
-import { useData, type Transaction } from '@/store/DataContext';
+import { useData } from '@/store/DataContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { DatePicker } from '@/components/DatePicker';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Trash2, Pencil, Search, ArrowDownRight, ArrowUpDown } from 'lucide-react';
+import { TransactionFormDialog, useTransactionForm } from '@/components/TransactionFormDialog';
+import { DatePicker } from '@/components/DatePicker';
 
 type SortKey = 'description' | 'category' | 'date' | 'amount' | 'status';
 
 const ExpensesPage = () => {
   const { t, formatCurrency, formatDate, translateRecurrence, translatePeriod, locale } = useI18n();
-  const { transactions, accounts, cards, categories, addTransaction, deleteTransaction, updateTransaction } = useData();
-  const [open, setOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const { transactions, deleteTransaction } = useData();
   const [search, setSearch] = useState('');
   const [period, setPeriod] = useState('month');
   const [filterMonth, setFilterMonth] = useState(() => {
@@ -31,6 +27,8 @@ const ExpensesPage = () => {
   const [customEnd, setCustomEnd] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortAsc, setSortAsc] = useState(false);
+
+  const { open, setOpen, editingId, initialData, openAdd, openEdit } = useTransactionForm('expense');
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc(!sortAsc);
@@ -74,59 +72,7 @@ const ExpensesPage = () => {
     return Array.from(set).sort().reverse();
   }, [transactions]);
 
-  const [form, setForm] = useState({
-    description: '', amount: '', category: categories.expense[0] || '', date: new Date().toISOString().split('T')[0],
-    status: 'paid' as 'paid' | 'planned', recurrence: 'once' as Transaction['recurrence'],
-    accountId: '', cardId: '', installments: '', fixed: false, tags: '',
-  });
-
-  const resetForm = () => setForm({ description: '', amount: '', category: categories.expense[0] || '', date: new Date().toISOString().split('T')[0], status: 'paid', recurrence: 'once', accountId: '', cardId: '', installments: '', fixed: false, tags: '' });
-
-  const openAdd = () => { setEditingId(null); resetForm(); setOpen(true); };
-
-  const openEdit = (tr: Transaction) => {
-    setEditingId(tr.id);
-    setForm({ description: tr.description, amount: String(tr.amount), category: tr.category, date: tr.date, status: tr.status as any, recurrence: tr.recurrence, accountId: tr.accountId, cardId: tr.cardId || '', installments: '', fixed: tr.fixed || false, tags: tr.tags?.join(', ') || '' });
-    setOpen(true);
-  };
-
-  const handleSubmit = () => {
-    if (!form.description || !form.amount || !form.accountId) return;
-    if (editingId) {
-      updateTransaction(editingId, {
-        type: 'expense', description: form.description, amount: parseFloat(form.amount),
-        category: form.category, date: form.date, status: form.status,
-        recurrence: form.recurrence, accountId: form.accountId,
-        cardId: form.cardId || undefined, tags: form.tags ? form.tags.split(',').map(t => t.trim()) : [], fixed: form.fixed,
-      });
-    } else {
-      const inst = form.installments ? parseInt(form.installments) : undefined;
-      if (inst && inst > 1) {
-        const amount = parseFloat(form.amount) / inst;
-        for (let i = 0; i < inst; i++) {
-          const date = new Date(form.date);
-          date.setMonth(date.getMonth() + i);
-          addTransaction({
-            type: 'expense', description: form.description, amount,
-            category: form.category, date: date.toISOString().split('T')[0],
-            status: i === 0 ? 'paid' : 'planned', recurrence: 'once',
-            accountId: form.accountId, cardId: form.cardId || undefined,
-            installments: inst, currentInstallment: i + 1,
-            tags: form.tags ? form.tags.split(',').map(t => t.trim()) : [], fixed: form.fixed,
-          });
-        }
-      } else {
-        addTransaction({
-          type: 'expense', description: form.description, amount: parseFloat(form.amount),
-          category: form.category, date: form.date, status: form.status,
-          recurrence: form.recurrence, accountId: form.accountId,
-          cardId: form.cardId || undefined, tags: form.tags ? form.tags.split(',').map(t => t.trim()) : [], fixed: form.fixed,
-        });
-      }
-    }
-    setOpen(false);
-    resetForm();
-  };
+  const fixedLabel = { pt: 'fixa', en: 'fixed', es: 'fija', fr: 'fixe', de: 'fest' }[locale] || 'fixa';
 
   const SortableHead = ({ label, field }: { label: string; field: SortKey }) => (
     <TableHead className="cursor-pointer select-none" onClick={() => toggleSort(field)}>
@@ -228,7 +174,7 @@ const ExpensesPage = () => {
                     {exp.description}
                     {exp.installments && <Badge variant="outline" className="text-[10px]">{exp.currentInstallment}/{exp.installments}</Badge>}
                     {exp.recurrence !== 'once' && !exp.installments && <Badge variant="secondary" className="text-[10px]">{translateRecurrence(exp.recurrence)}</Badge>}
-                    {exp.fixed && <Badge variant="secondary" className="text-[10px]">{locale === 'pt' ? 'fixa' : locale === 'en' ? 'fixed' : locale === 'es' ? 'fija' : locale === 'fr' ? 'fixe' : 'fest'}</Badge>}
+                    {exp.fixed && <Badge variant="secondary" className="text-[10px]">{fixedLabel}</Badge>}
                   </div>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">{exp.category}</TableCell>
@@ -258,77 +204,7 @@ const ExpensesPage = () => {
         </Table>
       </Card>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>{editingId ? t.common.edit : t.common.add} {t.common.expense}</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>{t.common.description}</Label>
-              <Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>{t.common.amount}</Label>
-                <Input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t.common.date}</Label>
-                <DatePicker value={form.date} onChange={v => setForm({ ...form, date: v })} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>{t.common.category}</Label>
-                <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {categories.expense.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              {!editingId && (
-                <div className="space-y-1.5">
-                  <Label>Parcelas</Label>
-                  <Input type="number" placeholder="1" value={form.installments} onChange={e => setForm({ ...form, installments: e.target.value })} />
-                </div>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Conta</Label>
-                <Select value={form.accountId} onValueChange={v => setForm({ ...form, accountId: v })}>
-                  <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
-                  <SelectContent>
-                    {accounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Cartão (opcional)</Label>
-                <Select value={form.cardId} onValueChange={v => setForm({ ...form, cardId: v })}>
-                  <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhum</SelectItem>
-                    {cards.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Switch checked={form.fixed} onCheckedChange={v => setForm({ ...form, fixed: v })} />
-              <Label>Despesa fixa</Label>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Tags</Label>
-              <Input value={form.tags} onChange={e => setForm({ ...form, tags: e.target.value })} placeholder="ex: tech, assinatura" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>{t.common.cancel}</Button>
-            <Button onClick={handleSubmit}>{t.common.save}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <TransactionFormDialog type="expense" open={open} onOpenChange={setOpen} editingId={editingId} initialData={initialData} />
     </div>
   );
 };

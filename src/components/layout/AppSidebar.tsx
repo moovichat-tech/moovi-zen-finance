@@ -15,6 +15,7 @@ import {
   Tag,
   PanelLeftClose,
   PanelLeft,
+  ClipboardList,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import mooviLogo from '@/assets/moovi-logo.jpeg';
@@ -23,6 +24,7 @@ const navItems = [
   { key: 'dashboard', path: '/', icon: LayoutDashboard },
   { key: 'income', path: '/income', icon: TrendingUp },
   { key: 'expenses', path: '/expenses', icon: TrendingDown },
+  { key: 'payables', path: '/payables', icon: ClipboardList },
   { key: 'cards', path: '/cards', icon: CreditCard },
   { key: 'accounts', path: '/accounts', icon: Landmark },
   { key: 'budget', path: '/budget', icon: Target },
@@ -37,7 +39,7 @@ interface AppSidebarProps {
 }
 
 export const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -45,10 +47,11 @@ export const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
     dashboard: t.nav.dashboard,
     income: t.nav.income,
     expenses: t.nav.expenses,
+    payables: locale === 'pt' ? 'A Pagar/Receber' : locale === 'en' ? 'Payables' : locale === 'es' ? 'Por Pagar' : locale === 'fr' ? 'À Payer' : 'Forderungen',
     cards: t.nav.cards,
     accounts: t.nav.accounts,
     budget: t.nav.budget,
-    categories: 'Categorias',
+    categories: locale === 'pt' ? 'Categorias' : locale === 'en' ? 'Categories' : locale === 'es' ? 'Categorías' : locale === 'fr' ? 'Catégories' : 'Kategorien',
     reports: t.nav.reports,
     ai: t.nav.ai,
   };

@@ -1,24 +1,21 @@
 import { useState, useMemo } from 'react';
 import { useI18n } from '@/i18n/context';
-import { useData, type Transaction } from '@/store/DataContext';
+import { useData } from '@/store/DataContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { DatePicker } from '@/components/DatePicker';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Trash2, Pencil, Search, ArrowUpRight, ArrowUpDown } from 'lucide-react';
+import { TransactionFormDialog, useTransactionForm } from '@/components/TransactionFormDialog';
+import { DatePicker } from '@/components/DatePicker';
 
 type SortKey = 'description' | 'category' | 'date' | 'amount' | 'status';
 
 const IncomePage = () => {
   const { t, formatCurrency, formatDate, translateRecurrence, translatePeriod } = useI18n();
-  const { transactions, accounts, categories, addTransaction, deleteTransaction, updateTransaction } = useData();
-  const [open, setOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const { transactions, deleteTransaction } = useData();
   const [search, setSearch] = useState('');
   const [period, setPeriod] = useState('month');
   const [filterMonth, setFilterMonth] = useState(() => {
@@ -30,6 +27,8 @@ const IncomePage = () => {
   const [customEnd, setCustomEnd] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortAsc, setSortAsc] = useState(false);
+
+  const { open, setOpen, editingId, initialData, openAdd, openEdit } = useTransactionForm('income');
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc(!sortAsc);
@@ -72,39 +71,6 @@ const IncomePage = () => {
     transactions.filter(tr => tr.type === 'income').forEach(tr => set.add(tr.date.substring(0, 4)));
     return Array.from(set).sort().reverse();
   }, [transactions]);
-
-  const [form, setForm] = useState({
-    description: '', amount: '', category: categories.income[0] || '', date: new Date().toISOString().split('T')[0],
-    status: 'received' as 'received' | 'planned', recurrence: 'once' as Transaction['recurrence'], accountId: '',
-    tags: '',
-  });
-
-  const resetForm = () => setForm({ description: '', amount: '', category: categories.income[0] || '', date: new Date().toISOString().split('T')[0], status: 'received', recurrence: 'once', accountId: '', tags: '' });
-
-  const openAdd = () => { setEditingId(null); resetForm(); setOpen(true); };
-
-  const openEdit = (tr: Transaction) => {
-    setEditingId(tr.id);
-    setForm({ description: tr.description, amount: String(tr.amount), category: tr.category, date: tr.date, status: tr.status as any, recurrence: tr.recurrence, accountId: tr.accountId, tags: tr.tags?.join(', ') || '' });
-    setOpen(true);
-  };
-
-  const handleSubmit = () => {
-    if (!form.description || !form.amount || !form.accountId) return;
-    const data = {
-      type: 'income' as const, description: form.description, amount: parseFloat(form.amount),
-      category: form.category, date: form.date, status: form.status,
-      recurrence: form.recurrence, accountId: form.accountId,
-      tags: form.tags ? form.tags.split(',').map(t => t.trim()) : [],
-    };
-    if (editingId) {
-      updateTransaction(editingId, data);
-    } else {
-      addTransaction(data);
-    }
-    setOpen(false);
-    resetForm();
-  };
 
   const SortableHead = ({ label, field }: { label: string; field: SortKey }) => (
     <TableHead className="cursor-pointer select-none" onClick={() => toggleSort(field)}>
@@ -204,7 +170,9 @@ const IncomePage = () => {
                   <div className="flex items-center gap-2">
                     <ArrowUpRight className="h-3.5 w-3.5 text-success" />
                     {inc.description}
-                    {inc.recurrence !== 'once' && <Badge variant="secondary" className="text-[10px]">{translateRecurrence(inc.recurrence)}</Badge>}
+                    {inc.installments && <Badge variant="outline" className="text-[10px]">{inc.currentInstallment}/{inc.installments}</Badge>}
+                    {inc.recurrence !== 'once' && !inc.installments && <Badge variant="secondary" className="text-[10px]">{translateRecurrence(inc.recurrence)}</Badge>}
+                    {inc.fixed && <Badge variant="secondary" className="text-[10px]">{t.common.status === 'Status' ? 'fixed' : 'fixa'}</Badge>}
                   </div>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">{inc.category}</TableCell>
@@ -234,79 +202,7 @@ const IncomePage = () => {
         </Table>
       </Card>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>{editingId ? t.common.edit : t.common.add} {t.common.income}</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>{t.common.description}</Label>
-              <Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>{t.common.amount}</Label>
-                <Input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t.common.date}</Label>
-                <DatePicker value={form.date} onChange={v => setForm({ ...form, date: v })} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>{t.common.category}</Label>
-                <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {categories.income.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t.common.status}</Label>
-                <Select value={form.status} onValueChange={v => setForm({ ...form, status: v as any })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="received">{t.common.received}</SelectItem>
-                    <SelectItem value="planned">{t.common.planned}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Recorrência</Label>
-                <Select value={form.recurrence} onValueChange={v => setForm({ ...form, recurrence: v as any })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="once">{translateRecurrence('once')}</SelectItem>
-                    <SelectItem value="monthly">{translateRecurrence('monthly')}</SelectItem>
-                    <SelectItem value="weekly">{translateRecurrence('weekly')}</SelectItem>
-                    <SelectItem value="yearly">{translateRecurrence('yearly')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Conta</Label>
-                <Select value={form.accountId} onValueChange={v => setForm({ ...form, accountId: v })}>
-                  <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
-                  <SelectContent>
-                    {accounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Tags (separadas por vírgula)</Label>
-              <Input value={form.tags} onChange={e => setForm({ ...form, tags: e.target.value })} placeholder="ex: freelance, web" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>{t.common.cancel}</Button>
-            <Button onClick={handleSubmit}>{t.common.save}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <TransactionFormDialog type="income" open={open} onOpenChange={setOpen} editingId={editingId} initialData={initialData} />
     </div>
   );
 };

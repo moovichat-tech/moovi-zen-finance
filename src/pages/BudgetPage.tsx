@@ -76,15 +76,15 @@ const BudgetPage = () => {
       {/* Summary */}
       <div className="grid grid-cols-3 gap-4">
         <Card className="p-4">
-          <span className="text-xs font-medium text-muted-foreground">{t.pages.budget.totalBudget || 'Orçamento Total'}</span>
+          <span className="text-xs font-medium text-muted-foreground">Orçamento Total</span>
           <div className="mt-1 text-xl font-semibold">{formatCurrency(totalLimit)}</div>
         </Card>
         <Card className="p-4">
-          <span className="text-xs font-medium text-muted-foreground">{t.pages.budget.totalSpent || 'Total Gasto'}</span>
+          <span className="text-xs font-medium text-muted-foreground">Total Gasto</span>
           <div className="mt-1 text-xl font-semibold text-destructive">{formatCurrency(totalSpent)}</div>
         </Card>
         <Card className="p-4">
-          <span className="text-xs font-medium text-muted-foreground">{t.pages.budget.available || 'Disponível'}</span>
+          <span className="text-xs font-medium text-muted-foreground">Disponível</span>
           <div className="mt-1 text-xl font-semibold text-success">{formatCurrency(totalLimit - totalSpent)}</div>
         </Card>
       </div>

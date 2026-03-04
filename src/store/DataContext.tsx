@@ -78,28 +78,169 @@ const defaultCategories: Categories = {
   expense: ['Moradia', 'Alimentação', 'Transporte', 'Lazer', 'Saúde', 'Educação', 'Vestuário', 'Serviços', 'Outros'],
 };
 
-const defaultTransactions: Transaction[] = [
-  { id: 't-1', type: 'income', description: 'Salário', amount: 8500, category: 'Salário', date: '2026-03-01', status: 'received', recurrence: 'monthly', accountId: 'acc-2', tags: [] },
-  { id: 't-2', type: 'income', description: 'Freelance Website', amount: 2700, category: 'Freelance', date: '2026-03-05', status: 'received', recurrence: 'once', accountId: 'acc-1', tags: ['web'] },
-  { id: 't-3', type: 'expense', description: 'Aluguel', amount: 2800, category: 'Moradia', date: '2026-03-05', status: 'paid', recurrence: 'monthly', accountId: 'acc-2', tags: [], fixed: true },
-  { id: 't-4', type: 'expense', description: 'Supermercado Extra', amount: 450, category: 'Alimentação', date: '2026-03-08', status: 'paid', recurrence: 'once', accountId: 'acc-1', tags: [] },
-  { id: 't-5', type: 'expense', description: 'Uber', amount: 85, category: 'Transporte', date: '2026-03-10', status: 'paid', recurrence: 'once', accountId: 'acc-1', tags: [] },
-  { id: 't-6', type: 'expense', description: 'Netflix', amount: 55.90, category: 'Lazer', date: '2026-03-10', status: 'paid', recurrence: 'monthly', accountId: 'acc-1', tags: [], fixed: true },
-  { id: 't-7', type: 'expense', description: 'Farmácia', amount: 120, category: 'Saúde', date: '2026-03-12', status: 'paid', recurrence: 'once', accountId: 'acc-1', tags: [] },
-  { id: 't-8', type: 'expense', description: 'iPhone 16 Pro', amount: 1200, category: 'Outros', date: '2026-03-01', status: 'paid', recurrence: 'once', accountId: 'acc-1', cardId: 'card-1', installments: 12, currentInstallment: 1, tags: ['tech'] },
-  { id: 't-9', type: 'income', description: 'Dividendos PETR4', amount: 320, category: 'Investimentos', date: '2026-03-15', status: 'planned', recurrence: 'once', accountId: 'acc-2', tags: ['ações'] },
-  { id: 't-10', type: 'expense', description: 'Condomínio', amount: 680, category: 'Moradia', date: '2026-03-10', status: 'paid', recurrence: 'monthly', accountId: 'acc-2', tags: [], fixed: true },
-  { id: 't-11', type: 'expense', description: 'Restaurante japonês', amount: 180, category: 'Alimentação', date: '2026-03-14', status: 'paid', recurrence: 'once', accountId: 'acc-1', tags: [] },
-  { id: 't-12', type: 'expense', description: 'Curso Udemy', amount: 27.90, category: 'Educação', date: '2026-03-06', status: 'paid', recurrence: 'once', accountId: 'acc-1', tags: ['dev'] },
-];
+// Generate extensive seed data from Jan 2025 to Mar 2026
+function generateSeedTransactions(): Transaction[] {
+  const txs: Transaction[] = [];
+  let id = 1;
+
+  const incomeItems = [
+    { desc: 'Salário', cat: 'Salário', amount: 8500, acc: 'acc-2', rec: 'monthly' as const },
+    { desc: 'Freelance Design', cat: 'Freelance', amount: 2200, acc: 'acc-1', rec: 'once' as const },
+    { desc: 'Freelance Website', cat: 'Freelance', amount: 2700, acc: 'acc-1', rec: 'once' as const },
+    { desc: 'Dividendos PETR4', cat: 'Investimentos', amount: 320, acc: 'acc-2', rec: 'once' as const },
+    { desc: 'Dividendos ITSA4', cat: 'Investimentos', amount: 180, acc: 'acc-2', rec: 'once' as const },
+    { desc: 'Venda Mercado Livre', cat: 'Vendas', amount: 450, acc: 'acc-1', rec: 'once' as const },
+  ];
+
+  const expenseItems = [
+    { desc: 'Aluguel', cat: 'Moradia', amount: 2800, acc: 'acc-2', rec: 'monthly' as const, fixed: true },
+    { desc: 'Condomínio', cat: 'Moradia', amount: 680, acc: 'acc-2', rec: 'monthly' as const, fixed: true },
+    { desc: 'Energia', cat: 'Moradia', amount: 220, acc: 'acc-1', rec: 'monthly' as const, fixed: true },
+    { desc: 'Internet', cat: 'Moradia', amount: 120, acc: 'acc-1', rec: 'monthly' as const, fixed: true },
+    { desc: 'Supermercado', cat: 'Alimentação', amount: 0, acc: 'acc-1', rec: 'once' as const },
+    { desc: 'Restaurante', cat: 'Alimentação', amount: 0, acc: 'acc-1', rec: 'once' as const },
+    { desc: 'iFood', cat: 'Alimentação', amount: 0, acc: 'acc-1', rec: 'once' as const },
+    { desc: 'Uber', cat: 'Transporte', amount: 0, acc: 'acc-1', rec: 'once' as const },
+    { desc: 'Gasolina', cat: 'Transporte', amount: 0, acc: 'acc-1', rec: 'once' as const },
+    { desc: 'Netflix', cat: 'Lazer', amount: 55.90, acc: 'acc-1', rec: 'monthly' as const, fixed: true },
+    { desc: 'Spotify', cat: 'Lazer', amount: 21.90, acc: 'acc-1', rec: 'monthly' as const, fixed: true },
+    { desc: 'Academia', cat: 'Saúde', amount: 129, acc: 'acc-1', rec: 'monthly' as const, fixed: true },
+    { desc: 'Farmácia', cat: 'Saúde', amount: 0, acc: 'acc-1', rec: 'once' as const },
+    { desc: 'Curso Udemy', cat: 'Educação', amount: 0, acc: 'acc-1', rec: 'once' as const },
+  ];
+
+  const rand = (min: number, max: number) => Math.round((min + Math.random() * (max - min)) * 100) / 100;
+
+  for (let year = 2025; year <= 2026; year++) {
+    const maxMonth = year === 2026 ? 3 : 12;
+    for (let month = 1; month <= maxMonth; month++) {
+      const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+      
+      // Salary every month
+      txs.push({
+        id: `t-${id++}`, type: 'income', description: 'Salário', amount: 8500,
+        category: 'Salário', date: `${monthStr}-05`, status: 'received',
+        recurrence: 'monthly', accountId: 'acc-2', tags: [], fixed: false,
+      });
+
+      // Random freelance (60% chance)
+      if (Math.random() > 0.4) {
+        const fl = incomeItems[Math.random() > 0.5 ? 1 : 2];
+        txs.push({
+          id: `t-${id++}`, type: 'income', description: fl.desc, amount: rand(1500, 4000),
+          category: fl.cat, date: `${monthStr}-${String(rand(10, 25) | 0).padStart(2, '0')}`,
+          status: 'received', recurrence: 'once', accountId: fl.acc, tags: ['web'],
+        });
+      }
+
+      // Dividends (40% chance)
+      if (Math.random() > 0.6) {
+        const div = incomeItems[Math.random() > 0.5 ? 3 : 4];
+        txs.push({
+          id: `t-${id++}`, type: 'income', description: div.desc, amount: rand(100, 500),
+          category: div.cat, date: `${monthStr}-15`, status: 'received',
+          recurrence: 'once', accountId: div.acc, tags: ['ações'],
+        });
+      }
+
+      // Fixed expenses every month
+      for (const exp of expenseItems.filter(e => e.fixed)) {
+        txs.push({
+          id: `t-${id++}`, type: 'expense', description: exp.desc, amount: exp.amount + rand(-20, 20),
+          category: exp.cat, date: `${monthStr}-${String(rand(1, 10) | 0).padStart(2, '0')}`,
+          status: 'paid', recurrence: 'monthly', accountId: exp.acc, tags: [], fixed: true,
+        });
+      }
+
+      // Variable expenses
+      // Supermercado 2-4x/month
+      const superCount = 2 + (Math.random() * 3 | 0);
+      for (let s = 0; s < superCount; s++) {
+        txs.push({
+          id: `t-${id++}`, type: 'expense', description: `Supermercado ${['Extra', 'Pão de Açúcar', 'Carrefour', 'Assaí'][s % 4]}`,
+          amount: rand(150, 600), category: 'Alimentação',
+          date: `${monthStr}-${String(rand(1, 28) | 0).padStart(2, '0')}`,
+          status: 'paid', recurrence: 'once', accountId: 'acc-1', tags: [],
+        });
+      }
+
+      // Restaurante 1-3x/month
+      const restCount = 1 + (Math.random() * 3 | 0);
+      for (let r = 0; r < restCount; r++) {
+        txs.push({
+          id: `t-${id++}`, type: 'expense', description: `${['Restaurante japonês', 'Pizzaria', 'Churrascaria', 'Café'][r % 4]}`,
+          amount: rand(40, 250), category: 'Alimentação',
+          date: `${monthStr}-${String(rand(1, 28) | 0).padStart(2, '0')}`,
+          status: 'paid', recurrence: 'once', accountId: 'acc-1', tags: [],
+        });
+      }
+
+      // Uber 2-5x/month
+      const uberCount = 2 + (Math.random() * 4 | 0);
+      for (let u = 0; u < uberCount; u++) {
+        txs.push({
+          id: `t-${id++}`, type: 'expense', description: 'Uber',
+          amount: rand(15, 85), category: 'Transporte',
+          date: `${monthStr}-${String(rand(1, 28) | 0).padStart(2, '0')}`,
+          status: 'paid', recurrence: 'once', accountId: 'acc-1', tags: [],
+        });
+      }
+
+      // Gasolina 1-2x/month
+      if (Math.random() > 0.3) {
+        txs.push({
+          id: `t-${id++}`, type: 'expense', description: 'Gasolina',
+          amount: rand(150, 350), category: 'Transporte',
+          date: `${monthStr}-${String(rand(1, 28) | 0).padStart(2, '0')}`,
+          status: 'paid', recurrence: 'once', accountId: 'acc-1', tags: [],
+        });
+      }
+
+      // Farmácia (50% chance)
+      if (Math.random() > 0.5) {
+        txs.push({
+          id: `t-${id++}`, type: 'expense', description: 'Farmácia',
+          amount: rand(30, 200), category: 'Saúde',
+          date: `${monthStr}-${String(rand(1, 28) | 0).padStart(2, '0')}`,
+          status: 'paid', recurrence: 'once', accountId: 'acc-1', tags: [],
+        });
+      }
+
+      // Education (30% chance)
+      if (Math.random() > 0.7) {
+        txs.push({
+          id: `t-${id++}`, type: 'expense', description: `Curso ${['Udemy', 'Alura', 'Rocketseat'][Math.random() * 3 | 0]}`,
+          amount: rand(25, 150), category: 'Educação',
+          date: `${monthStr}-${String(rand(1, 28) | 0).padStart(2, '0')}`,
+          status: 'paid', recurrence: 'once', accountId: 'acc-1', tags: ['dev'],
+        });
+      }
+
+      // Card purchases (some with card)
+      if (Math.random() > 0.4) {
+        txs.push({
+          id: `t-${id++}`, type: 'expense', description: `${['Zara', 'Nike', 'Amazon', 'Magazine Luiza'][Math.random() * 4 | 0]}`,
+          amount: rand(80, 800), category: ['Vestuário', 'Lazer', 'Outros'][Math.random() * 3 | 0],
+          date: `${monthStr}-${String(rand(1, 28) | 0).padStart(2, '0')}`,
+          status: 'paid', recurrence: 'once', accountId: 'acc-1',
+          cardId: Math.random() > 0.5 ? 'card-1' : 'card-2', tags: [],
+        });
+      }
+    }
+  }
+
+  return txs;
+}
+
+const defaultTransactions: Transaction[] = generateSeedTransactions();
 
 const defaultBudgets: BudgetItem[] = [
-  { id: 'b-1', category: 'Moradia', limit: 3500, spent: 3480 },
-  { id: 'b-2', category: 'Alimentação', limit: 1500, spent: 630 },
-  { id: 'b-3', category: 'Transporte', limit: 500, spent: 85 },
-  { id: 'b-4', category: 'Lazer', limit: 600, spent: 55.90 },
-  { id: 'b-5', category: 'Saúde', limit: 400, spent: 120 },
-  { id: 'b-6', category: 'Educação', limit: 300, spent: 27.90 },
+  { id: 'b-1', category: 'Moradia', limit: 4000, spent: 0 },
+  { id: 'b-2', category: 'Alimentação', limit: 2000, spent: 0 },
+  { id: 'b-3', category: 'Transporte', limit: 800, spent: 0 },
+  { id: 'b-4', category: 'Lazer', limit: 600, spent: 0 },
+  { id: 'b-5', category: 'Saúde', limit: 500, spent: 0 },
+  { id: 'b-6', category: 'Educação', limit: 300, spent: 0 },
 ];
 
 interface DataContextType {
@@ -113,6 +254,7 @@ interface DataContextType {
   updateTransaction: (id: string, data: Partial<Omit<Transaction, 'id'>>) => void;
   deleteTransaction: (id: string) => void;
   addAccount: (a: Omit<Account, 'id'>) => void;
+  updateAccount: (id: string, data: Partial<Omit<Account, 'id'>>) => void;
   deleteAccount: (id: string) => void;
   addCard: (c: Omit<CreditCard, 'id'>) => void;
   updateCard: (id: string, data: Partial<Omit<CreditCard, 'id'>>) => void;
@@ -167,8 +309,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAccounts(prev => [...prev, { ...a, id: `acc-${Date.now()}` }]);
   }, []);
 
+  const updateAccount = useCallback((id: string, data: Partial<Omit<Account, 'id'>>) => {
+    setAccounts(prev => prev.map(a => a.id === id ? { ...a, ...data } : a));
+  }, []);
+
+  // When deleting account, reassign transactions to empty string (will show "Sem conta")
   const deleteAccount = useCallback((id: string) => {
     setAccounts(prev => prev.filter(a => a.id !== id));
+    setTransactions(prev => prev.map(t => t.accountId === id ? { ...t, accountId: '' } : t));
   }, []);
 
   const addCard = useCallback((c: Omit<CreditCard, 'id'>) => {
@@ -216,7 +364,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteCategory = useCallback((type: 'income' | 'expense', name: string) => {
     setCategories(prev => ({ ...prev, [type]: prev[type].filter(c => c !== name) }));
-    // Also remove budget for this category
     if (type === 'expense') {
       setBudgets(prev => prev.filter(b => b.category !== name));
     }
@@ -225,7 +372,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateCategory = useCallback((type: 'income' | 'expense', oldName: string, newName: string) => {
     setCategories(prev => ({ ...prev, [type]: prev[type].map(c => c === oldName ? newName : c) }));
     setTransactions(prev => prev.map(t => t.category === oldName ? { ...t, category: newName } : t));
-    // Also update budgets
     setBudgets(prev => prev.map(b => b.category === oldName ? { ...b, category: newName } : b));
   }, []);
 
@@ -237,7 +383,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <DataContext.Provider value={{
       transactions, accounts, cards, budgets, categories, profile,
       addTransaction, updateTransaction, deleteTransaction,
-      addAccount, deleteAccount,
+      addAccount, updateAccount, deleteAccount,
       addCard, updateCard, deleteCard,
       updateBudget, addBudget, deleteBudget, transferBetweenAccounts,
       addCategory, deleteCategory, updateCategory,

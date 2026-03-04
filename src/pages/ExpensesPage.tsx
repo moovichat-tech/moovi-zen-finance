@@ -14,6 +14,13 @@ import { Plus, Trash2, Pencil, Search, ArrowDownRight, ArrowUpDown } from 'lucid
 
 type SortKey = 'description' | 'category' | 'date' | 'amount' | 'status';
 
+const recurrenceLabels = (t: any) => ({
+  once: t.common.once,
+  monthly: t.common.monthly,
+  weekly: t.common.weekly,
+  yearly: t.common.yearly,
+});
+
 const ExpensesPage = () => {
   const { t, formatCurrency, formatDate } = useI18n();
   const { transactions, accounts, cards, categories, addTransaction, deleteTransaction, updateTransaction } = useData();
@@ -30,6 +37,8 @@ const ExpensesPage = () => {
   const [customEnd, setCustomEnd] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortAsc, setSortAsc] = useState(false);
+
+  const recLabels = recurrenceLabels(t);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc(!sortAsc);
@@ -171,10 +180,10 @@ const ExpensesPage = () => {
         <Select value={period} onValueChange={setPeriod}>
           <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="month">Mensal</SelectItem>
-            <SelectItem value="year">Anual</SelectItem>
-            <SelectItem value="custom">Personalizado</SelectItem>
+            <SelectItem value="all">{t.common.all}</SelectItem>
+            <SelectItem value="month">{t.common.monthly_filter}</SelectItem>
+            <SelectItem value="year">{t.common.yearly_filter}</SelectItem>
+            <SelectItem value="custom">{t.common.custom}</SelectItem>
           </SelectContent>
         </Select>
         {period === 'month' && (
@@ -226,8 +235,8 @@ const ExpensesPage = () => {
                     <ArrowDownRight className="h-3.5 w-3.5 text-destructive" />
                     {exp.description}
                     {exp.installments && <Badge variant="outline" className="text-[10px]">{exp.currentInstallment}/{exp.installments}</Badge>}
-                    {exp.recurrence !== 'once' && !exp.installments && <Badge variant="secondary" className="text-[10px]">{exp.recurrence}</Badge>}
-                    {exp.fixed && <Badge variant="secondary" className="text-[10px]">fixa</Badge>}
+                    {exp.recurrence !== 'once' && !exp.installments && <Badge variant="secondary" className="text-[10px]">{recLabels[exp.recurrence as keyof typeof recLabels] || exp.recurrence}</Badge>}
+                    {exp.fixed && <Badge variant="secondary" className="text-[10px]">{t.common.fixed}</Badge>}
                   </div>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">{exp.category}</TableCell>
@@ -251,7 +260,7 @@ const ExpensesPage = () => {
               </TableRow>
             ))}
             {expenses.length === 0 && (
-              <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">Nenhuma despesa encontrada</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">{t.common.noData}</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
@@ -315,7 +324,7 @@ const ExpensesPage = () => {
             </div>
             <div className="flex items-center gap-3">
               <Switch checked={form.fixed} onCheckedChange={v => setForm({ ...form, fixed: v })} />
-              <Label>Despesa fixa</Label>
+              <Label>{t.common.fixed}</Label>
             </div>
             <div className="space-y-1.5">
               <Label>Tags</Label>

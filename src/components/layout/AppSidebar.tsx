@@ -63,11 +63,25 @@ export const AppSidebar = () => {
 
       {/* Bottom */}
       <div className="space-y-1 border-t border-sidebar-border px-3 py-3">
-        <button className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground">
+        <button
+          onClick={() => navigate('/subscription')}
+          className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${
+            location.pathname === '/subscription'
+              ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+              : 'text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground'
+          }`}
+        >
           <Crown className="h-4 w-4" />
           {t.nav.subscription}
         </button>
-        <button className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground">
+        <button
+          onClick={() => navigate('/settings')}
+          className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${
+            location.pathname === '/settings'
+              ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+              : 'text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground'
+          }`}
+        >
           <Settings className="h-4 w-4" />
           {t.nav.settings}
         </button>

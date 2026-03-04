@@ -7,14 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Trash2, ArrowRightLeft, Landmark, Wallet, Globe, Building2 } from 'lucide-react';
+import { Plus, Trash2, ArrowRightLeft, Landmark, Wallet, Globe, Building2, TrendingUp } from 'lucide-react';
 
-const typeIcons = {
+const typeIcons: Record<string, any> = {
   checking: Landmark,
   digital: Wallet,
   business: Building2,
   international: Globe,
-  wallet: Wallet,
+  investment: TrendingUp,
 };
 
 const typeLabels: Record<string, string> = {
@@ -22,7 +22,7 @@ const typeLabels: Record<string, string> = {
   digital: 'Conta Digital',
   business: 'Conta PJ',
   international: 'Conta Internacional',
-  wallet: 'Carteira Física',
+  investment: 'Conta Investimento',
 };
 
 const AccountsPage = () => {
@@ -84,20 +84,20 @@ const AccountsPage = () => {
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold">{acc.name}</h3>
-                    <p className="text-xs text-muted-foreground">{typeLabels[acc.type]} • {acc.institution}</p>
+                    <p className="text-xs text-muted-foreground">{typeLabels[acc.type] || acc.type} • {acc.institution}</p>
                   </div>
                 </div>
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteAccount(acc.id)}>
                   <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
                 </Button>
               </div>
-              <div className="mt-3 text-xl font-semibold font-mono">{formatCurrency(acc.balance)}</div>
+              <div className="mt-3 text-xl font-semibold">{formatCurrency(acc.balance)}</div>
               {recentTx.length > 0 && (
                 <div className="mt-3 space-y-1.5 border-t border-border pt-3">
                   {recentTx.map(tr => (
                     <div key={tr.id} className="flex items-center justify-between text-xs">
                       <span className="text-muted-foreground">{tr.description}</span>
-                      <span className={`font-mono ${tr.type === 'income' ? 'text-success' : 'text-destructive'}`}>
+                      <span className={`font-medium ${tr.type === 'income' ? 'text-success' : 'text-destructive'}`}>
                         {tr.type === 'income' ? '+' : '-'}{formatCurrency(tr.amount)}
                       </span>
                     </div>

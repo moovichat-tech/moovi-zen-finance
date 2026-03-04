@@ -1,12 +1,12 @@
 import { useI18n } from '@/i18n/context';
-import { ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, Sparkles, Flame, Send } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, Sparkles, Send } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, BarChart, Bar, Legend,
+  PieChart, Pie, Cell, BarChart, Bar,
 } from 'recharts';
 import { useState } from 'react';
 
@@ -40,7 +40,6 @@ const accounts = [
   { name: 'Nubank', balance: 12450.8, color: 'hsl(280, 60%, 55%)' },
   { name: 'Itaú', balance: 8320.5, color: 'hsl(38, 92%, 50%)' },
   { name: 'Wise', balance: 3200.0, color: 'hsl(152, 60%, 42%)' },
-  { name: 'Carteira', balance: 350.0, color: 'hsl(234, 62%, 52%)' },
 ];
 
 const budgetAlerts = [
@@ -56,33 +55,10 @@ const Dashboard = () => {
   const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
 
   const statCards = [
-    {
-      label: t.dashboard.totalBalance,
-      value: totalBalance,
-      icon: Wallet,
-      trend: null,
-    },
-    {
-      label: t.dashboard.monthIncome,
-      value: 11200,
-      icon: ArrowUpRight,
-      trend: '+14.3%',
-      positive: true,
-    },
-    {
-      label: t.dashboard.monthExpense,
-      value: 6800,
-      icon: ArrowDownRight,
-      trend: '-5.6%',
-      positive: true,
-    },
-    {
-      label: t.dashboard.netResult,
-      value: 4400,
-      icon: TrendingUp,
-      trend: '+38%',
-      positive: true,
-    },
+    { label: t.dashboard.totalBalance, value: totalBalance, icon: Wallet, trend: null },
+    { label: t.dashboard.monthIncome, value: 11200, icon: ArrowUpRight, trend: '+14.3%', positive: true },
+    { label: t.dashboard.monthExpense, value: 6800, icon: ArrowDownRight, trend: '-5.6%', positive: true },
+    { label: t.dashboard.netResult, value: 4400, icon: TrendingUp, trend: '+38%', positive: true },
   ];
 
   return (
@@ -123,7 +99,6 @@ const Dashboard = () => {
 
       {/* Charts Row */}
       <div className="grid grid-cols-3 gap-4">
-        {/* Monthly Evolution */}
         <Card className="col-span-2 p-5 card-hover">
           <h3 className="mb-4 text-sm font-semibold">{t.dashboard.monthlyEvolution}</h3>
           <ResponsiveContainer width="100%" height={240}>
@@ -139,47 +114,23 @@ const Dashboard = () => {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(240, 6%, 92%)" />
-              <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="hsl(240, 4%, 46%)" />
-              <YAxis tick={{ fontSize: 11 }} stroke="hsl(240, 4%, 46%)" />
-              <Tooltip
-                contentStyle={{
-                  borderRadius: '8px',
-                  border: '1px solid hsl(240, 6%, 92%)',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                  fontSize: '12px',
-                }}
-              />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: 'var(--font-sans)' }} stroke="hsl(240, 4%, 46%)" />
+              <YAxis tick={{ fontSize: 11, fontFamily: 'var(--font-sans)' }} stroke="hsl(240, 4%, 46%)" />
+              <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(240, 6%, 92%)', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontSize: '12px', fontFamily: 'var(--font-sans)' }} />
               <Area type="monotone" dataKey="income" stroke="hsl(152, 60%, 42%)" fill="url(#incomeGrad)" strokeWidth={2} />
               <Area type="monotone" dataKey="expense" stroke="hsl(0, 72%, 51%)" fill="url(#expenseGrad)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
         </Card>
 
-        {/* Spending by Category */}
         <Card className="p-5 card-hover">
           <h3 className="mb-4 text-sm font-semibold">{t.dashboard.spendingByCategory}</h3>
           <ResponsiveContainer width="100%" height={180}>
             <PieChart>
-              <Pie
-                data={categoryData}
-                cx="50%"
-                cy="50%"
-                innerRadius={50}
-                outerRadius={75}
-                paddingAngle={3}
-                dataKey="value"
-              >
-                {categoryData.map((entry, i) => (
-                  <Cell key={i} fill={entry.color} />
-                ))}
+              <Pie data={categoryData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
+                {categoryData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
               </Pie>
-              <Tooltip
-                contentStyle={{
-                  borderRadius: '8px',
-                  border: '1px solid hsl(240, 6%, 92%)',
-                  fontSize: '12px',
-                }}
-              />
+              <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(240, 6%, 92%)', fontSize: '12px', fontFamily: 'var(--font-sans)' }} />
             </PieChart>
           </ResponsiveContainer>
           <div className="mt-2 space-y-1.5">
@@ -198,22 +149,20 @@ const Dashboard = () => {
 
       {/* Bottom Row */}
       <div className="grid grid-cols-3 gap-4">
-        {/* Comparison */}
         <Card className="p-5 card-hover">
           <h3 className="mb-4 text-sm font-semibold">{t.dashboard.comparison}</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={comparisonData} barGap={2}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(240, 6%, 92%)" />
-              <XAxis dataKey="category" tick={{ fontSize: 10 }} stroke="hsl(240, 4%, 46%)" />
-              <YAxis tick={{ fontSize: 10 }} stroke="hsl(240, 4%, 46%)" />
-              <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(240, 6%, 92%)', fontSize: '12px' }} />
+              <XAxis dataKey="category" tick={{ fontSize: 10, fontFamily: 'var(--font-sans)' }} stroke="hsl(240, 4%, 46%)" />
+              <YAxis tick={{ fontSize: 10, fontFamily: 'var(--font-sans)' }} stroke="hsl(240, 4%, 46%)" />
+              <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(240, 6%, 92%)', fontSize: '12px', fontFamily: 'var(--font-sans)' }} />
               <Bar dataKey="previous" fill="hsl(240, 5%, 88%)" radius={[3, 3, 0, 0]} barSize={16} />
               <Bar dataKey="current" fill="hsl(234, 62%, 52%)" radius={[3, 3, 0, 0]} barSize={16} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
 
-        {/* Budget Alerts */}
         <Card className="p-5 card-hover">
           <h3 className="mb-4 text-sm font-semibold">{t.dashboard.budgetAlerts}</h3>
           <div className="space-y-4">
@@ -221,14 +170,11 @@ const Dashboard = () => {
               <div key={i} className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-medium">{alert.category}</span>
-                  <span className={`font-mono ${alert.percent >= 100 ? 'text-destructive' : alert.percent >= 80 ? 'text-warning' : 'text-muted-foreground'}`}>
+                  <span className={`${alert.percent >= 100 ? 'text-destructive' : alert.percent >= 80 ? 'text-warning' : 'text-muted-foreground'}`}>
                     {alert.percent}%
                   </span>
                 </div>
-                <Progress
-                  value={alert.percent}
-                  className="h-1.5"
-                />
+                <Progress value={alert.percent} className="h-1.5" />
                 <div className="flex justify-between text-[11px] text-muted-foreground">
                   <span>{formatCurrency(alert.used)}</span>
                   <span>{formatCurrency(alert.limit)}</span>
@@ -238,42 +184,20 @@ const Dashboard = () => {
           </div>
         </Card>
 
-        {/* Gamification + Accounts */}
-        <div className="space-y-4">
-          {/* Financial Level */}
-          <Card className="p-5 card-hover">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-                <Flame className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <div className="text-sm font-semibold">{t.dashboard.financialLevel}</div>
-                <div className="text-xs text-muted-foreground">Nível 7 — Investidor</div>
-              </div>
-            </div>
-            <Progress value={72} className="mt-3 h-1.5" />
-            <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Flame className="h-3 w-3 text-warning" />
-              <span>{t.dashboard.streak}: 14 {t.dashboard.days} 🔥</span>
-            </div>
-          </Card>
-
-          {/* Balance by Account */}
-          <Card className="p-5 card-hover">
-            <h3 className="mb-3 text-sm font-semibold">{t.dashboard.balanceByAccount}</h3>
-            <div className="space-y-2.5">
-              {accounts.map((acc, i) => (
-                <div key={i} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full" style={{ backgroundColor: acc.color }} />
-                    <span className="text-xs text-muted-foreground">{acc.name}</span>
-                  </div>
-                  <span className="text-xs font-medium font-mono">{formatCurrency(acc.balance)}</span>
+        <Card className="p-5 card-hover">
+          <h3 className="mb-3 text-sm font-semibold">{t.dashboard.balanceByAccount}</h3>
+          <div className="space-y-2.5">
+            {accounts.map((acc, i) => (
+              <div key={i} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full" style={{ backgroundColor: acc.color }} />
+                  <span className="text-xs text-muted-foreground">{acc.name}</span>
                 </div>
-              ))}
-            </div>
-          </Card>
-        </div>
+                <span className="text-xs font-medium">{formatCurrency(acc.balance)}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
       </div>
     </div>
   );

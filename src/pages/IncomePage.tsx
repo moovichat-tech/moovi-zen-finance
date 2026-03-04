@@ -9,24 +9,33 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, Search, ArrowUpRight } from 'lucide-react';
+import { Plus, Trash2, Pencil, Search, ArrowUpRight } from 'lucide-react';
 
 const IncomePage = () => {
   const { t, formatCurrency } = useI18n();
-  const { transactions, accounts, categories, addTransaction, deleteTransaction } = useData();
+  const { transactions, accounts, categories, addTransaction, deleteTransaction, updateTransaction } = useData();
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [filterMonth, setFilterMonth] = useState('all');
 
   const incomes = useMemo(() =>
     transactions
       .filter(tr => tr.type === 'income')
       .filter(tr => tr.description.toLowerCase().includes(search.toLowerCase()))
+      .filter(tr => filterMonth === 'all' || tr.date.startsWith(filterMonth))
       .sort((a, b) => b.date.localeCompare(a.date)),
-    [transactions, search]
+    [transactions, search, filterMonth]
   );
 
   const totalReceived = incomes.filter(i => i.status === 'received').reduce((s, i) => s + i.amount, 0);
   const totalPlanned = incomes.filter(i => i.status === 'planned').reduce((s, i) => s + i.amount, 0);
+
+  const availableMonths = useMemo(() => {
+    const set = new Set<string>();
+    transactions.filter(tr => tr.type === 'income').forEach(tr => set.add(tr.date.substring(0, 7)));
+    return Array.from(set).sort().reverse();
+  }, [transactions]);
 
   const [form, setForm] = useState({
     description: '', amount: '', category: categories.income[0], date: new Date().toISOString().split('T')[0],
@@ -34,16 +43,31 @@ const IncomePage = () => {
     tags: '',
   });
 
+  const resetForm = () => setForm({ description: '', amount: '', category: categories.income[0], date: new Date().toISOString().split('T')[0], status: 'received', recurrence: 'once', accountId: '', tags: '' });
+
+  const openAdd = () => { setEditingId(null); resetForm(); setOpen(true); };
+
+  const openEdit = (tr: Transaction) => {
+    setEditingId(tr.id);
+    setForm({ description: tr.description, amount: String(tr.amount), category: tr.category, date: tr.date, status: tr.status as any, recurrence: tr.recurrence, accountId: tr.accountId, tags: tr.tags?.join(', ') || '' });
+    setOpen(true);
+  };
+
   const handleSubmit = () => {
     if (!form.description || !form.amount || !form.accountId) return;
-    addTransaction({
-      type: 'income', description: form.description, amount: parseFloat(form.amount),
+    const data = {
+      type: 'income' as const, description: form.description, amount: parseFloat(form.amount),
       category: form.category, date: form.date, status: form.status,
       recurrence: form.recurrence, accountId: form.accountId,
       tags: form.tags ? form.tags.split(',').map(t => t.trim()) : [],
-    });
+    };
+    if (editingId) {
+      updateTransaction(editingId, data);
+    } else {
+      addTransaction(data);
+    }
     setOpen(false);
-    setForm({ description: '', amount: '', category: categories.income[0], date: new Date().toISOString().split('T')[0], status: 'received', recurrence: 'once', accountId: '', tags: '' });
+    resetForm();
   };
 
   return (
@@ -53,12 +77,11 @@ const IncomePage = () => {
           <h2 className="text-xl font-semibold">{t.pages.income.title}</h2>
           <p className="text-sm text-muted-foreground">{t.pages.income.subtitle}</p>
         </div>
-        <Button size="sm" className="gap-1.5" onClick={() => setOpen(true)}>
+        <Button size="sm" className="gap-1.5" onClick={openAdd}>
           <Plus className="h-4 w-4" /> {t.common.add}
         </Button>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-4">
         <Card className="p-4">
           <span className="text-xs font-medium text-muted-foreground">{t.common.received}</span>
@@ -74,13 +97,20 @@ const IncomePage = () => {
         </Card>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder={t.common.search} value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input placeholder={t.common.search} value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+        </div>
+        <Select value={filterMonth} onValueChange={setFilterMonth}>
+          <SelectTrigger className="w-40"><SelectValue placeholder="Período" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            {availableMonths.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
-      {/* Table */}
       <Card>
         <Table>
           <TableHeader>
@@ -90,7 +120,7 @@ const IncomePage = () => {
               <TableHead>{t.common.date}</TableHead>
               <TableHead>{t.common.status}</TableHead>
               <TableHead className="text-right">{t.common.amount}</TableHead>
-              <TableHead className="w-10" />
+              <TableHead className="w-20" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -100,23 +130,26 @@ const IncomePage = () => {
                   <div className="flex items-center gap-2">
                     <ArrowUpRight className="h-3.5 w-3.5 text-success" />
                     {inc.description}
-                    {inc.recurrence !== 'once' && (
-                      <Badge variant="secondary" className="text-[10px]">{inc.recurrence}</Badge>
-                    )}
+                    {inc.recurrence !== 'once' && <Badge variant="secondary" className="text-[10px]">{inc.recurrence}</Badge>}
                   </div>
                 </TableCell>
-                <TableCell className="text-muted-foreground text-sm">{inc.category}</TableCell>
-                <TableCell className="text-muted-foreground text-sm font-mono">{inc.date}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">{inc.category}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">{inc.date}</TableCell>
                 <TableCell>
                   <Badge variant={inc.status === 'received' ? 'default' : 'secondary'} className="text-[10px]">
                     {inc.status === 'received' ? t.common.received : t.common.planned}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-right font-mono font-medium text-success">{formatCurrency(inc.amount)}</TableCell>
+                <TableCell className="text-right font-medium text-success">{formatCurrency(inc.amount)}</TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteTransaction(inc.id)}>
-                    <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(inc)}>
+                      <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteTransaction(inc.id)}>
+                      <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -127,10 +160,9 @@ const IncomePage = () => {
         </Table>
       </Card>
 
-      {/* Add Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>{t.common.add} {t.common.income}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingId ? t.common.edit : t.common.add} {t.common.income}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label>{t.common.description}</Label>

@@ -1,13 +1,23 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import translations, { type Locale, type Currency, type TranslationKey, currencyLocales } from './translations';
 
+// Exchange rates relative to BRL (1 BRL = X of target currency)
+const exchangeRates: Record<Currency, Record<Currency, number>> = {
+  BRL: { BRL: 1, USD: 0.17, EUR: 0.16, CHF: 0.15 },
+  USD: { BRL: 5.80, USD: 1, EUR: 0.92, CHF: 0.88 },
+  EUR: { BRL: 6.30, EUR: 1, USD: 1.09, CHF: 0.96 },
+  CHF: { BRL: 6.55, CHF: 1, USD: 1.14, EUR: 1.04 },
+};
+
 interface I18nContextType {
   locale: Locale;
   currency: Currency;
+  baseCurrency: Currency;
   t: TranslationKey;
   setLocale: (locale: Locale) => void;
   setCurrency: (currency: Currency) => void;
   formatCurrency: (value: number) => string;
+  convertValue: (value: number) => number;
 }
 
 const I18nContext = createContext<I18nContextType | null>(null);
@@ -15,18 +25,26 @@ const I18nContext = createContext<I18nContextType | null>(null);
 export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [locale, setLocale] = useState<Locale>('pt');
   const [currency, setCurrency] = useState<Currency>('BRL');
+  const baseCurrency: Currency = 'BRL'; // All stored values are in BRL
 
   const t = translations[locale];
 
+  const convertValue = useCallback((value: number) => {
+    if (currency === baseCurrency) return value;
+    const rate = exchangeRates[baseCurrency][currency];
+    return value * rate;
+  }, [currency, baseCurrency]);
+
   const formatCurrency = useCallback((value: number) => {
+    const converted = convertValue(value);
     return new Intl.NumberFormat(currencyLocales[currency], {
       style: 'currency',
       currency: currency,
-    }).format(value);
-  }, [currency]);
+    }).format(converted);
+  }, [currency, convertValue]);
 
   return (
-    <I18nContext.Provider value={{ locale, currency, t, setLocale, setCurrency, formatCurrency }}>
+    <I18nContext.Provider value={{ locale, currency, baseCurrency, t, setLocale, setCurrency, formatCurrency, convertValue }}>
       {children}
     </I18nContext.Provider>
   );

@@ -13,6 +13,8 @@ const routeTitles: Record<string, string> = {
   '/budget': 'budget',
   '/reports': 'reports',
   '/ai': 'ai',
+  '/settings': 'settings',
+  '/subscription': 'subscription',
 };
 
 export const AppLayout = () => {

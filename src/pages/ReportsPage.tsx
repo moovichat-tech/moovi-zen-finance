@@ -305,7 +305,7 @@ const ReportsPage = () => {
                   <Pie data={categoryBreakdown} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
                     {categoryBreakdown.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
-                  <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} formatter={(value: number) => formatCurrency(value)} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="mt-2 space-y-1.5">

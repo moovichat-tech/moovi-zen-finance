@@ -15,6 +15,7 @@ import {
   Tag,
   PanelLeftClose,
   PanelLeft,
+  ClipboardList,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import mooviLogo from '@/assets/moovi-logo.jpeg';

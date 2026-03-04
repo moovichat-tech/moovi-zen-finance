@@ -24,6 +24,7 @@ const navItems = [
   { key: 'dashboard', path: '/', icon: LayoutDashboard },
   { key: 'income', path: '/income', icon: TrendingUp },
   { key: 'expenses', path: '/expenses', icon: TrendingDown },
+  { key: 'payables', path: '/payables', icon: ClipboardList },
   { key: 'cards', path: '/cards', icon: CreditCard },
   { key: 'accounts', path: '/accounts', icon: Landmark },
   { key: 'budget', path: '/budget', icon: Target },

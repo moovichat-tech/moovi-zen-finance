@@ -359,7 +359,8 @@ const translations = {
       ai: { title: 'KI-Assistent', subtitle: 'Intelligente Finanzeinblicke' },
     },
   },
-} as const;
+};
 
 export type TranslationKey = typeof translations['pt'];
-export default translations;
+export default translations as Record<Locale, TranslationKey>;
+

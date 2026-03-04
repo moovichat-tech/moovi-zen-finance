@@ -1,19 +1,23 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { useI18n } from '@/i18n/context';
 import { useData } from '@/store/DataContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { FileText, FileSpreadsheet } from 'lucide-react';
+import { FileText, FileSpreadsheet, Download, ArrowUpDown } from 'lucide-react';
 
 const COLORS = ['hsl(234, 62%, 52%)', 'hsl(152, 60%, 42%)', 'hsl(38, 92%, 50%)', 'hsl(280, 60%, 55%)', 'hsl(200, 70%, 50%)', 'hsl(0, 72%, 51%)'];
 
+type DetailSortKey = 'description' | 'category' | 'date' | 'amount' | 'type';
+
 const ReportsPage = () => {
-  const { t, formatCurrency } = useI18n();
-  const { transactions } = useData();
+  const { t, formatCurrency, formatDate, translatePeriod } = useI18n();
+  const { transactions, accounts } = useData();
   const [period, setPeriod] = useState('month');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
@@ -22,19 +26,28 @@ const ReportsPage = () => {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
   const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [filterAccount, setFilterAccount] = useState('all');
+  const [detailSort, setDetailSort] = useState<DetailSortKey>('date');
+  const [detailSortAsc, setDetailSortAsc] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const toggleDetailSort = (key: DetailSortKey) => {
+    if (detailSort === key) setDetailSortAsc(!detailSortAsc);
+    else { setDetailSort(key); setDetailSortAsc(false); }
+  };
 
   const filteredTransactions = useMemo(() => {
-    return transactions.filter(tr => {
-      if (period === 'month') {
-        return tr.date.startsWith(selectedMonth);
-      } else if (period === 'year') {
-        return tr.date.startsWith(selectedYear);
-      } else if (period === 'custom' && customStart && customEnd) {
-        return tr.date >= customStart && tr.date <= customEnd;
-      }
-      return true;
-    });
-  }, [transactions, period, selectedMonth, selectedYear, customStart, customEnd]);
+    let filtered = transactions;
+    if (period === 'month') filtered = filtered.filter(tr => tr.date.startsWith(selectedMonth));
+    else if (period === 'year') filtered = filtered.filter(tr => tr.date.startsWith(selectedYear));
+    else if (period === 'custom' && customStart && customEnd) filtered = filtered.filter(tr => tr.date >= customStart && tr.date <= customEnd);
+
+    if (filterCategory !== 'all') filtered = filtered.filter(tr => tr.category === filterCategory);
+    if (filterAccount !== 'all') filtered = filtered.filter(tr => tr.accountId === filterAccount);
+
+    return filtered;
+  }, [transactions, period, selectedMonth, selectedYear, customStart, customEnd, filterCategory, filterAccount]);
 
   const income = filteredTransactions.filter(tr => tr.type === 'income');
   const expenses = filteredTransactions.filter(tr => tr.type === 'expense');
@@ -44,8 +57,20 @@ const ReportsPage = () => {
   const categoryBreakdown = useMemo(() => {
     const map: Record<string, number> = {};
     expenses.forEach(e => { map[e.category] = (map[e.category] || 0) + e.amount; });
-    return Object.entries(map).map(([name, value]) => ({ name, value }));
+    return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   }, [expenses]);
+
+  const accountBreakdown = useMemo(() => {
+    const map: Record<string, { income: number; expense: number; name: string }> = {};
+    filteredTransactions.forEach(tr => {
+      const acc = accounts.find(a => a.id === tr.accountId);
+      const name = acc?.name || 'Desconhecida';
+      if (!map[tr.accountId]) map[tr.accountId] = { income: 0, expense: 0, name };
+      if (tr.type === 'income') map[tr.accountId].income += tr.amount;
+      else map[tr.accountId].expense += tr.amount;
+    });
+    return Object.values(map);
+  }, [filteredTransactions, accounts]);
 
   const monthlyData = useMemo(() => {
     const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -59,26 +84,113 @@ const ReportsPage = () => {
     }).filter(d => d.income > 0 || d.expense > 0);
   }, [transactions, period, selectedMonth, selectedYear]);
 
-  const exportCSV = () => {
-    const headers = 'Tipo,Descrição,Valor,Categoria,Data,Status\n';
-    const rows = filteredTransactions.map(tr => `${tr.type},${tr.description},${tr.amount},${tr.category},${tr.date},${tr.status}`).join('\n');
-    const blob = new Blob([headers + rows], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'moovi-relatorio.csv'; a.click();
-  };
+  const detailTransactions = useMemo(() => {
+    const sorted = [...filteredTransactions];
+    sorted.sort((a, b) => {
+      let cmp = 0;
+      if (detailSort === 'description') cmp = a.description.localeCompare(b.description);
+      else if (detailSort === 'category') cmp = a.category.localeCompare(b.category);
+      else if (detailSort === 'date') cmp = a.date.localeCompare(b.date);
+      else if (detailSort === 'amount') cmp = a.amount - b.amount;
+      else if (detailSort === 'type') cmp = a.type.localeCompare(b.type);
+      return detailSortAsc ? cmp : -cmp;
+    });
+    return sorted;
+  }, [filteredTransactions, detailSort, detailSortAsc]);
+
+  const allCategories = useMemo(() => {
+    const set = new Set<string>();
+    transactions.forEach(tr => set.add(tr.category));
+    return Array.from(set).sort();
+  }, [transactions]);
 
   const availableMonths = useMemo(() => {
     const set = new Set<string>();
-    transactions.forEach(tr => { set.add(tr.date.substring(0, 7)); });
+    transactions.forEach(tr => set.add(tr.date.substring(0, 7)));
     return Array.from(set).sort().reverse();
   }, [transactions]);
 
   const availableYears = useMemo(() => {
     const set = new Set<string>();
-    transactions.forEach(tr => { set.add(tr.date.substring(0, 4)); });
+    transactions.forEach(tr => set.add(tr.date.substring(0, 4)));
     return Array.from(set).sort().reverse();
   }, [transactions]);
+
+  const exportCSV = () => {
+    const BOM = '\uFEFF';
+    const headers = 'Tipo;Descrição;Valor;Categoria;Data;Status;Conta\n';
+    const rows = filteredTransactions.map(tr => {
+      const acc = accounts.find(a => a.id === tr.accountId)?.name || '';
+      return `${tr.type === 'income' ? 'Receita' : 'Despesa'};${tr.description};${tr.amount};${tr.category};${tr.date};${tr.status};${acc}`;
+    }).join('\n');
+    const blob = new Blob([BOM + headers + rows], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'moovi-relatorio.csv'; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportExcel = () => {
+    const BOM = '\uFEFF';
+    const headers = 'Tipo\tDescrição\tValor\tCategoria\tData\tStatus\tConta\n';
+    const rows = filteredTransactions.map(tr => {
+      const acc = accounts.find(a => a.id === tr.accountId)?.name || '';
+      return `${tr.type === 'income' ? 'Receita' : 'Despesa'}\t${tr.description}\t${tr.amount}\t${tr.category}\t${tr.date}\t${tr.status}\t${acc}`;
+    }).join('\n');
+    const blob = new Blob([BOM + headers + rows], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'moovi-relatorio.xls'; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportPDF = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    const rows = filteredTransactions.map(tr => {
+      const acc = accounts.find(a => a.id === tr.accountId)?.name || '';
+      return `<tr>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee">${tr.type === 'income' ? 'Receita' : 'Despesa'}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee">${tr.description}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:right">${tr.amount.toFixed(2)}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee">${tr.category}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee">${tr.date}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee">${acc}</td>
+      </tr>`;
+    }).join('');
+    printWindow.document.write(`
+      <html><head><title>Relatório Moovi</title>
+      <style>body{font-family:'DM Sans',sans-serif;padding:40px;color:#1a1a2e}
+      h1{font-size:20px;margin-bottom:4px}p{color:#666;font-size:13px;margin-bottom:20px}
+      table{width:100%;border-collapse:collapse;font-size:13px}
+      th{text-align:left;padding:8px 10px;border-bottom:2px solid #ddd;font-weight:600}
+      .summary{display:flex;gap:24px;margin-bottom:24px}
+      .summary div{padding:12px 16px;border-radius:8px;background:#f5f5f7}
+      .summary .val{font-size:18px;font-weight:600;margin-top:4px}
+      .green{color:#2ba35d}.red{color:#d32f2f}
+      @media print{body{padding:20px}}</style></head><body>
+      <h1>Relatório Financeiro — Moovi</h1>
+      <p>Período: ${period === 'month' ? selectedMonth : period === 'year' ? selectedYear : `${customStart} a ${customEnd}`}</p>
+      <div class="summary">
+        <div><span>Total Receitas</span><div class="val green">R$ ${totalIncome.toFixed(2)}</div></div>
+        <div><span>Total Despesas</span><div class="val red">R$ ${totalExpenses.toFixed(2)}</div></div>
+        <div><span>Resultado</span><div class="val ${totalIncome - totalExpenses >= 0 ? 'green' : 'red'}">R$ ${(totalIncome - totalExpenses).toFixed(2)}</div></div>
+      </div>
+      <table><thead><tr><th>Tipo</th><th>Descrição</th><th style="text-align:right">Valor</th><th>Categoria</th><th>Data</th><th>Conta</th></tr></thead>
+      <tbody>${rows}</tbody></table>
+      <script>setTimeout(()=>window.print(),300)<\/script></body></html>
+    `);
+    printWindow.document.close();
+  };
+
+  const SortHead = ({ label, field }: { label: string; field: DetailSortKey }) => (
+    <TableHead className="cursor-pointer select-none" onClick={() => toggleDetailSort(field)}>
+      <div className="flex items-center gap-1">
+        {label}
+        <ArrowUpDown className={`h-3 w-3 ${detailSort === field ? 'text-primary' : 'text-muted-foreground/40'}`} />
+      </div>
+    </TableHead>
+  );
 
   return (
     <div className="space-y-6 animate-in-up">
@@ -87,29 +199,25 @@ const ReportsPage = () => {
           <h2 className="text-xl font-semibold">{t.pages.reports.title}</h2>
           <p className="text-sm text-muted-foreground">{t.pages.reports.subtitle}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Select value={period} onValueChange={setPeriod}>
             <SelectTrigger className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="month">Mensal</SelectItem>
-              <SelectItem value="year">Anual</SelectItem>
-              <SelectItem value="custom">Personalizado</SelectItem>
+              <SelectItem value="month">{translatePeriod('month')}</SelectItem>
+              <SelectItem value="year">{translatePeriod('year')}</SelectItem>
+              <SelectItem value="custom">{translatePeriod('custom')}</SelectItem>
             </SelectContent>
           </Select>
           {period === 'month' && (
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
               <SelectTrigger className="h-8 w-36 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {availableMonths.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-              </SelectContent>
+              <SelectContent>{availableMonths.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
             </Select>
           )}
           {period === 'year' && (
             <Select value={selectedYear} onValueChange={setSelectedYear}>
               <SelectTrigger className="h-8 w-24 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {availableYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-              </SelectContent>
+              <SelectContent>{availableYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
             </Select>
           )}
           {period === 'custom' && (
@@ -118,13 +226,34 @@ const ReportsPage = () => {
               <Input type="date" className="h-8 w-36 text-xs" value={customEnd} onChange={e => setCustomEnd(e.target.value)} />
             </>
           )}
-          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportCSV}>
-            <FileSpreadsheet className="h-3.5 w-3.5" /> CSV
-          </Button>
-          <Button size="sm" variant="outline" className="gap-1.5 text-xs">
-            <FileText className="h-3.5 w-3.5" /> PDF
-          </Button>
+          <Select value={filterCategory} onValueChange={setFilterCategory}>
+            <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Categoria" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas categorias</SelectItem>
+              {allCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={filterAccount} onValueChange={setFilterAccount}>
+            <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Conta" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas contas</SelectItem>
+              {accounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
+      </div>
+
+      {/* Export buttons */}
+      <div className="flex gap-2">
+        <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportCSV}>
+          <FileSpreadsheet className="h-3.5 w-3.5" /> CSV
+        </Button>
+        <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportExcel}>
+          <Download className="h-3.5 w-3.5" /> Excel
+        </Button>
+        <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportPDF}>
+          <FileText className="h-3.5 w-3.5" /> PDF
+        </Button>
       </div>
 
       {/* Summary */}
@@ -145,44 +274,162 @@ const ReportsPage = () => {
         </Card>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="col-span-2 p-5">
-          <h3 className="mb-4 text-sm font-semibold">Receitas vs Despesas</h3>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={monthlyData} barGap={4}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(240, 6%, 92%)" />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: 'var(--font-sans)' }} />
-              <YAxis tick={{ fontSize: 11, fontFamily: 'var(--font-sans)' }} />
-              <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(240, 6%, 92%)', fontSize: '12px', fontFamily: 'var(--font-sans)' }} />
-              <Bar dataKey="income" fill="hsl(152, 60%, 42%)" radius={[4, 4, 0, 0]} barSize={20} />
-              <Bar dataKey="expense" fill="hsl(0, 72%, 51%)" radius={[4, 4, 0, 0]} barSize={20} />
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
+      {/* Tabs for different report views */}
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+          <TabsTrigger value="category">Por Categoria</TabsTrigger>
+          <TabsTrigger value="account">Por Conta</TabsTrigger>
+          <TabsTrigger value="detail">Detalhado</TabsTrigger>
+        </TabsList>
 
-        <Card className="p-5">
-          <h3 className="mb-4 text-sm font-semibold">Despesas por Categoria</h3>
-          <ResponsiveContainer width="100%" height={180}>
-            <PieChart>
-              <Pie data={categoryBreakdown} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
-                {categoryBreakdown.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-              </Pie>
-              <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px', fontFamily: 'var(--font-sans)' }} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="mt-2 space-y-1.5">
-            {categoryBreakdown.map((cat, i) => (
-              <div key={i} className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                  <span className="text-muted-foreground">{cat.name}</span>
-                </div>
-                <span className="font-medium">{formatCurrency(cat.value)}</span>
+        <TabsContent value="overview">
+          <div className="grid grid-cols-3 gap-4">
+            <Card className="col-span-2 p-5">
+              <h3 className="mb-4 text-sm font-semibold">Receitas vs Despesas</h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={monthlyData} barGap={4}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', fontSize: '12px' }} />
+                  <Bar dataKey="income" fill="hsl(152, 60%, 42%)" radius={[4, 4, 0, 0]} barSize={20} name="Receitas" />
+                  <Bar dataKey="expense" fill="hsl(0, 72%, 51%)" radius={[4, 4, 0, 0]} barSize={20} name="Despesas" />
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+            <Card className="p-5">
+              <h3 className="mb-4 text-sm font-semibold">Despesas por Categoria</h3>
+              <ResponsiveContainer width="100%" height={180}>
+                <PieChart>
+                  <Pie data={categoryBreakdown} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
+                    {categoryBreakdown.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="mt-2 space-y-1.5">
+                {categoryBreakdown.map((cat, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                      <span className="text-muted-foreground">{cat.name}</span>
+                    </div>
+                    <span className="font-medium">{formatCurrency(cat.value)}</span>
+                  </div>
+                ))}
               </div>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="category">
+          <div className="grid grid-cols-2 gap-4">
+            <Card className="p-5">
+              <h3 className="mb-4 text-sm font-semibold">Despesas por Categoria</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={categoryBreakdown} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis type="number" tick={{ fontSize: 11 }} />
+                  <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={100} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
+                  <Bar dataKey="value" fill="hsl(234, 62%, 52%)" radius={[0, 4, 4, 0]} barSize={16} />
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+            <Card className="p-5">
+              <h3 className="mb-4 text-sm font-semibold">Detalhamento</h3>
+              <div className="space-y-3">
+                {categoryBreakdown.map((cat, i) => {
+                  const pct = totalExpenses > 0 ? Math.round((cat.value / totalExpenses) * 100) : 0;
+                  return (
+                    <div key={i} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium">{cat.name}</span>
+                        <span className="text-muted-foreground">{pct}% — {formatCurrency(cat.value)}</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: COLORS[i % COLORS.length] }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="account">
+          <div className="grid grid-cols-2 gap-4">
+            {accountBreakdown.map((acc, i) => (
+              <Card key={i} className="p-5">
+                <h3 className="text-sm font-semibold mb-3">{acc.name}</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <span className="text-xs text-muted-foreground">Receitas</span>
+                    <div className="text-lg font-semibold text-success">{formatCurrency(acc.income)}</div>
+                  </div>
+                  <div>
+                    <span className="text-xs text-muted-foreground">Despesas</span>
+                    <div className="text-lg font-semibold text-destructive">{formatCurrency(acc.expense)}</div>
+                  </div>
+                </div>
+                <div className="mt-3 pt-3 border-t border-border">
+                  <span className="text-xs text-muted-foreground">Resultado</span>
+                  <div className={`text-lg font-semibold ${acc.income - acc.expense >= 0 ? 'text-success' : 'text-destructive'}`}>
+                    {formatCurrency(acc.income - acc.expense)}
+                  </div>
+                </div>
+              </Card>
             ))}
           </div>
-        </Card>
-      </div>
+        </TabsContent>
+
+        <TabsContent value="detail">
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <SortHead label="Tipo" field="type" />
+                  <SortHead label={t.common.description} field="description" />
+                  <SortHead label={t.common.category} field="category" />
+                  <SortHead label={t.common.date} field="date" />
+                  <TableHead className="text-right cursor-pointer select-none" onClick={() => toggleDetailSort('amount')}>
+                    <div className="flex items-center justify-end gap-1">
+                      {t.common.amount}
+                      <ArrowUpDown className={`h-3 w-3 ${detailSort === 'amount' ? 'text-primary' : 'text-muted-foreground/40'}`} />
+                    </div>
+                  </TableHead>
+                  <TableHead>Conta</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {detailTransactions.map(tr => (
+                  <TableRow key={tr.id}>
+                    <TableCell>
+                      <Badge variant={tr.type === 'income' ? 'default' : 'secondary'} className="text-[10px]">
+                        {tr.type === 'income' ? 'Receita' : 'Despesa'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">{tr.description}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{tr.category}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{formatDate(tr.date)}</TableCell>
+                    <TableCell className={`text-right font-medium ${tr.type === 'income' ? 'text-success' : 'text-destructive'}`}>
+                      {tr.type === 'income' ? '+' : '-'}{formatCurrency(tr.amount)}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {accounts.find(a => a.id === tr.accountId)?.name || '—'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {detailTransactions.length === 0 && (
+                  <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">Nenhuma transação encontrada</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

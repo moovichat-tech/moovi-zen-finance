@@ -1,6 +1,6 @@
 import { useI18n } from '@/i18n/context';
 import { useData } from '@/store/DataContext';
-import { type Locale, type Currency, localeNames, currencySymbols } from '@/i18n/translations';
+import { type Locale, type Currency, localeNames, localeFlags, currencySymbols } from '@/i18n/translations';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -63,7 +63,7 @@ const SettingsPage = () => {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {(Object.entries(localeNames) as [Locale, string][]).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                  <SelectItem key={k} value={k}>{localeFlags[k]} {v}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

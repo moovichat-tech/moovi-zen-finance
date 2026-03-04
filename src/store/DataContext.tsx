@@ -113,7 +113,10 @@ interface DataContextType {
   updateTransaction: (id: string, data: Partial<Omit<Transaction, 'id'>>) => void;
   deleteTransaction: (id: string) => void;
   addAccount: (a: Omit<Account, 'id'>) => void;
+  updateAccount: (id: string, data: Partial<Omit<Account, 'id'>>) => void;
   deleteAccount: (id: string) => void;
+  deleteAccountWithTransactions: (id: string) => void;
+  moveAccountTransactions: (fromAccountId: string, toAccountId: string) => void;
   addCard: (c: Omit<CreditCard, 'id'>) => void;
   updateCard: (id: string, data: Partial<Omit<CreditCard, 'id'>>) => void;
   deleteCard: (id: string) => void;
@@ -167,8 +170,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAccounts(prev => [...prev, { ...a, id: `acc-${Date.now()}` }]);
   }, []);
 
+  const updateAccount = useCallback((id: string, data: Partial<Omit<Account, 'id'>>) => {
+    setAccounts(prev => prev.map(a => a.id === id ? { ...a, ...data } : a));
+  }, []);
+
   const deleteAccount = useCallback((id: string) => {
     setAccounts(prev => prev.filter(a => a.id !== id));
+  }, []);
+
+  const deleteAccountWithTransactions = useCallback((id: string) => {
+    setAccounts(prev => prev.filter(a => a.id !== id));
+    setTransactions(prev => prev.filter(t => t.accountId !== id));
+  }, []);
+
+  const moveAccountTransactions = useCallback((fromAccountId: string, toAccountId: string) => {
+    setTransactions(prev => prev.map(t => t.accountId === fromAccountId ? { ...t, accountId: toAccountId } : t));
+    setAccounts(prev => prev.filter(a => a.id !== fromAccountId));
   }, []);
 
   const addCard = useCallback((c: Omit<CreditCard, 'id'>) => {
@@ -216,7 +233,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteCategory = useCallback((type: 'income' | 'expense', name: string) => {
     setCategories(prev => ({ ...prev, [type]: prev[type].filter(c => c !== name) }));
-    // Also remove budget for this category
     if (type === 'expense') {
       setBudgets(prev => prev.filter(b => b.category !== name));
     }
@@ -225,7 +241,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateCategory = useCallback((type: 'income' | 'expense', oldName: string, newName: string) => {
     setCategories(prev => ({ ...prev, [type]: prev[type].map(c => c === oldName ? newName : c) }));
     setTransactions(prev => prev.map(t => t.category === oldName ? { ...t, category: newName } : t));
-    // Also update budgets
     setBudgets(prev => prev.map(b => b.category === oldName ? { ...b, category: newName } : b));
   }, []);
 
@@ -237,7 +252,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <DataContext.Provider value={{
       transactions, accounts, cards, budgets, categories, profile,
       addTransaction, updateTransaction, deleteTransaction,
-      addAccount, deleteAccount,
+      addAccount, updateAccount, deleteAccount, deleteAccountWithTransactions, moveAccountTransactions,
       addCard, updateCard, deleteCard,
       updateBudget, addBudget, deleteBudget, transferBetweenAccounts,
       addCategory, deleteCategory, updateCategory,

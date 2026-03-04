@@ -4,7 +4,7 @@ import { useData } from '@/store/DataContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, Sparkles, Bot, User } from 'lucide-react';
+import { Send, Bot, User } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -12,10 +12,10 @@ interface Message {
   content: string;
 }
 
-function parseNaturalLanguage(text: string) {
+function parseNaturalLanguage(text: string, accountNames: { id: string; name: string }[]) {
   const lower = text.toLowerCase();
   let type: 'income' | 'expense' = 'expense';
-  if (lower.includes('recebi') || lower.includes('salário') || lower.includes('freelance') || lower.includes('receita')) type = 'income';
+  if (lower.includes('recebi') || lower.includes('salário') || lower.includes('freelance') || lower.includes('receita') || lower.includes('ganhei')) type = 'income';
 
   // Extract amount
   const amountMatch = lower.match(/(\d+[.,]?\d*)\s*(reais|real|r\$|brl|dólares|usd|euros|eur)/i) || lower.match(/r\$\s*(\d+[.,]?\d*)/i) || lower.match(/(\d+[.,]?\d*)/);
@@ -25,27 +25,42 @@ function parseNaturalLanguage(text: string) {
   const installMatch = lower.match(/(\d+)\s*x|(\d+)\s*parcela|em\s*(\d+)\s*vez/);
   const installments = installMatch ? parseInt(installMatch[1] || installMatch[2] || installMatch[3]) : undefined;
 
+  // Match account by name
+  let accountId = '';
+  for (const acc of accountNames) {
+    if (lower.includes(acc.name.toLowerCase()) || lower.includes(`no ${acc.name.toLowerCase()}`) || lower.includes(`na ${acc.name.toLowerCase()}`)) {
+      accountId = acc.id;
+      break;
+    }
+  }
+
   // Guess category
   let category = 'Outros';
   const categoryMap: Record<string, string[]> = {
-    'Alimentação': ['mercado', 'supermercado', 'restaurante', 'ifood', 'lanche', 'padaria', 'café'],
-    'Transporte': ['uber', 'taxi', '99', 'gasolina', 'combustível', 'estacionamento', 'pedágio'],
-    'Moradia': ['aluguel', 'condomínio', 'luz', 'água', 'gás', 'internet'],
-    'Saúde': ['farmácia', 'médico', 'hospital', 'plano de saúde', 'consulta'],
-    'Lazer': ['netflix', 'cinema', 'spotify', 'jogo', 'bar', 'show'],
-    'Educação': ['curso', 'livro', 'escola', 'faculdade', 'udemy'],
-    'Vestuário': ['roupa', 'sapato', 'tênis', 'camisa'],
+    'Alimentação': ['mercado', 'supermercado', 'restaurante', 'ifood', 'lanche', 'padaria', 'café', 'comida', 'almoço', 'jantar'],
+    'Transporte': ['uber', 'taxi', '99', 'gasolina', 'combustível', 'estacionamento', 'pedágio', 'ônibus', 'metrô'],
+    'Moradia': ['aluguel', 'condomínio', 'luz', 'água', 'gás', 'internet', 'iptu'],
+    'Saúde': ['farmácia', 'médico', 'hospital', 'plano de saúde', 'consulta', 'remédio'],
+    'Lazer': ['netflix', 'cinema', 'spotify', 'jogo', 'bar', 'show', 'viagem', 'hotel'],
+    'Educação': ['curso', 'livro', 'escola', 'faculdade', 'udemy', 'mensalidade'],
+    'Vestuário': ['roupa', 'sapato', 'tênis', 'camisa', 'calça', 'loja'],
     'Salário': ['salário', 'pagamento'],
-    'Freelance': ['freelance', 'projeto'],
+    'Freelance': ['freelance', 'projeto', 'cliente'],
+    'Investimentos': ['dividendo', 'rendimento', 'investimento', 'ações'],
   };
   for (const [cat, keywords] of Object.entries(categoryMap)) {
     if (keywords.some(k => lower.includes(k))) { category = cat; break; }
   }
 
-  // Extract description (first meaningful words)
-  const description = text.split(/\d/)[0].trim() || text.slice(0, 30);
+  // Extract description
+  const description = text
+    .replace(/\d+[.,]?\d*\s*(reais|real|r\$|brl|dólares|usd|euros|eur|x|parcela|vez)/gi, '')
+    .replace(/r\$\s*\d+[.,]?\d*/gi, '')
+    .replace(/(no|na|em|hoje|ontem)\s+\w+/gi, '')
+    .trim()
+    .slice(0, 40) || text.slice(0, 30);
 
-  return { type, amount, installments, category, description };
+  return { type, amount, installments, category, description: description || category, accountId };
 }
 
 const AIPage = () => {
@@ -67,28 +82,57 @@ const AIPage = () => {
     const lower = input.toLowerCase();
     let response: string;
 
-    if (lower.includes('resumo') || lower.includes('summary')) {
-      response = `📊 **Resumo Financeiro**\n\n💰 Receitas: ${formatCurrency(totalIncome)}\n💸 Despesas: ${formatCurrency(totalExpenses)}\n📈 Resultado: ${formatCurrency(totalIncome - totalExpenses)}\n\n${totalIncome > totalExpenses ? '✅ Você está no positivo este mês! Continue assim.' : '⚠️ Suas despesas estão superando as receitas. Considere revisar seus gastos.'}`;
+    if (lower.includes('resumo') || lower.includes('summary') || lower.includes('relatório')) {
+      const topExpenses = transactions
+        .filter(t => t.type === 'expense')
+        .reduce((map, t) => { map[t.category] = (map[t.category] || 0) + t.amount; return map; }, {} as Record<string, number>);
+      const topCats = Object.entries(topExpenses).sort((a, b) => b[1] - a[1]).slice(0, 3);
+      const topList = topCats.map(([cat, val]) => `  • ${cat}: ${formatCurrency(val)}`).join('\n');
+
+      response = `📊 **Resumo Financeiro**\n\n💰 Receitas: ${formatCurrency(totalIncome)}\n💸 Despesas: ${formatCurrency(totalExpenses)}\n📈 Resultado: ${formatCurrency(totalIncome - totalExpenses)}\n\n📋 Maiores categorias de gasto:\n${topList}\n\n${totalIncome > totalExpenses ? '✅ Você está no positivo! Continue assim.' : '⚠️ Suas despesas estão superando as receitas. Revise seus gastos.'}`;
     } else {
-      const parsed = parseNaturalLanguage(input);
+      const accountNames = accounts.map(a => ({ id: a.id, name: a.name }));
+      const parsed = parseNaturalLanguage(input, accountNames);
       if (parsed.amount > 0) {
-        const defaultAccount = accounts[0]?.id || '';
-        addTransaction({
-          type: parsed.type,
-          description: parsed.description,
-          amount: parsed.amount,
-          category: parsed.category,
-          date: new Date().toISOString().split('T')[0],
-          status: parsed.type === 'income' ? 'received' : 'paid',
-          recurrence: 'once',
-          accountId: defaultAccount,
-          installments: parsed.installments,
-          currentInstallment: parsed.installments ? 1 : undefined,
-          tags: [],
-        });
-        response = `✅ Lançamento registrado!\n\n• **Tipo:** ${parsed.type === 'income' ? 'Receita' : 'Despesa'}\n• **Descrição:** ${parsed.description}\n• **Valor:** ${formatCurrency(parsed.amount)}\n• **Categoria:** ${parsed.category}${parsed.installments ? `\n• **Parcelas:** ${parsed.installments}x de ${formatCurrency(parsed.amount / parsed.installments)}` : ''}`;
+        const finalAccountId = parsed.accountId || accounts[0]?.id || '';
+        const accountName = accounts.find(a => a.id === finalAccountId)?.name || 'padrão';
+
+        if (parsed.installments && parsed.installments > 1) {
+          const instAmount = parsed.amount / parsed.installments;
+          for (let i = 0; i < parsed.installments; i++) {
+            const date = new Date();
+            date.setMonth(date.getMonth() + i);
+            addTransaction({
+              type: parsed.type,
+              description: parsed.description,
+              amount: instAmount,
+              category: parsed.category,
+              date: date.toISOString().split('T')[0],
+              status: i === 0 ? (parsed.type === 'income' ? 'received' : 'paid') : 'planned',
+              recurrence: 'once',
+              accountId: finalAccountId,
+              installments: parsed.installments,
+              currentInstallment: i + 1,
+              tags: [],
+            });
+          }
+        } else {
+          addTransaction({
+            type: parsed.type,
+            description: parsed.description,
+            amount: parsed.amount,
+            category: parsed.category,
+            date: new Date().toISOString().split('T')[0],
+            status: parsed.type === 'income' ? 'received' : 'paid',
+            recurrence: 'once',
+            accountId: finalAccountId,
+            tags: [],
+          });
+        }
+
+        response = `✅ Lançamento registrado!\n\n• **Tipo:** ${parsed.type === 'income' ? 'Receita' : 'Despesa'}\n• **Descrição:** ${parsed.description}\n• **Valor:** ${formatCurrency(parsed.amount)}\n• **Categoria:** ${parsed.category}\n• **Conta:** ${accountName}${parsed.installments ? `\n• **Parcelas:** ${parsed.installments}x de ${formatCurrency(parsed.amount / parsed.installments)}` : ''}`;
       } else {
-        response = 'Não consegui interpretar o lançamento. Tente algo como:\n"Mercado 320 reais" ou "Recebi 5000 freelance"';
+        response = 'Não consegui interpretar o lançamento. Tente algo como:\n"Mercado 320 reais no Nubank" ou "Recebi 5000 freelance"';
       }
     }
 

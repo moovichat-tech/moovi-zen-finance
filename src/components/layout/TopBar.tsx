@@ -1,6 +1,8 @@
 import { useI18n } from '@/i18n/context';
-import { localeNames, type Locale, type Currency } from '@/i18n/translations';
-import { Globe, Coins } from 'lucide-react';
+import { localeNames, localeFlags, type Locale, type Currency } from '@/i18n/translations';
+import { Globe, Coins, Sun, Moon } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -11,6 +13,7 @@ import {
 
 export const TopBar = ({ title }: { title: string }) => {
   const { locale, currency, setLocale, setCurrency } = useI18n();
+  const { theme, setTheme } = useTheme();
 
   return (
     <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-xl">
@@ -24,7 +27,9 @@ export const TopBar = ({ title }: { title: string }) => {
           </SelectTrigger>
           <SelectContent>
             {(Object.entries(localeNames) as [Locale, string][]).map(([key, name]) => (
-              <SelectItem key={key} value={key} className="text-xs">{name}</SelectItem>
+              <SelectItem key={key} value={key} className="text-xs">
+                {localeFlags[key]} {name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -40,6 +45,15 @@ export const TopBar = ({ title }: { title: string }) => {
             ))}
           </SelectContent>
         </Select>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+        >
+          {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </Button>
       </div>
     </header>
   );

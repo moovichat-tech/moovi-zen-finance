@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import translations, { type Locale, type Currency, type TranslationKey, currencyLocales } from './translations';
+import translations, { type Locale, type Currency, type TranslationKey, currencyLocales, recurrenceLabels, periodLabels } from './translations';
 
 const exchangeRates: Record<Currency, Record<Currency, number>> = {
   BRL: { BRL: 1, USD: 0.17, EUR: 0.16, CHF: 0.15 },
@@ -26,6 +26,8 @@ interface I18nContextType {
   formatCurrency: (value: number) => string;
   formatDate: (dateStr: string) => string;
   convertValue: (value: number) => number;
+  translateRecurrence: (recurrence: string) => string;
+  translatePeriod: (period: string) => string;
 }
 
 const I18nContext = createContext<I18nContextType | null>(null);
@@ -60,8 +62,16 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }).format(date);
   }, [locale]);
 
+  const translateRecurrence = useCallback((recurrence: string) => {
+    return recurrenceLabels[locale]?.[recurrence] || recurrence;
+  }, [locale]);
+
+  const translatePeriod = useCallback((period: string) => {
+    return periodLabels[locale]?.[period] || period;
+  }, [locale]);
+
   return (
-    <I18nContext.Provider value={{ locale, currency, baseCurrency, t, setLocale, setCurrency, formatCurrency, formatDate, convertValue }}>
+    <I18nContext.Provider value={{ locale, currency, baseCurrency, t, setLocale, setCurrency, formatCurrency, formatDate, convertValue, translateRecurrence, translatePeriod }}>
       {children}
     </I18nContext.Provider>
   );

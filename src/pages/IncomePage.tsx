@@ -14,7 +14,7 @@ import { Plus, Trash2, Pencil, Search, ArrowUpRight, ArrowUpDown } from 'lucide-
 type SortKey = 'description' | 'category' | 'date' | 'amount' | 'status';
 
 const IncomePage = () => {
-  const { t, formatCurrency, formatDate } = useI18n();
+  const { t, formatCurrency, formatDate, translateRecurrence, translatePeriod } = useI18n();
   const { transactions, accounts, categories, addTransaction, deleteTransaction, updateTransaction } = useData();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -149,10 +149,10 @@ const IncomePage = () => {
         <Select value={period} onValueChange={setPeriod}>
           <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="month">Mensal</SelectItem>
-            <SelectItem value="year">Anual</SelectItem>
-            <SelectItem value="custom">Personalizado</SelectItem>
+            <SelectItem value="all">{translatePeriod('all')}</SelectItem>
+            <SelectItem value="month">{translatePeriod('month')}</SelectItem>
+            <SelectItem value="year">{translatePeriod('year')}</SelectItem>
+            <SelectItem value="custom">{translatePeriod('custom')}</SelectItem>
           </SelectContent>
         </Select>
         {period === 'month' && (
@@ -203,7 +203,7 @@ const IncomePage = () => {
                   <div className="flex items-center gap-2">
                     <ArrowUpRight className="h-3.5 w-3.5 text-success" />
                     {inc.description}
-                    {inc.recurrence !== 'once' && <Badge variant="secondary" className="text-[10px]">{inc.recurrence}</Badge>}
+                    {inc.recurrence !== 'once' && <Badge variant="secondary" className="text-[10px]">{translateRecurrence(inc.recurrence)}</Badge>}
                   </div>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">{inc.category}</TableCell>
@@ -278,10 +278,10 @@ const IncomePage = () => {
                 <Select value={form.recurrence} onValueChange={v => setForm({ ...form, recurrence: v as any })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="once">Única</SelectItem>
-                    <SelectItem value="monthly">Mensal</SelectItem>
-                    <SelectItem value="weekly">Semanal</SelectItem>
-                    <SelectItem value="yearly">Anual</SelectItem>
+                    <SelectItem value="once">{translateRecurrence('once')}</SelectItem>
+                    <SelectItem value="monthly">{translateRecurrence('monthly')}</SelectItem>
+                    <SelectItem value="weekly">{translateRecurrence('weekly')}</SelectItem>
+                    <SelectItem value="yearly">{translateRecurrence('yearly')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

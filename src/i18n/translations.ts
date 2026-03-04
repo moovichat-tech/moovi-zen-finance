@@ -9,6 +9,14 @@ export const localeNames: Record<Locale, string> = {
   de: 'Deutsch',
 };
 
+export const localeFlags: Record<Locale, string> = {
+  pt: '🇧🇷',
+  en: '🇺🇸',
+  es: '🇪🇸',
+  fr: '🇫🇷',
+  de: '🇩🇪',
+};
+
 export const currencySymbols: Record<Currency, string> = {
   BRL: 'R$',
   USD: '$',
@@ -21,6 +29,22 @@ export const currencyLocales: Record<Currency, string> = {
   USD: 'en-US',
   EUR: 'de-DE',
   CHF: 'de-CH',
+};
+
+export const recurrenceLabels: Record<Locale, Record<string, string>> = {
+  pt: { once: 'Única', monthly: 'Mensal', weekly: 'Semanal', yearly: 'Anual' },
+  en: { once: 'Once', monthly: 'Monthly', weekly: 'Weekly', yearly: 'Yearly' },
+  es: { once: 'Única', monthly: 'Mensual', weekly: 'Semanal', yearly: 'Anual' },
+  fr: { once: 'Unique', monthly: 'Mensuel', weekly: 'Hebdomadaire', yearly: 'Annuel' },
+  de: { once: 'Einmalig', monthly: 'Monatlich', weekly: 'Wöchentlich', yearly: 'Jährlich' },
+};
+
+export const periodLabels: Record<Locale, Record<string, string>> = {
+  pt: { all: 'Todos', month: 'Mensal', year: 'Anual', custom: 'Personalizado' },
+  en: { all: 'All', month: 'Monthly', year: 'Yearly', custom: 'Custom' },
+  es: { all: 'Todos', month: 'Mensual', year: 'Anual', custom: 'Personalizado' },
+  fr: { all: 'Tous', month: 'Mensuel', year: 'Annuel', custom: 'Personnalisé' },
+  de: { all: 'Alle', month: 'Monatlich', year: 'Jährlich', custom: 'Benutzerdefiniert' },
 };
 
 const translations = {
@@ -363,4 +387,3 @@ const translations = {
 
 export type TranslationKey = typeof translations['pt'];
 export default translations as Record<Locale, TranslationKey>;
-

@@ -4,7 +4,7 @@ import { useData } from '@/store/DataContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/DatePicker';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -246,8 +246,8 @@ const ReportsPage = () => {
           )}
           {period === 'custom' && (
             <>
-              <Input type="date" className="h-8 w-36 text-xs" value={customStart} onChange={e => setCustomStart(e.target.value)} />
-              <Input type="date" className="h-8 w-36 text-xs" value={customEnd} onChange={e => setCustomEnd(e.target.value)} />
+              <DatePicker value={customStart} onChange={setCustomStart} placeholder="Data início" className="w-44" />
+              <DatePicker value={customEnd} onChange={setCustomEnd} placeholder="Data fim" className="w-44" />
             </>
           )}
           <Select value={filterCategory} onValueChange={setFilterCategory}>

@@ -4,6 +4,7 @@ import { useData, type Transaction } from '@/store/DataContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/DatePicker';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -195,8 +196,8 @@ const ExpensesPage = () => {
         )}
         {period === 'custom' && (
           <>
-            <Input type="date" className="w-36" value={customStart} onChange={e => setCustomStart(e.target.value)} />
-            <Input type="date" className="w-36" value={customEnd} onChange={e => setCustomEnd(e.target.value)} />
+            <DatePicker value={customStart} onChange={setCustomStart} placeholder="Data início" className="w-44" />
+            <DatePicker value={customEnd} onChange={setCustomEnd} placeholder="Data fim" className="w-44" />
           </>
         )}
       </div>
@@ -272,7 +273,7 @@ const ExpensesPage = () => {
               </div>
               <div className="space-y-1.5">
                 <Label>{t.common.date}</Label>
-                <Input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
+                <DatePicker value={form.date} onChange={v => setForm({ ...form, date: v })} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">

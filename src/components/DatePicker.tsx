@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useI18n } from "@/i18n/context";
 import type { Locale } from "@/i18n/translations";
 
-const dateFnsLocales: Record<Locale, globalThis.Locale> = {
+const dateFnsLocales: Record<Locale, any> = {
   pt: ptBR,
   en: enUS,
   es: es,

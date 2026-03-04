@@ -23,12 +23,13 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <I18nProvider>
-      <DataProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
+  <ThemeProvider attribute="class" defaultTheme="light" storageKey="moovi-theme">
+    <QueryClientProvider client={queryClient}>
+      <I18nProvider>
+        <DataProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
           <BrowserRouter>
             <Routes>
               <Route element={<AppLayout />}>

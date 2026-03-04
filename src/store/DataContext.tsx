@@ -32,7 +32,7 @@ export interface CreditCard {
 export interface Account {
   id: string;
   name: string;
-  type: 'checking' | 'digital' | 'business' | 'international' | 'investment';
+  type: 'checking' | 'business' | 'international' | 'investment';
   balance: number;
   color: string;
   institution: string;
@@ -45,13 +45,25 @@ export interface BudgetItem {
   spent: number;
 }
 
+export interface Profile {
+  name: string;
+  email: string;
+  phone: string;
+}
+
 interface Categories {
   income: string[];
   expense: string[];
 }
 
+const defaultProfile: Profile = {
+  name: 'Usuário Moovi',
+  email: 'usuario@email.com',
+  phone: '+55 11 99999-9999',
+};
+
 const defaultAccounts: Account[] = [
-  { id: 'acc-1', name: 'Nubank', type: 'digital', balance: 12450.80, color: 'hsl(280, 60%, 55%)', institution: 'Nubank' },
+  { id: 'acc-1', name: 'Nubank', type: 'checking', balance: 12450.80, color: 'hsl(280, 60%, 55%)', institution: 'Nubank' },
   { id: 'acc-2', name: 'Itaú', type: 'checking', balance: 8320.50, color: 'hsl(38, 92%, 50%)', institution: 'Itaú' },
   { id: 'acc-3', name: 'Wise', type: 'international', balance: 3200.00, color: 'hsl(152, 60%, 42%)', institution: 'Wise' },
 ];
@@ -96,6 +108,7 @@ interface DataContextType {
   cards: CreditCard[];
   budgets: BudgetItem[];
   categories: Categories;
+  profile: Profile;
   addTransaction: (t: Omit<Transaction, 'id'>) => void;
   updateTransaction: (id: string, data: Partial<Omit<Transaction, 'id'>>) => void;
   deleteTransaction: (id: string) => void;
@@ -105,10 +118,13 @@ interface DataContextType {
   updateCard: (id: string, data: Partial<Omit<CreditCard, 'id'>>) => void;
   deleteCard: (id: string) => void;
   updateBudget: (id: string, limit: number) => void;
+  addBudget: (category: string, limit: number) => void;
+  deleteBudget: (id: string) => void;
   transferBetweenAccounts: (fromId: string, toId: string, amount: number) => void;
   addCategory: (type: 'income' | 'expense', name: string) => void;
   deleteCategory: (type: 'income' | 'expense', name: string) => void;
   updateCategory: (type: 'income' | 'expense', oldName: string, newName: string) => void;
+  updateProfile: (data: Partial<Profile>) => void;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
@@ -126,12 +142,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [cards, setCards] = useState<CreditCard[]>(() => loadFromStorage('moovi_cards', defaultCards));
   const [budgets, setBudgets] = useState<BudgetItem[]>(() => loadFromStorage('moovi_budgets', defaultBudgets));
   const [categories, setCategories] = useState<Categories>(() => loadFromStorage('moovi_categories', defaultCategories));
+  const [profile, setProfile] = useState<Profile>(() => loadFromStorage('moovi_profile', defaultProfile));
 
   useEffect(() => { localStorage.setItem('moovi_transactions', JSON.stringify(transactions)); }, [transactions]);
   useEffect(() => { localStorage.setItem('moovi_accounts', JSON.stringify(accounts)); }, [accounts]);
   useEffect(() => { localStorage.setItem('moovi_cards', JSON.stringify(cards)); }, [cards]);
   useEffect(() => { localStorage.setItem('moovi_budgets', JSON.stringify(budgets)); }, [budgets]);
   useEffect(() => { localStorage.setItem('moovi_categories', JSON.stringify(categories)); }, [categories]);
+  useEffect(() => { localStorage.setItem('moovi_profile', JSON.stringify(profile)); }, [profile]);
 
   const addTransaction = useCallback((t: Omit<Transaction, 'id'>) => {
     setTransactions(prev => [{ ...t, id: `t-${Date.now()}-${Math.random().toString(36).substr(2, 4)}` }, ...prev]);
@@ -169,6 +187,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setBudgets(prev => prev.map(b => b.id === id ? { ...b, limit } : b));
   }, []);
 
+  const addBudget = useCallback((category: string, limit: number) => {
+    setBudgets(prev => {
+      if (prev.some(b => b.category === category)) return prev;
+      return [...prev, { id: `b-${Date.now()}`, category, limit, spent: 0 }];
+    });
+  }, []);
+
+  const deleteBudget = useCallback((id: string) => {
+    setBudgets(prev => prev.filter(b => b.id !== id));
+  }, []);
+
   const transferBetweenAccounts = useCallback((fromId: string, toId: string, amount: number) => {
     setAccounts(prev => prev.map(a => {
       if (a.id === fromId) return { ...a, balance: a.balance - amount };
@@ -187,22 +216,32 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteCategory = useCallback((type: 'income' | 'expense', name: string) => {
     setCategories(prev => ({ ...prev, [type]: prev[type].filter(c => c !== name) }));
+    // Also remove budget for this category
+    if (type === 'expense') {
+      setBudgets(prev => prev.filter(b => b.category !== name));
+    }
   }, []);
 
   const updateCategory = useCallback((type: 'income' | 'expense', oldName: string, newName: string) => {
     setCategories(prev => ({ ...prev, [type]: prev[type].map(c => c === oldName ? newName : c) }));
-    // Also update all transactions with old category
     setTransactions(prev => prev.map(t => t.category === oldName ? { ...t, category: newName } : t));
+    // Also update budgets
+    setBudgets(prev => prev.map(b => b.category === oldName ? { ...b, category: newName } : b));
+  }, []);
+
+  const updateProfile = useCallback((data: Partial<Profile>) => {
+    setProfile(prev => ({ ...prev, ...data }));
   }, []);
 
   return (
     <DataContext.Provider value={{
-      transactions, accounts, cards, budgets, categories,
+      transactions, accounts, cards, budgets, categories, profile,
       addTransaction, updateTransaction, deleteTransaction,
       addAccount, deleteAccount,
       addCard, updateCard, deleteCard,
-      updateBudget, transferBetweenAccounts,
+      updateBudget, addBudget, deleteBudget, transferBetweenAccounts,
       addCategory, deleteCategory, updateCategory,
+      updateProfile,
     }}>
       {children}
     </DataContext.Provider>

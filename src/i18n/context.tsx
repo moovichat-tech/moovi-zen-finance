@@ -1,12 +1,19 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import translations, { type Locale, type Currency, type TranslationKey, currencyLocales } from './translations';
 
-// Exchange rates relative to BRL (1 BRL = X of target currency)
 const exchangeRates: Record<Currency, Record<Currency, number>> = {
   BRL: { BRL: 1, USD: 0.17, EUR: 0.16, CHF: 0.15 },
   USD: { BRL: 5.80, USD: 1, EUR: 0.92, CHF: 0.88 },
   EUR: { BRL: 6.30, EUR: 1, USD: 1.09, CHF: 0.96 },
   CHF: { BRL: 6.55, CHF: 1, USD: 1.14, EUR: 1.04 },
+};
+
+const dateLocales: Record<Locale, string> = {
+  pt: 'pt-BR',
+  en: 'en-US',
+  es: 'es-ES',
+  fr: 'fr-FR',
+  de: 'de-DE',
 };
 
 interface I18nContextType {
@@ -17,6 +24,7 @@ interface I18nContextType {
   setLocale: (locale: Locale) => void;
   setCurrency: (currency: Currency) => void;
   formatCurrency: (value: number) => string;
+  formatDate: (dateStr: string) => string;
   convertValue: (value: number) => number;
 }
 
@@ -25,7 +33,7 @@ const I18nContext = createContext<I18nContextType | null>(null);
 export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [locale, setLocale] = useState<Locale>('pt');
   const [currency, setCurrency] = useState<Currency>('BRL');
-  const baseCurrency: Currency = 'BRL'; // All stored values are in BRL
+  const baseCurrency: Currency = 'BRL';
 
   const t = translations[locale];
 
@@ -43,8 +51,17 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }).format(converted);
   }, [currency, convertValue]);
 
+  const formatDate = useCallback((dateStr: string) => {
+    const date = new Date(dateStr + 'T00:00:00');
+    return new Intl.DateTimeFormat(dateLocales[locale], {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(date);
+  }, [locale]);
+
   return (
-    <I18nContext.Provider value={{ locale, currency, baseCurrency, t, setLocale, setCurrency, formatCurrency, convertValue }}>
+    <I18nContext.Provider value={{ locale, currency, baseCurrency, t, setLocale, setCurrency, formatCurrency, formatDate, convertValue }}>
       {children}
     </I18nContext.Provider>
   );

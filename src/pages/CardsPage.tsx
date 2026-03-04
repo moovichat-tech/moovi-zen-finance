@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useI18n } from '@/i18n/context';
 import { useData } from '@/store/DataContext';
 import { Card } from '@/components/ui/card';
@@ -6,16 +6,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Trash2, CreditCard, Pencil, X } from 'lucide-react';
+import { Plus, Trash2, CreditCard, Pencil, X, Eye } from 'lucide-react';
 import type { CreditCard as CreditCardType } from '@/store/DataContext';
 
 const CardsPage = () => {
-  const { t, formatCurrency } = useI18n();
+  const { t, formatCurrency, formatDate } = useI18n();
   const { cards, transactions, addCard, deleteCard, updateCard } = useData();
   const [open, setOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<CreditCardType | null>(null);
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
+  const [txFilterMonth, setTxFilterMonth] = useState('all');
   const [form, setForm] = useState({ name: '', lastDigits: '', limit: '', closingDay: '3', dueDay: '10', color: 'hsl(234, 62%, 52%)' });
 
   const openAdd = () => {
@@ -41,7 +43,21 @@ const CardsPage = () => {
   };
 
   const selectedCardData = selectedCard ? cards.find(c => c.id === selectedCard) : null;
-  const selectedCardTransactions = selectedCard ? transactions.filter(tr => tr.cardId === selectedCard).sort((a, b) => b.date.localeCompare(a.date)) : [];
+
+  const selectedCardTransactions = useMemo(() => {
+    if (!selectedCard) return [];
+    return transactions
+      .filter(tr => tr.cardId === selectedCard)
+      .filter(tr => txFilterMonth === 'all' || tr.date.startsWith(txFilterMonth))
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [transactions, selectedCard, txFilterMonth]);
+
+  const cardTxMonths = useMemo(() => {
+    if (!selectedCard) return [];
+    const set = new Set<string>();
+    transactions.filter(tr => tr.cardId === selectedCard).forEach(tr => set.add(tr.date.substring(0, 7)));
+    return Array.from(set).sort().reverse();
+  }, [transactions, selectedCard]);
 
   return (
     <div className="space-y-6 animate-in-up">
@@ -59,11 +75,7 @@ const CardsPage = () => {
         {cards.map(card => {
           const usagePercent = Math.round((card.usedLimit / card.limit) * 100);
           return (
-            <Card
-              key={card.id}
-              className={`p-5 card-hover cursor-pointer ${selectedCard === card.id ? 'border-primary' : ''}`}
-              onClick={() => setSelectedCard(selectedCard === card.id ? null : card.id)}
-            >
+            <Card key={card.id} className={`p-5 card-hover ${selectedCard === card.id ? 'border-primary' : ''}`}>
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: card.color + '20' }}>
@@ -75,10 +87,10 @@ const CardsPage = () => {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openEdit(card); }}>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(card)}>
                     <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); deleteCard(card.id); }}>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteCard(card.id)}>
                     <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
                   </Button>
                 </div>
@@ -106,6 +118,15 @@ const CardsPage = () => {
                   <div className="mt-0.5 font-semibold">Dia {card.dueDay}</div>
                 </div>
               </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3 w-full gap-1.5 text-xs"
+                onClick={() => { setSelectedCard(selectedCard === card.id ? null : card.id); setTxFilterMonth('all'); }}
+              >
+                <Eye className="h-3.5 w-3.5" /> Ver lançamentos
+              </Button>
             </Card>
           );
         })}
@@ -116,23 +137,37 @@ const CardsPage = () => {
         <Card className="p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold">Lançamentos — {selectedCardData.name}</h3>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedCard(null)}>
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Select value={txFilterMonth} onValueChange={setTxFilterMonth}>
+                <SelectTrigger className="h-7 w-32 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {cardTxMonths.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedCard(null)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
           {selectedCardTransactions.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">Nenhum lançamento neste cartão</p>
           ) : (
             <div className="space-y-2">
-              {selectedCardTransactions.map(tr => (
-                <div key={tr.id} className="flex items-center justify-between text-xs py-1.5 border-b border-border last:border-0">
-                  <div>
-                    <span className="font-medium">{tr.description}</span>
-                    <span className="ml-2 text-muted-foreground">{tr.date}</span>
+              {selectedCardTransactions.map(tr => {
+                const isRefund = tr.type === 'income';
+                return (
+                  <div key={tr.id} className="flex items-center justify-between text-xs py-1.5 border-b border-border last:border-0">
+                    <div>
+                      <span className="font-medium">{tr.description}</span>
+                      <span className="ml-2 text-muted-foreground">{formatDate(tr.date)}</span>
+                    </div>
+                    <span className={`font-medium ${isRefund ? 'text-success' : 'text-destructive'}`}>
+                      {isRefund ? '+' : '-'}{formatCurrency(tr.amount)}
+                    </span>
                   </div>
-                  <span className="font-medium text-destructive">-{formatCurrency(tr.amount)}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </Card>

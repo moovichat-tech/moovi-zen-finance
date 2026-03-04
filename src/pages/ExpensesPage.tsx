@@ -10,24 +10,53 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, Pencil, Search, ArrowDownRight } from 'lucide-react';
+import { Plus, Trash2, Pencil, Search, ArrowDownRight, ArrowUpDown } from 'lucide-react';
+
+type SortKey = 'description' | 'category' | 'date' | 'amount' | 'status';
 
 const ExpensesPage = () => {
-  const { t, formatCurrency } = useI18n();
+  const { t, formatCurrency, formatDate } = useI18n();
   const { transactions, accounts, cards, categories, addTransaction, deleteTransaction, updateTransaction } = useData();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [filterMonth, setFilterMonth] = useState('all');
+  const [period, setPeriod] = useState('month');
+  const [filterMonth, setFilterMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [filterYear, setFilterYear] = useState(() => String(new Date().getFullYear()));
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('date');
+  const [sortAsc, setSortAsc] = useState(false);
 
-  const expenses = useMemo(() =>
-    transactions
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortAsc(!sortAsc);
+    else { setSortKey(key); setSortAsc(false); }
+  };
+
+  const expenses = useMemo(() => {
+    let filtered = transactions
       .filter(tr => tr.type === 'expense')
-      .filter(tr => tr.description.toLowerCase().includes(search.toLowerCase()))
-      .filter(tr => filterMonth === 'all' || tr.date.startsWith(filterMonth))
-      .sort((a, b) => b.date.localeCompare(a.date)),
-    [transactions, search, filterMonth]
-  );
+      .filter(tr => tr.description.toLowerCase().includes(search.toLowerCase()));
+
+    if (period === 'month') filtered = filtered.filter(tr => tr.date.startsWith(filterMonth));
+    else if (period === 'year') filtered = filtered.filter(tr => tr.date.startsWith(filterYear));
+    else if (period === 'custom' && customStart && customEnd) filtered = filtered.filter(tr => tr.date >= customStart && tr.date <= customEnd);
+
+    filtered.sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === 'description') cmp = a.description.localeCompare(b.description);
+      else if (sortKey === 'category') cmp = a.category.localeCompare(b.category);
+      else if (sortKey === 'date') cmp = a.date.localeCompare(b.date);
+      else if (sortKey === 'amount') cmp = a.amount - b.amount;
+      else if (sortKey === 'status') cmp = a.status.localeCompare(b.status);
+      return sortAsc ? cmp : -cmp;
+    });
+
+    return filtered;
+  }, [transactions, search, period, filterMonth, filterYear, customStart, customEnd, sortKey, sortAsc]);
 
   const totalPaid = expenses.filter(e => e.status === 'paid').reduce((s, e) => s + e.amount, 0);
   const totalPlanned = expenses.filter(e => e.status === 'planned').reduce((s, e) => s + e.amount, 0);
@@ -38,13 +67,19 @@ const ExpensesPage = () => {
     return Array.from(set).sort().reverse();
   }, [transactions]);
 
+  const availableYears = useMemo(() => {
+    const set = new Set<string>();
+    transactions.filter(tr => tr.type === 'expense').forEach(tr => set.add(tr.date.substring(0, 4)));
+    return Array.from(set).sort().reverse();
+  }, [transactions]);
+
   const [form, setForm] = useState({
-    description: '', amount: '', category: categories.expense[0], date: new Date().toISOString().split('T')[0],
+    description: '', amount: '', category: categories.expense[0] || '', date: new Date().toISOString().split('T')[0],
     status: 'paid' as 'paid' | 'planned', recurrence: 'once' as Transaction['recurrence'],
     accountId: '', cardId: '', installments: '', fixed: false, tags: '',
   });
 
-  const resetForm = () => setForm({ description: '', amount: '', category: categories.expense[0], date: new Date().toISOString().split('T')[0], status: 'paid', recurrence: 'once', accountId: '', cardId: '', installments: '', fixed: false, tags: '' });
+  const resetForm = () => setForm({ description: '', amount: '', category: categories.expense[0] || '', date: new Date().toISOString().split('T')[0], status: 'paid', recurrence: 'once', accountId: '', cardId: '', installments: '', fixed: false, tags: '' });
 
   const openAdd = () => { setEditingId(null); resetForm(); setOpen(true); };
 
@@ -56,7 +91,6 @@ const ExpensesPage = () => {
 
   const handleSubmit = () => {
     if (!form.description || !form.amount || !form.accountId) return;
-
     if (editingId) {
       updateTransaction(editingId, {
         type: 'expense', description: form.description, amount: parseFloat(form.amount),
@@ -93,6 +127,15 @@ const ExpensesPage = () => {
     resetForm();
   };
 
+  const SortableHead = ({ label, field }: { label: string; field: SortKey }) => (
+    <TableHead className="cursor-pointer select-none" onClick={() => toggleSort(field)}>
+      <div className="flex items-center gap-1">
+        {label}
+        <ArrowUpDown className={`h-3 w-3 ${sortKey === field ? 'text-primary' : 'text-muted-foreground/40'}`} />
+      </div>
+    </TableHead>
+  );
+
   return (
     <div className="space-y-6 animate-in-up">
       <div className="flex items-center justify-between">
@@ -120,29 +163,58 @@ const ExpensesPage = () => {
         </Card>
       </div>
 
-      <div className="flex gap-2">
-        <div className="relative flex-1">
+      <div className="flex gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder={t.common.search} value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
-        <Select value={filterMonth} onValueChange={setFilterMonth}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="Período" /></SelectTrigger>
+        <Select value={period} onValueChange={setPeriod}>
+          <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
-            {availableMonths.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+            <SelectItem value="month">Mensal</SelectItem>
+            <SelectItem value="year">Anual</SelectItem>
+            <SelectItem value="custom">Personalizado</SelectItem>
           </SelectContent>
         </Select>
+        {period === 'month' && (
+          <Select value={filterMonth} onValueChange={setFilterMonth}>
+            <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {availableMonths.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        )}
+        {period === 'year' && (
+          <Select value={filterYear} onValueChange={setFilterYear}>
+            <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {availableYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        )}
+        {period === 'custom' && (
+          <>
+            <Input type="date" className="w-36" value={customStart} onChange={e => setCustomStart(e.target.value)} />
+            <Input type="date" className="w-36" value={customEnd} onChange={e => setCustomEnd(e.target.value)} />
+          </>
+        )}
       </div>
 
       <Card>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t.common.description}</TableHead>
-              <TableHead>{t.common.category}</TableHead>
-              <TableHead>{t.common.date}</TableHead>
-              <TableHead>{t.common.status}</TableHead>
-              <TableHead className="text-right">{t.common.amount}</TableHead>
+              <SortableHead label={t.common.description} field="description" />
+              <SortableHead label={t.common.category} field="category" />
+              <SortableHead label={t.common.date} field="date" />
+              <SortableHead label={t.common.status} field="status" />
+              <TableHead className="text-right cursor-pointer select-none" onClick={() => toggleSort('amount')}>
+                <div className="flex items-center justify-end gap-1">
+                  {t.common.amount}
+                  <ArrowUpDown className={`h-3 w-3 ${sortKey === 'amount' ? 'text-primary' : 'text-muted-foreground/40'}`} />
+                </div>
+              </TableHead>
               <TableHead className="w-20" />
             </TableRow>
           </TableHeader>
@@ -159,7 +231,7 @@ const ExpensesPage = () => {
                   </div>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">{exp.category}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">{exp.date}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">{formatDate(exp.date)}</TableCell>
                 <TableCell>
                   <Badge variant={exp.status === 'paid' ? 'default' : 'secondary'} className="text-[10px]">
                     {exp.status === 'paid' ? t.common.paid : t.common.planned}

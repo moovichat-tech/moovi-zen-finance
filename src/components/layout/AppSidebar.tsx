@@ -47,10 +47,11 @@ export const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
     dashboard: t.nav.dashboard,
     income: t.nav.income,
     expenses: t.nav.expenses,
+    payables: locale === 'pt' ? 'A Pagar/Receber' : locale === 'en' ? 'Payables' : locale === 'es' ? 'Por Pagar' : locale === 'fr' ? 'À Payer' : 'Forderungen',
     cards: t.nav.cards,
     accounts: t.nav.accounts,
     budget: t.nav.budget,
-    categories: 'Categorias',
+    categories: locale === 'pt' ? 'Categorias' : locale === 'en' ? 'Categories' : locale === 'es' ? 'Categorías' : locale === 'fr' ? 'Catégories' : 'Kategorien',
     reports: t.nav.reports,
     ai: t.nav.ai,
   };

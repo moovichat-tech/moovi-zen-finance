@@ -16,13 +16,17 @@ const dateLocales: Record<Locale, string> = {
   de: 'de-DE',
 };
 
+export type Theme = 'light' | 'dark';
+
 interface I18nContextType {
   locale: Locale;
   currency: Currency;
   baseCurrency: Currency;
   t: TranslationKey;
+  theme: Theme;
   setLocale: (locale: Locale) => void;
   setCurrency: (currency: Currency) => void;
+  setTheme: (theme: Theme) => void;
   formatCurrency: (value: number) => string;
   formatDate: (dateStr: string) => string;
   convertValue: (value: number) => number;
@@ -31,11 +35,47 @@ interface I18nContextType {
 const I18nContext = createContext<I18nContextType | null>(null);
 
 export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [locale, setLocale] = useState<Locale>('pt');
-  const [currency, setCurrency] = useState<Currency>('BRL');
+  const [locale, setLocale] = useState<Locale>(() => {
+    try { return (localStorage.getItem('moovi_locale') as Locale) || 'pt'; } catch { return 'pt'; }
+  });
+  const [currency, setCurrency] = useState<Currency>(() => {
+    try { return (localStorage.getItem('moovi_currency') as Currency) || 'BRL'; } catch { return 'BRL'; }
+  });
+  const [theme, setThemeState] = useState<Theme>(() => {
+    try { return (localStorage.getItem('moovi_theme') as Theme) || 'light'; } catch { return 'light'; }
+  });
   const baseCurrency: Currency = 'BRL';
 
   const t = translations[locale];
+
+  const handleSetLocale = useCallback((l: Locale) => {
+    setLocale(l);
+    localStorage.setItem('moovi_locale', l);
+  }, []);
+
+  const handleSetCurrency = useCallback((c: Currency) => {
+    setCurrency(c);
+    localStorage.setItem('moovi_currency', c);
+  }, []);
+
+  const setTheme = useCallback((th: Theme) => {
+    setThemeState(th);
+    localStorage.setItem('moovi_theme', th);
+    if (th === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
+  // Apply theme on mount
+  React.useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
 
   const convertValue = useCallback((value: number) => {
     if (currency === baseCurrency) return value;
@@ -61,7 +101,7 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [locale]);
 
   return (
-    <I18nContext.Provider value={{ locale, currency, baseCurrency, t, setLocale, setCurrency, formatCurrency, formatDate, convertValue }}>
+    <I18nContext.Provider value={{ locale, currency, baseCurrency, t, theme, setLocale: handleSetLocale, setCurrency: handleSetCurrency, setTheme, formatCurrency, formatDate, convertValue }}>
       {children}
     </I18nContext.Provider>
   );

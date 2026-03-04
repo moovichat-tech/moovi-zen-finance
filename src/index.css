@@ -62,6 +62,59 @@
     --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
     --font-mono: 'DM Mono', ui-monospace, monospace;
   }
+
+  .dark {
+    --background: 240 10% 6%;
+    --foreground: 0 0% 95%;
+
+    --card: 240 10% 9%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 240 10% 9%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 234 62% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 5% 15%;
+    --secondary-foreground: 0 0% 85%;
+
+    --muted: 240 5% 15%;
+    --muted-foreground: 240 4% 55%;
+
+    --accent: 240 5% 15%;
+    --accent-foreground: 0 0% 85%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 152 60% 42%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 240 5% 18%;
+    --input: 240 5% 18%;
+    --ring: 234 62% 60%;
+
+    --sidebar-background: 240 10% 8%;
+    --sidebar-foreground: 240 4% 55%;
+    --sidebar-primary: 234 62% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 5% 15%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 240 5% 16%;
+    --sidebar-ring: 234 62% 60%;
+
+    --chart-income: 152 60% 42%;
+    --chart-expense: 0 72% 51%;
+    --chart-1: 234 62% 60%;
+    --chart-2: 152 60% 42%;
+    --chart-3: 38 92% 50%;
+    --chart-4: 280 60% 55%;
+    --chart-5: 200 70% 50%;
+  }
 }
 
 @layer base {
@@ -88,7 +141,6 @@
     @apply bg-card/80 backdrop-blur-xl border border-border/50;
   }
 
-  /* Standardize mono-style numbers to use sans font */
   .font-mono {
     font-family: var(--font-sans) !important;
     font-variant-numeric: tabular-nums;

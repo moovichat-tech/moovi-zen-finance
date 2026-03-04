@@ -13,6 +13,13 @@ import { Plus, Trash2, Pencil, Search, ArrowUpRight, ArrowUpDown } from 'lucide-
 
 type SortKey = 'description' | 'category' | 'date' | 'amount' | 'status';
 
+const recurrenceLabels = (t: any) => ({
+  once: t.common.once,
+  monthly: t.common.monthly,
+  weekly: t.common.weekly,
+  yearly: t.common.yearly,
+});
+
 const IncomePage = () => {
   const { t, formatCurrency, formatDate } = useI18n();
   const { transactions, accounts, categories, addTransaction, deleteTransaction, updateTransaction } = useData();
@@ -29,6 +36,8 @@ const IncomePage = () => {
   const [customEnd, setCustomEnd] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortAsc, setSortAsc] = useState(false);
+
+  const recLabels = recurrenceLabels(t);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc(!sortAsc);
@@ -149,10 +158,10 @@ const IncomePage = () => {
         <Select value={period} onValueChange={setPeriod}>
           <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="month">Mensal</SelectItem>
-            <SelectItem value="year">Anual</SelectItem>
-            <SelectItem value="custom">Personalizado</SelectItem>
+            <SelectItem value="all">{t.common.all}</SelectItem>
+            <SelectItem value="month">{t.common.monthly_filter}</SelectItem>
+            <SelectItem value="year">{t.common.yearly_filter}</SelectItem>
+            <SelectItem value="custom">{t.common.custom}</SelectItem>
           </SelectContent>
         </Select>
         {period === 'month' && (
@@ -203,7 +212,7 @@ const IncomePage = () => {
                   <div className="flex items-center gap-2">
                     <ArrowUpRight className="h-3.5 w-3.5 text-success" />
                     {inc.description}
-                    {inc.recurrence !== 'once' && <Badge variant="secondary" className="text-[10px]">{inc.recurrence}</Badge>}
+                    {inc.recurrence !== 'once' && <Badge variant="secondary" className="text-[10px]">{recLabels[inc.recurrence as keyof typeof recLabels] || inc.recurrence}</Badge>}
                   </div>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">{inc.category}</TableCell>
@@ -227,7 +236,7 @@ const IncomePage = () => {
               </TableRow>
             ))}
             {incomes.length === 0 && (
-              <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">Nenhuma receita encontrada</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">{t.common.noData}</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
@@ -274,14 +283,14 @@ const IncomePage = () => {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Recorrência</Label>
+                <Label>{t.common.once}</Label>
                 <Select value={form.recurrence} onValueChange={v => setForm({ ...form, recurrence: v as any })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="once">Única</SelectItem>
-                    <SelectItem value="monthly">Mensal</SelectItem>
-                    <SelectItem value="weekly">Semanal</SelectItem>
-                    <SelectItem value="yearly">Anual</SelectItem>
+                    <SelectItem value="once">{t.common.once}</SelectItem>
+                    <SelectItem value="monthly">{t.common.monthly}</SelectItem>
+                    <SelectItem value="weekly">{t.common.weekly}</SelectItem>
+                    <SelectItem value="yearly">{t.common.yearly}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -296,7 +305,7 @@ const IncomePage = () => {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Tags (separadas por vírgula)</Label>
+              <Label>Tags</Label>
               <Input value={form.tags} onChange={e => setForm({ ...form, tags: e.target.value })} placeholder="ex: freelance, web" />
             </div>
           </div>

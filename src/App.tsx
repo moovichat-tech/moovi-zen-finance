@@ -18,6 +18,7 @@ import AIPage from "@/pages/AIPage";
 import SettingsPage from "@/pages/SettingsPage";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import CategoriesPage from "@/pages/CategoriesPage";
+import PayablesReceivablesPage from "@/pages/PayablesReceivablesPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

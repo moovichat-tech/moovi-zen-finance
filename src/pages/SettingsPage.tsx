@@ -1,4 +1,5 @@
 import { useI18n } from '@/i18n/context';
+import { useData } from '@/store/DataContext';
 import { type Locale, type Currency, localeNames, currencySymbols } from '@/i18n/translations';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -7,13 +8,19 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { User, Bell, Shield, Palette, Globe, Coins } from 'lucide-react';
+import { User, Shield, Globe } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 const SettingsPage = () => {
   const { locale, currency, setLocale, setCurrency, t } = useI18n();
-  const [notifications, setNotifications] = useState({ budget: true, weekly: true, tips: false });
-  const [profile, setProfile] = useState({ name: 'Usuário Moovi', email: 'usuario@email.com', phone: '+55 11 99999-9999' });
+  const { profile, updateProfile } = useData();
+  const [localProfile, setLocalProfile] = useState(profile);
+
+  const handleSaveProfile = () => {
+    updateProfile(localProfile);
+    toast.success('Perfil salvo com sucesso!');
+  };
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 animate-in-up">
@@ -30,18 +37,18 @@ const SettingsPage = () => {
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label>Nome</Label>
-            <Input value={profile.name} onChange={e => setProfile({ ...profile, name: e.target.value })} />
+            <Input value={localProfile.name} onChange={e => setLocalProfile({ ...localProfile, name: e.target.value })} />
           </div>
           <div className="space-y-1.5">
             <Label>Telefone</Label>
-            <Input value={profile.phone} onChange={e => setProfile({ ...profile, phone: e.target.value })} />
+            <Input value={localProfile.phone} onChange={e => setLocalProfile({ ...localProfile, phone: e.target.value })} />
           </div>
         </div>
         <div className="space-y-1.5">
           <Label>E-mail</Label>
-          <Input value={profile.email} onChange={e => setProfile({ ...profile, email: e.target.value })} />
+          <Input value={localProfile.email} onChange={e => setLocalProfile({ ...localProfile, email: e.target.value })} />
         </div>
-        <Button size="sm">{t.common.save}</Button>
+        <Button size="sm" onClick={handleSaveProfile}>{t.common.save}</Button>
       </Card>
 
       {/* Language & Currency */}
@@ -76,38 +83,6 @@ const SettingsPage = () => {
         </div>
       </Card>
 
-      {/* Notifications */}
-      <Card className="p-5 space-y-4">
-        <div className="flex items-center gap-2 text-sm font-semibold">
-          <Bell className="h-4 w-4 text-primary" /> Notificações
-        </div>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">Alertas de orçamento</p>
-              <p className="text-xs text-muted-foreground">Receba alertas quando atingir 80% e 100% do limite</p>
-            </div>
-            <Switch checked={notifications.budget} onCheckedChange={v => setNotifications({ ...notifications, budget: v })} />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">Resumo semanal</p>
-              <p className="text-xs text-muted-foreground">Receba um resumo financeiro toda segunda-feira</p>
-            </div>
-            <Switch checked={notifications.weekly} onCheckedChange={v => setNotifications({ ...notifications, weekly: v })} />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">Dicas de economia</p>
-              <p className="text-xs text-muted-foreground">Sugestões personalizadas para economizar</p>
-            </div>
-            <Switch checked={notifications.tips} onCheckedChange={v => setNotifications({ ...notifications, tips: v })} />
-          </div>
-        </div>
-      </Card>
-
       {/* Security */}
       <Card className="p-5 space-y-4">
         <div className="flex items-center gap-2 text-sm font-semibold">
@@ -130,14 +105,9 @@ const SettingsPage = () => {
       <Card className="border-destructive/30 p-5 space-y-3">
         <p className="text-sm font-semibold text-destructive">Zona de Perigo</p>
         <p className="text-xs text-muted-foreground">Ações irreversíveis</p>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10">
-            Exportar meus dados
-          </Button>
-          <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10">
-            Excluir minha conta
-          </Button>
-        </div>
+        <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10">
+          Excluir minha conta
+        </Button>
       </Card>
     </div>
   );

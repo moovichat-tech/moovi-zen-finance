@@ -7,11 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Trash2, ArrowRightLeft, Landmark, Wallet, Globe, Building2, TrendingUp } from 'lucide-react';
+import { Plus, Trash2, ArrowRightLeft, Landmark, Globe, Building2, TrendingUp } from 'lucide-react';
 
 const typeIcons: Record<string, any> = {
   checking: Landmark,
-  digital: Wallet,
   business: Building2,
   international: Globe,
   investment: TrendingUp,
@@ -19,7 +18,6 @@ const typeIcons: Record<string, any> = {
 
 const typeLabels: Record<string, string> = {
   checking: 'Conta Corrente',
-  digital: 'Conta Digital',
   business: 'Conta PJ',
   international: 'Conta Internacional',
   investment: 'Conta Investimento',
@@ -73,7 +71,7 @@ const AccountsPage = () => {
 
       <div className="grid grid-cols-2 gap-4">
         {accounts.map(acc => {
-          const Icon = typeIcons[acc.type] || Wallet;
+          const Icon = typeIcons[acc.type] || Landmark;
           const recentTx = transactions.filter(tr => tr.accountId === acc.id).slice(0, 4);
           return (
             <Card key={acc.id} className="p-5 card-hover">

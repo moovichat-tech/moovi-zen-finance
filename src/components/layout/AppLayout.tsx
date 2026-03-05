@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { AppSidebar } from './AppSidebar';
 import { TopBar } from './TopBar';
@@ -26,6 +26,11 @@ export const AppLayout = () => {
   });
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
   const navKey = routeTitles[location.pathname] || 'dashboard';
   const title = t.nav[navKey as keyof typeof t.nav] || 'Moovi';
 
@@ -51,17 +56,14 @@ export const AppLayout = () => {
         onMobileClose={() => setMobileOpen(false)}
       />
 
-      <div className={`transition-all duration-300 lg:${collapsed ? 'pl-[60px]' : 'pl-52'}`} style={{ paddingLeft: undefined }}>
-        <div className={`hidden lg:block`}>
-          <div className={`transition-all duration-300 ${collapsed ? 'pl-[60px]' : 'pl-52'}`}>
-          </div>
-        </div>
-        <div className={`transition-all duration-300 ${collapsed ? 'lg:pl-[60px]' : 'lg:pl-52'}`}>
-          <TopBar title={title} onMenuClick={() => setMobileOpen(true)} />
-          <main className="p-3 sm:p-4 md:p-6">
-            <Outlet />
-          </main>
-        </div>
+      <div
+        className="transition-all duration-300"
+        style={{ paddingLeft: typeof window !== 'undefined' && window.innerWidth >= 1024 ? (collapsed ? 60 : 208) : 0 }}
+      >
+        <TopBar title={title} onMenuClick={() => setMobileOpen(true)} />
+        <main className="p-3 sm:p-4 md:p-6">
+          <Outlet />
+        </main>
       </div>
     </div>
   );

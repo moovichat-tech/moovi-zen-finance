@@ -66,6 +66,8 @@ export const AppSidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }: A
 
   const NavButton = ({ keyName, path, Icon, label }: { keyName: string; path: string; Icon: React.ElementType; label: string }) => {
     const isActive = location.pathname === path;
+    // On mobile: always show full labels. On desktop: respect collapsed state
+    const showLabel = !collapsed;
     const btn = (
       <button
         onClick={() => handleNavigate(path)}
@@ -73,56 +75,40 @@ export const AppSidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }: A
           isActive
             ? 'bg-sidebar-accent text-sidebar-accent-foreground'
             : 'text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground'
-        } ${collapsed ? 'lg:justify-center lg:px-2' : ''}`}
+        }`}
       >
         <Icon className="h-4 w-4 shrink-0" />
-        <span className={`truncate ${collapsed ? 'lg:hidden' : ''}`}>{label}</span>
+        <span className={`truncate ${collapsed ? 'hidden' : ''}`}>{label}</span>
       </button>
     );
 
     if (collapsed) {
       return (
-        <span className="hidden lg:block">
-          <Tooltip delayDuration={0}>
-            <TooltipTrigger asChild>{btn}</TooltipTrigger>
-            <TooltipContent side="right" className="text-xs">{label}</TooltipContent>
-          </Tooltip>
-        </span>
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>{btn}</TooltipTrigger>
+          <TooltipContent side="right" className="text-xs">{label}</TooltipContent>
+        </Tooltip>
       );
     }
     return btn;
   };
+
+  // Desktop width
+  const desktopWidth = collapsed ? 60 : 208; // 208px = 13rem = w-52
 
   return (
     <aside
       className={`fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0
-        w-64 lg:${collapsed ? 'w-[60px]' : 'w-52'}
       `}
-      style={{ width: undefined }}
+      style={{ width: typeof window !== 'undefined' && window.innerWidth >= 1024 ? desktopWidth : 256 }}
     >
-      {/* Use inline style for lg width since template literals in className don't work well */}
-      <style>{`
-        @media (min-width: 1024px) {
-          aside.sidebar-main { width: ${collapsed ? '60px' : '13rem'} !important; }
-        }
-        @media (max-width: 1023px) {
-          aside.sidebar-main { width: 16rem !important; }
-        }
-      `}</style>
-      <div className="sidebar-main fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300"
-        style={{
-          transform: mobileOpen ? 'translateX(0)' : undefined,
-        }}
-      >
-      </div>
-
       {/* Logo + Close on mobile */}
-      <div className={`flex h-14 items-center justify-between ${collapsed ? 'lg:justify-center lg:px-2' : ''} gap-2.5 px-4`}>
+      <div className={`flex h-14 items-center justify-between ${collapsed ? 'px-2' : 'px-4'} gap-2.5`}>
         <div className="flex items-center gap-2.5">
           <img src={mooviLogo} alt="Moovi" className="h-8 w-8 rounded-lg object-cover shrink-0" />
-          <span className={`text-base font-bold tracking-tight text-sidebar-accent-foreground ${collapsed ? 'lg:hidden' : ''}`}>Moovi</span>
+          {!collapsed && <span className="text-base font-bold tracking-tight text-sidebar-accent-foreground">Moovi</span>}
         </div>
         <button onClick={onMobileClose} className="lg:hidden text-sidebar-foreground">
           <X className="h-5 w-5" />
@@ -130,23 +116,22 @@ export const AppSidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }: A
       </div>
 
       {/* Navigation */}
-      <nav className={`flex-1 space-y-0.5 overflow-y-auto py-2 ${collapsed ? 'lg:px-1.5' : ''} px-2.5`}>
+      <nav className={`flex-1 space-y-0.5 overflow-y-auto py-2 ${collapsed ? 'px-1.5' : 'px-2.5'}`}>
         {navItems.map(({ key, path, icon: Icon }) => (
           <NavButton key={key} keyName={key} path={path} Icon={Icon} label={navLabels[key]} />
         ))}
       </nav>
 
       {/* Bottom */}
-      <div className={`space-y-0.5 border-t border-sidebar-border py-3 ${collapsed ? 'lg:px-1.5' : ''} px-2.5`}>
+      <div className={`space-y-0.5 border-t border-sidebar-border py-3 ${collapsed ? 'px-1.5' : 'px-2.5'}`}>
         <NavButton keyName="subscription" path="/subscription" Icon={Crown} label={t.nav.subscription} />
         <NavButton keyName="settings" path="/settings" Icon={Settings} label={t.nav.settings} />
 
         <button
-          onClick={onMobileClose}
-          className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-destructive transition-colors hover:bg-destructive/10 ${collapsed ? 'lg:justify-center lg:px-2' : ''}`}
+          className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-destructive transition-colors hover:bg-destructive/10 ${collapsed ? 'justify-center px-2' : ''}`}
         >
           <LogOut className="h-4 w-4 shrink-0" />
-          <span className={`truncate ${collapsed ? 'lg:hidden' : ''}`}>{t.nav.logout}</span>
+          {!collapsed && <span className="truncate">{t.nav.logout}</span>}
         </button>
 
         {/* Collapse toggle - desktop only */}

@@ -60,14 +60,14 @@ const BudgetPage = () => {
   };
 
   return (
-    <div className="space-y-6 animate-in-up">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6 animate-in-up">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold">{t.pages.budget.title}</h2>
+          <h2 className="text-lg sm:text-xl font-semibold">{t.pages.budget.title}</h2>
           <p className="text-sm text-muted-foreground">{t.pages.budget.subtitle}</p>
         </div>
         {availableCategories.length > 0 && (
-          <Button size="sm" className="gap-1.5" onClick={() => { setNewCategory(availableCategories[0]); setOpenAdd(true); }}>
+          <Button size="sm" className="gap-1.5 self-start" onClick={() => { setNewCategory(availableCategories[0]); setOpenAdd(true); }}>
             <Plus className="h-4 w-4" /> {t.common.add}
           </Button>
         )}

@@ -13,9 +13,12 @@ const routeTitles: Record<string, string> = {
   '/accounts': 'accounts',
   '/budget': 'budget',
   '/reports': 'reports',
-  '/ai': 'ai',
   '/settings': 'settings',
   '/subscription': 'subscription',
+  '/commitments': 'commitments',
+  '/open-finance': 'openfinance',
+  '/categories': 'categories',
+  '/payables': 'payables',
 };
 
 export const AppLayout = () => {

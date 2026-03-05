@@ -42,6 +42,20 @@ const CardsPage = () => {
     setOpen(false);
   };
 
+  // Compute usedLimit dynamically from transactions linked to each card
+  const cardUsedLimits = useMemo(() => {
+    const limits: Record<string, number> = {};
+    cards.forEach(card => {
+      // Sum all expense transactions linked to this card that are not yet paid (status === 'planned')
+      // OR that are paid in the current billing cycle
+      const used = transactions
+        .filter(tr => tr.cardId === card.id && tr.type === 'expense')
+        .reduce((sum, tr) => sum + tr.amount, 0);
+      limits[card.id] = used;
+    });
+    return limits;
+  }, [cards, transactions]);
+
   const selectedCardData = selectedCard ? cards.find(c => c.id === selectedCard) : null;
 
   const selectedCardTransactions = useMemo(() => {

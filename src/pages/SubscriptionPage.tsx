@@ -92,7 +92,7 @@ const SubscriptionPage = () => {
       </Card>
 
       {/* Plans */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {plans.map(plan => (
           <Card key={plan.name} className={`relative p-5 card-hover ${plan.popular ? 'border-primary' : ''}`}>
             {plan.popular && <Badge className="absolute -top-2.5 right-4 text-[10px]">Popular</Badge>}

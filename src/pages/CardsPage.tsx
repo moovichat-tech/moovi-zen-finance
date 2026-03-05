@@ -125,8 +125,6 @@ const CardsPage = () => {
                   Disponível: <span className="font-medium text-foreground">{formatCurrency(Math.max(card.limit - usedLimit, 0))}</span>
                 </div>
               </div>
-                </div>
-              </div>
 
               <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
                 <div className="rounded-lg bg-secondary p-2.5">

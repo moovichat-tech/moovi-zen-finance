@@ -1,6 +1,6 @@
 import { useI18n } from '@/i18n/context';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, TrendingUp, TrendingDown, CreditCard, Landmark, Target, BarChart3, Sparkles, Settings, LogOut, Crown, Tag, PanelLeftClose, PanelLeft, ClipboardList, X } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, TrendingDown, CreditCard, Landmark, Target, BarChart3, Settings, LogOut, Crown, Tag, PanelLeftClose, PanelLeft, ClipboardList, X, CalendarDays, Building2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import mooviLogo from '@/assets/moovi-logo.jpeg';
 
@@ -13,8 +13,9 @@ const navItems = [
   { key: 'accounts', path: '/accounts', icon: Landmark },
   { key: 'budget', path: '/budget', icon: Target },
   { key: 'categories', path: '/categories', icon: Tag },
+  { key: 'commitments', path: '/commitments', icon: CalendarDays },
   { key: 'reports', path: '/reports', icon: BarChart3 },
-  { key: 'ai', path: '/ai', icon: Sparkles },
+  { key: 'openfinance', path: '/open-finance', icon: Building2 },
 ] as const;
 
 interface AppSidebarProps { collapsed: boolean; onToggle: () => void; mobileOpen: boolean; onMobileClose: () => void; isDesktop: boolean; }
@@ -29,12 +30,13 @@ export const AppSidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose, isD
     payables: locale === 'pt' ? 'A Pagar/Receber' : locale === 'en' ? 'Payables' : locale === 'es' ? 'Por Pagar' : locale === 'fr' ? 'À Payer' : 'Forderungen',
     cards: t.nav.cards, accounts: t.nav.accounts, budget: t.nav.budget,
     categories: locale === 'pt' ? 'Categorias' : locale === 'en' ? 'Categories' : locale === 'es' ? 'Categorías' : locale === 'fr' ? 'Catégories' : 'Kategorien',
-    reports: t.nav.reports, ai: t.nav.ai,
+    commitments: locale === 'pt' ? 'Compromissos' : locale === 'en' ? 'Commitments' : locale === 'es' ? 'Compromisos' : locale === 'fr' ? 'Engagements' : 'Verpflichtungen',
+    reports: t.nav.reports,
+    openfinance: 'Open Finance',
   };
 
   const handleNavigate = (path: string) => { navigate(path); onMobileClose(); };
 
-  // On mobile always show labels; on desktop respect collapsed
   const showLabels = !isDesktop || !collapsed;
   const sidebarWidth = isDesktop ? (collapsed ? 60 : 208) : 256;
 

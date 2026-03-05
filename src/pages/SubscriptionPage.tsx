@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Crown, Check, Zap, Shield, BarChart3, Bot, AlertTriangle, Heart, Gift, X } from 'lucide-react';
+import { Crown, Check, Zap, Shield, BarChart3, Bot, AlertTriangle, Heart, Gift, X, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 const plans = [
@@ -49,7 +49,7 @@ const cancelReasons = [
 
 const SubscriptionPage = () => {
   const { formatCurrency } = useI18n();
-  const [cancelStep, setCancelStep] = useState(0); // 0 = closed, 1-4 = steps
+  const [cancelStep, setCancelStep] = useState(0);
   const [cancelReason, setCancelReason] = useState('');
 
   const handleStartCancel = () => setCancelStep(1);
@@ -63,6 +63,11 @@ const SubscriptionPage = () => {
   const handleFinalCancel = () => {
     toast.info('Sua assinatura foi cancelada. Você ainda terá acesso até o final do período.');
     handleCancelClose();
+  };
+
+  const handleBack = () => {
+    if (cancelStep <= 1) handleCancelClose();
+    else setCancelStep(cancelStep - 1);
   };
 
   return (
@@ -83,12 +88,7 @@ const SubscriptionPage = () => {
             <p className="text-xs text-muted-foreground">Renovação em 04/04/2026</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Badge className="text-xs">Ativo</Badge>
-          <Button variant="outline" size="sm" className="text-xs text-destructive border-destructive/30 hover:bg-destructive/10" onClick={handleStartCancel}>
-            Cancelar assinatura
-          </Button>
-        </div>
+        <Badge className="text-xs">Ativo</Badge>
       </Card>
 
       {/* Plans */}
@@ -139,6 +139,16 @@ const SubscriptionPage = () => {
         </div>
       </div>
 
+      {/* Cancel subscription - subtle, at the bottom */}
+      <div className="pt-6 border-t border-border">
+        <button
+          onClick={handleStartCancel}
+          className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+        >
+          Cancelar assinatura
+        </button>
+      </div>
+
       {/* Cancellation Flow Dialog */}
       <Dialog open={cancelStep > 0} onOpenChange={(open) => { if (!open) handleCancelClose(); }}>
         <DialogContent className="sm:max-w-md">
@@ -146,10 +156,15 @@ const SubscriptionPage = () => {
           {cancelStep === 1 && (
             <>
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-warning" />
-                  Tem certeza que deseja cancelar?
-                </DialogTitle>
+                <div className="flex items-center gap-2">
+                  <button onClick={handleBack} className="p-1 rounded-md hover:bg-secondary transition-colors">
+                    <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                  <DialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-warning" />
+                    Tem certeza que deseja cancelar?
+                  </DialogTitle>
+                </div>
               </DialogHeader>
               <div className="space-y-4 py-2">
                 <p className="text-sm text-muted-foreground">Ao cancelar, você perderá acesso a:</p>
@@ -177,7 +192,12 @@ const SubscriptionPage = () => {
           {cancelStep === 2 && (
             <>
               <DialogHeader>
-                <DialogTitle>Por que você está saindo?</DialogTitle>
+                <div className="flex items-center gap-2">
+                  <button onClick={handleBack} className="p-1 rounded-md hover:bg-secondary transition-colors">
+                    <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                  <DialogTitle>Por que você está saindo?</DialogTitle>
+                </div>
               </DialogHeader>
               <div className="space-y-2 py-2">
                 <p className="text-sm text-muted-foreground mb-3">Seu feedback nos ajuda a melhorar:</p>
@@ -209,10 +229,15 @@ const SubscriptionPage = () => {
           {cancelStep === 3 && (
             <>
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Gift className="h-5 w-5 text-primary" />
-                  Temos uma oferta especial para você!
-                </DialogTitle>
+                <div className="flex items-center gap-2">
+                  <button onClick={handleBack} className="p-1 rounded-md hover:bg-secondary transition-colors">
+                    <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Gift className="h-5 w-5 text-primary" />
+                    Temos uma oferta especial para você!
+                  </DialogTitle>
+                </div>
               </DialogHeader>
               <div className="space-y-4 py-2">
                 <Card className="p-5 border-primary bg-primary/5">
@@ -242,10 +267,15 @@ const SubscriptionPage = () => {
           {cancelStep === 4 && (
             <>
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 text-destructive">
-                  <AlertTriangle className="h-5 w-5" />
-                  Confirmação final
-                </DialogTitle>
+                <div className="flex items-center gap-2">
+                  <button onClick={handleBack} className="p-1 rounded-md hover:bg-secondary transition-colors">
+                    <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                  <DialogTitle className="flex items-center gap-2 text-destructive">
+                    <AlertTriangle className="h-5 w-5" />
+                    Confirmação final
+                  </DialogTitle>
+                </div>
               </DialogHeader>
               <div className="space-y-4 py-2">
                 <div className="rounded-lg bg-destructive/10 p-4">

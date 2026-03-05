@@ -46,7 +46,7 @@ interface TransactionFormDialogProps {
 }
 
 export function TransactionFormDialog({ type, open, onOpenChange, editingId, initialData }: TransactionFormDialogProps) {
-  const { t, locale, translateRecurrence } = useI18n();
+  const { t, locale, translateRecurrence, formatCurrency } = useI18n();
   const { accounts, cards, categories, addTransaction, updateTransaction } = useData();
 
   const defaultCategory = type === 'income' ? categories.income[0] || '' : categories.expense[0] || '';
@@ -147,7 +147,7 @@ export function TransactionFormDialog({ type, open, onOpenChange, editingId, ini
           {/* Amount + Date */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>{t.common.amount}</Label>
+              <Label>{locale === 'pt' ? 'Valor Total' : locale === 'en' ? 'Total Amount' : locale === 'es' ? 'Valor Total' : locale === 'fr' ? 'Montant Total' : 'Gesamtbetrag'}</Label>
               <Input type="number" min="0" step="0.01" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
             </div>
             <div className="space-y-1.5">

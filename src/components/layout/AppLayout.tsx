@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { AppSidebar } from './AppSidebar';
 import { TopBar } from './TopBar';
@@ -24,6 +24,18 @@ export const AppLayout = () => {
   const [collapsed, setCollapsed] = useState(() => {
     return localStorage.getItem('moovi-sidebar-collapsed') === 'true';
   });
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    setIsDesktop(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
   const navKey = routeTitles[location.pathname] || 'dashboard';
   const title = t.nav[navKey as keyof typeof t.nav] || 'Moovi';
@@ -38,12 +50,13 @@ export const AppLayout = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppSidebar collapsed={collapsed} onToggle={toggleCollapsed} />
-      <div className={`transition-all duration-300 ${collapsed ? 'pl-[60px]' : 'pl-52'}`}>
-        <TopBar title={title} />
-        <main className="p-6">
-          <Outlet />
-        </main>
+      {mobileOpen && (
+        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setMobileOpen(false)} />
+      )}
+      <AppSidebar collapsed={collapsed} onToggle={toggleCollapsed} mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} isDesktop={isDesktop} />
+      <div className="transition-all duration-300" style={{ paddingLeft: isDesktop ? (collapsed ? 60 : 208) : 0 }}>
+        <TopBar title={title} onMenuClick={() => setMobileOpen(true)} />
+        <main className="p-3 sm:p-4 md:p-6"><Outlet /></main>
       </div>
     </div>
   );

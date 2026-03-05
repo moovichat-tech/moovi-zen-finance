@@ -68,7 +68,6 @@ const Dashboard = () => {
     return Object.entries(map).map(([category, data]) => ({ category, ...data }));
   }, [transactions, selectedMonth]);
 
-  // Budget alerts from real budgets, computing spent from transactions
   const budgetAlerts = useMemo(() => {
     return budgets.map(b => {
       const spent = filtered.filter(t => t.type === 'expense' && t.category === b.category).reduce((s, t) => s + t.amount, 0);
@@ -85,23 +84,23 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="space-y-6 animate-in-up">
+    <div className="space-y-4 sm:space-y-6 animate-in-up">
       {/* Quick Entry + Period Filter */}
-      <div className="flex gap-3">
-        <Card className="flex flex-1 items-center gap-3 p-4 card-hover">
-          <Sparkles className="h-5 w-5 text-primary" />
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Card className="flex flex-1 items-center gap-3 p-3 sm:p-4 card-hover">
+          <Sparkles className="h-5 w-5 text-primary shrink-0" />
           <Input
             placeholder={t.dashboard.quickEntryPlaceholder}
             value={quickEntry}
             onChange={(e) => setQuickEntry(e.target.value)}
             className="border-none bg-transparent text-sm shadow-none focus-visible:ring-0"
           />
-          <Button size="sm" className="h-8 gap-1.5 px-3 text-xs">
+          <Button size="sm" className="h-8 gap-1.5 px-3 text-xs shrink-0">
             <Send className="h-3.5 w-3.5" />
           </Button>
         </Card>
         <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-          <SelectTrigger className="h-auto w-40 text-xs"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-auto w-full sm:w-40 text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
             {availableMonths.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
           </SelectContent>
@@ -109,14 +108,14 @@ const Dashboard = () => {
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {statCards.map((stat, i) => (
-          <Card key={i} className="p-5 card-hover" style={{ animationDelay: `${i * 60}ms` }}>
+          <Card key={i} className="p-3 sm:p-5 card-hover" style={{ animationDelay: `${i * 60}ms` }}>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">{stat.label}</span>
+              <span className="text-[11px] sm:text-xs font-medium text-muted-foreground">{stat.label}</span>
               <stat.icon className={`h-4 w-4 ${i === 0 ? 'text-primary' : i === 1 ? 'text-success' : i === 2 ? 'text-destructive' : (stat.positive ? 'text-success' : 'text-destructive')}`} />
             </div>
-            <div className="mt-2 text-2xl font-semibold tracking-tight">
+            <div className="mt-1 sm:mt-2 text-lg sm:text-2xl font-semibold tracking-tight">
               {formatCurrency(stat.value)}
             </div>
           </Card>
@@ -124,9 +123,9 @@ const Dashboard = () => {
       </div>
 
       {/* Full-width Evolution Chart */}
-      <Card className="p-5 card-hover">
-        <h3 className="mb-4 text-sm font-semibold">{t.dashboard.monthlyEvolution}</h3>
-        <ResponsiveContainer width="100%" height={300}>
+      <Card className="p-3 sm:p-5 card-hover">
+        <h3 className="mb-3 sm:mb-4 text-sm font-semibold">{t.dashboard.monthlyEvolution}</h3>
+        <ResponsiveContainer width="100%" height={250}>
           <AreaChart data={monthlyData}>
             <defs>
               <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
@@ -140,7 +139,7 @@ const Dashboard = () => {
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(240, 6%, 92%)" />
             <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: 'var(--font-sans)' }} stroke="hsl(240, 4%, 46%)" />
-            <YAxis tick={{ fontSize: 11, fontFamily: 'var(--font-sans)' }} stroke="hsl(240, 4%, 46%)" />
+            <YAxis tick={{ fontSize: 11, fontFamily: 'var(--font-sans)' }} stroke="hsl(240, 4%, 46%)" width={60} />
             <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(240, 6%, 92%)', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontSize: '12px', fontFamily: 'var(--font-sans)' }} formatter={(value: number) => formatCurrency(value)} />
             <Area type="monotone" dataKey="income" stroke="hsl(152, 60%, 42%)" fill="url(#incomeGrad)" strokeWidth={2} name={t.dashboard.monthIncome} />
             <Area type="monotone" dataKey="expense" stroke="hsl(0, 72%, 51%)" fill="url(#expenseGrad)" strokeWidth={2} name={t.dashboard.monthExpense} />
@@ -149,8 +148,8 @@ const Dashboard = () => {
       </Card>
 
       {/* Second Row: Pie + Comparison + Budget + Accounts */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="p-5 card-hover">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Card className="p-3 sm:p-5 card-hover">
           <h3 className="mb-4 text-sm font-semibold">{t.dashboard.spendingByCategory}</h3>
           <ResponsiveContainer width="100%" height={180}>
             <PieChart>
@@ -173,13 +172,13 @@ const Dashboard = () => {
           </div>
         </Card>
 
-        <Card className="p-5 card-hover">
+        <Card className="p-3 sm:p-5 card-hover">
           <h3 className="mb-4 text-sm font-semibold">{t.dashboard.comparison}</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={comparisonData} barGap={2}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(240, 6%, 92%)" />
               <XAxis dataKey="category" tick={{ fontSize: 10, fontFamily: 'var(--font-sans)' }} stroke="hsl(240, 4%, 46%)" />
-              <YAxis tick={{ fontSize: 10, fontFamily: 'var(--font-sans)' }} stroke="hsl(240, 4%, 46%)" />
+              <YAxis tick={{ fontSize: 10, fontFamily: 'var(--font-sans)' }} stroke="hsl(240, 4%, 46%)" width={50} />
               <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(240, 6%, 92%)', fontSize: '12px', fontFamily: 'var(--font-sans)' }} formatter={(value: number) => formatCurrency(value)} />
               <Bar dataKey="previous" fill="hsl(140, 8%, 80%)" radius={[3, 3, 0, 0]} barSize={16} name={t.dashboard.comparison + ' (anterior)'} />
               <Bar dataKey="current" fill="hsl(145, 63%, 32%)" radius={[3, 3, 0, 0]} barSize={16} name={t.dashboard.comparison + ' (atual)'} />
@@ -188,7 +187,7 @@ const Dashboard = () => {
         </Card>
 
         <div className="space-y-4">
-          <Card className="p-5 card-hover">
+          <Card className="p-3 sm:p-5 card-hover">
             <h3 className="mb-4 text-sm font-semibold">{t.dashboard.budgetAlerts}</h3>
             <div className="space-y-4">
               {budgetAlerts.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">Nenhum alerta</p>}
@@ -210,7 +209,7 @@ const Dashboard = () => {
             </div>
           </Card>
 
-          <Card className="p-5 card-hover">
+          <Card className="p-3 sm:p-5 card-hover">
             <h3 className="mb-3 text-sm font-semibold">{t.dashboard.balanceByAccount}</h3>
             <div className="space-y-2.5">
               {accounts.map((acc, i) => (

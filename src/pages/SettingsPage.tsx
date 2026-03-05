@@ -34,7 +34,7 @@ const SettingsPage = () => {
         <div className="flex items-center gap-2 text-sm font-semibold">
           <User className="h-4 w-4 text-primary" /> Perfil
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label>Nome</Label>
             <Input value={localProfile.name} onChange={e => setLocalProfile({ ...localProfile, name: e.target.value })} />
@@ -56,7 +56,7 @@ const SettingsPage = () => {
         <div className="flex items-center gap-2 text-sm font-semibold">
           <Globe className="h-4 w-4 text-primary" /> {t.common.language} & {t.common.currency}
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label>{t.common.language}</Label>
             <Select value={locale} onValueChange={v => setLocale(v as Locale)}>

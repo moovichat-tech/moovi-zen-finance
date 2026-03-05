@@ -73,7 +73,7 @@ const SubscriptionPage = () => {
       </div>
 
       {/* Current Plan */}
-      <Card className="flex items-center justify-between p-5">
+      <Card className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-5 gap-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
             <Crown className="h-5 w-5 text-primary" />
@@ -92,7 +92,7 @@ const SubscriptionPage = () => {
       </Card>
 
       {/* Plans */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {plans.map(plan => (
           <Card key={plan.name} className={`relative p-5 card-hover ${plan.popular ? 'border-primary' : ''}`}>
             {plan.popular && <Badge className="absolute -top-2.5 right-4 text-[10px]">Popular</Badge>}
@@ -123,7 +123,7 @@ const SubscriptionPage = () => {
       {/* Features */}
       <div>
         <h3 className="mb-3 text-sm font-semibold">Recursos incluídos</h3>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
             { icon: Zap, label: 'IA Inteligente', desc: 'Lançamentos por linguagem natural' },
             { icon: Shield, label: 'Dados Seguros', desc: 'Criptografia end-to-end' },

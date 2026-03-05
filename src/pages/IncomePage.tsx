@@ -73,7 +73,7 @@ const IncomePage = () => {
   }, [transactions]);
 
   const SortableHead = ({ label, field }: { label: string; field: SortKey }) => (
-    <TableHead className="cursor-pointer select-none" onClick={() => toggleSort(field)}>
+    <TableHead className="cursor-pointer select-none whitespace-nowrap" onClick={() => toggleSort(field)}>
       <div className="flex items-center gap-1">
         {label}
         <ArrowUpDown className={`h-3 w-3 ${sortKey === field ? 'text-primary' : 'text-muted-foreground/40'}`} />
@@ -82,39 +82,39 @@ const IncomePage = () => {
   );
 
   return (
-    <div className="space-y-6 animate-in-up">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6 animate-in-up">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold">{t.pages.income.title}</h2>
+          <h2 className="text-lg sm:text-xl font-semibold">{t.pages.income.title}</h2>
           <p className="text-sm text-muted-foreground">{t.pages.income.subtitle}</p>
         </div>
-        <Button size="sm" className="gap-1.5" onClick={openAdd}>
+        <Button size="sm" className="gap-1.5 self-start" onClick={openAdd}>
           <Plus className="h-4 w-4" /> {t.common.add}
         </Button>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="p-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <Card className="p-3 sm:p-4">
           <span className="text-xs font-medium text-muted-foreground">{t.common.received}</span>
-          <div className="mt-1 text-xl font-semibold text-success">{formatCurrency(totalReceived)}</div>
+          <div className="mt-1 text-lg sm:text-xl font-semibold text-success">{formatCurrency(totalReceived)}</div>
         </Card>
-        <Card className="p-4">
+        <Card className="p-3 sm:p-4">
           <span className="text-xs font-medium text-muted-foreground">{t.common.planned}</span>
-          <div className="mt-1 text-xl font-semibold text-muted-foreground">{formatCurrency(totalPlanned)}</div>
+          <div className="mt-1 text-lg sm:text-xl font-semibold text-muted-foreground">{formatCurrency(totalPlanned)}</div>
         </Card>
-        <Card className="p-4">
+        <Card className="p-3 sm:p-4">
           <span className="text-xs font-medium text-muted-foreground">Total</span>
-          <div className="mt-1 text-xl font-semibold">{formatCurrency(totalReceived + totalPlanned)}</div>
+          <div className="mt-1 text-lg sm:text-xl font-semibold">{formatCurrency(totalReceived + totalPlanned)}</div>
         </Card>
       </div>
 
       <div className="flex gap-2 flex-wrap">
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="relative flex-1 min-w-[150px]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder={t.common.search} value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
         <Select value={period} onValueChange={setPeriod}>
-          <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-28 sm:w-32"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{translatePeriod('all')}</SelectItem>
             <SelectItem value="month">{translatePeriod('month')}</SelectItem>
@@ -124,7 +124,7 @@ const IncomePage = () => {
         </Select>
         {period === 'month' && (
           <Select value={filterMonth} onValueChange={setFilterMonth}>
-            <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-28 sm:w-36"><SelectValue /></SelectTrigger>
             <SelectContent>
               {availableMonths.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
             </SelectContent>
@@ -132,7 +132,7 @@ const IncomePage = () => {
         )}
         {period === 'year' && (
           <Select value={filterYear} onValueChange={setFilterYear}>
-            <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-20 sm:w-24"><SelectValue /></SelectTrigger>
             <SelectContent>
               {availableYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
             </SelectContent>
@@ -140,13 +140,13 @@ const IncomePage = () => {
         )}
         {period === 'custom' && (
           <>
-            <DatePicker value={customStart} onChange={setCustomStart} placeholder="Data início" className="w-44" />
-            <DatePicker value={customEnd} onChange={setCustomEnd} placeholder="Data fim" className="w-44" />
+            <DatePicker value={customStart} onChange={setCustomStart} placeholder="Data início" className="w-36 sm:w-44" />
+            <DatePicker value={customEnd} onChange={setCustomEnd} placeholder="Data fim" className="w-36 sm:w-44" />
           </>
         )}
       </div>
 
-      <Card>
+      <Card className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -154,7 +154,7 @@ const IncomePage = () => {
               <SortableHead label={t.common.category} field="category" />
               <SortableHead label={t.common.date} field="date" />
               <SortableHead label={t.common.status} field="status" />
-              <TableHead className="text-right cursor-pointer select-none" onClick={() => toggleSort('amount')}>
+              <TableHead className="text-right cursor-pointer select-none whitespace-nowrap" onClick={() => toggleSort('amount')}>
                 <div className="flex items-center justify-end gap-1">
                   {t.common.amount}
                   <ArrowUpDown className={`h-3 w-3 ${sortKey === 'amount' ? 'text-primary' : 'text-muted-foreground/40'}`} />
@@ -168,21 +168,20 @@ const IncomePage = () => {
               <TableRow key={inc.id}>
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
-                    <ArrowUpRight className="h-3.5 w-3.5 text-success" />
-                    {inc.description}
-                    {inc.installments && <Badge variant="outline" className="text-[10px]">{inc.currentInstallment}/{inc.installments}</Badge>}
-                    {inc.recurrence !== 'once' && !inc.installments && <Badge variant="secondary" className="text-[10px]">{translateRecurrence(inc.recurrence)}</Badge>}
-                    {inc.fixed && <Badge variant="secondary" className="text-[10px]">{t.common.status === 'Status' ? 'fixed' : 'fixa'}</Badge>}
+                    <ArrowUpRight className="h-3.5 w-3.5 text-success shrink-0" />
+                    <span className="truncate max-w-[120px] sm:max-w-none">{inc.description}</span>
+                    {inc.installments && <Badge variant="outline" className="text-[10px] shrink-0">{inc.currentInstallment}/{inc.installments}</Badge>}
+                    {inc.recurrence !== 'once' && !inc.installments && <Badge variant="secondary" className="text-[10px] shrink-0 hidden sm:inline-flex">{translateRecurrence(inc.recurrence)}</Badge>}
                   </div>
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">{inc.category}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">{formatDate(inc.date)}</TableCell>
+                <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{inc.category}</TableCell>
+                <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{formatDate(inc.date)}</TableCell>
                 <TableCell>
                   <Badge variant={inc.status === 'received' ? 'default' : 'secondary'} className="text-[10px]">
                     {inc.status === 'received' ? t.common.received : t.common.planned}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-right font-medium text-success">{formatCurrency(inc.amount)}</TableCell>
+                <TableCell className="text-right font-medium text-success whitespace-nowrap">{formatCurrency(inc.amount)}</TableCell>
                 <TableCell>
                   <div className="flex gap-1">
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(inc)}>

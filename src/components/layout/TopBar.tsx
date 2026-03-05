@@ -1,6 +1,6 @@
 import { useI18n } from '@/i18n/context';
 import { localeNames, localeFlags, type Locale, type Currency } from '@/i18n/translations';
-import { Globe, Coins, Sun, Moon } from 'lucide-react';
+import { Globe, Coins, Sun, Moon, Menu } from 'lucide-react';
 import { useTheme } from '@/hooks/use-theme';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,19 +11,24 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-export const TopBar = ({ title }: { title: string }) => {
+export const TopBar = ({ title, onMenuClick }: { title: string; onMenuClick: () => void }) => {
   const { locale, currency, setLocale, setCurrency } = useI18n();
   const { theme, setTheme } = useTheme();
 
   return (
-    <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-xl">
-      <h1 className="text-lg font-semibold">{title}</h1>
-
+    <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border bg-background/80 px-3 sm:px-6 backdrop-blur-xl">
       <div className="flex items-center gap-2">
+        <Button variant="ghost" size="icon" className="h-8 w-8 lg:hidden" onClick={onMenuClick}>
+          <Menu className="h-5 w-5" />
+        </Button>
+        <h1 className="text-base sm:text-lg font-semibold truncate">{title}</h1>
+      </div>
+
+      <div className="flex items-center gap-1 sm:gap-2">
         <Select value={locale} onValueChange={(v) => setLocale(v as Locale)}>
-          <SelectTrigger className="h-8 w-auto gap-1.5 border-none bg-secondary px-2.5 text-xs font-medium shadow-none">
+          <SelectTrigger className="h-8 w-auto gap-1 sm:gap-1.5 border-none bg-secondary px-1.5 sm:px-2.5 text-xs font-medium shadow-none">
             <Globe className="h-3.5 w-3.5 text-muted-foreground" />
-            <SelectValue />
+            <span className="hidden sm:inline"><SelectValue /></span>
           </SelectTrigger>
           <SelectContent>
             {(Object.entries(localeNames) as [Locale, string][]).map(([key, name]) => (
@@ -35,9 +40,9 @@ export const TopBar = ({ title }: { title: string }) => {
         </Select>
 
         <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
-          <SelectTrigger className="h-8 w-auto gap-1.5 border-none bg-secondary px-2.5 text-xs font-medium shadow-none">
+          <SelectTrigger className="h-8 w-auto gap-1 sm:gap-1.5 border-none bg-secondary px-1.5 sm:px-2.5 text-xs font-medium shadow-none">
             <Coins className="h-3.5 w-3.5 text-muted-foreground" />
-            <SelectValue />
+            <span className="hidden sm:inline"><SelectValue /></span>
           </SelectTrigger>
           <SelectContent>
             {(['BRL', 'USD', 'EUR', 'CHF'] as Currency[]).map((c) => (

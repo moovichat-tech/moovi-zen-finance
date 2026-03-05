@@ -60,32 +60,32 @@ const BudgetPage = () => {
   };
 
   return (
-    <div className="space-y-6 animate-in-up">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6 animate-in-up">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold">{t.pages.budget.title}</h2>
+          <h2 className="text-lg sm:text-xl font-semibold">{t.pages.budget.title}</h2>
           <p className="text-sm text-muted-foreground">{t.pages.budget.subtitle}</p>
         </div>
         {availableCategories.length > 0 && (
-          <Button size="sm" className="gap-1.5" onClick={() => { setNewCategory(availableCategories[0]); setOpenAdd(true); }}>
+          <Button size="sm" className="gap-1.5 self-start" onClick={() => { setNewCategory(availableCategories[0]); setOpenAdd(true); }}>
             <Plus className="h-4 w-4" /> {t.common.add}
           </Button>
         )}
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="p-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <Card className="p-3 sm:p-4">
           <span className="text-xs font-medium text-muted-foreground">Orçamento Total</span>
-          <div className="mt-1 text-xl font-semibold">{formatCurrency(totalLimit)}</div>
+          <div className="mt-1 text-lg sm:text-xl font-semibold">{formatCurrency(totalLimit)}</div>
         </Card>
-        <Card className="p-4">
+        <Card className="p-3 sm:p-4">
           <span className="text-xs font-medium text-muted-foreground">Total Gasto</span>
-          <div className="mt-1 text-xl font-semibold text-destructive">{formatCurrency(totalSpent)}</div>
+          <div className="mt-1 text-lg sm:text-xl font-semibold text-destructive">{formatCurrency(totalSpent)}</div>
         </Card>
-        <Card className="p-4">
+        <Card className="p-3 sm:p-4">
           <span className="text-xs font-medium text-muted-foreground">Disponível</span>
-          <div className="mt-1 text-xl font-semibold text-success">{formatCurrency(totalLimit - totalSpent)}</div>
+          <div className="mt-1 text-lg sm:text-xl font-semibold text-success">{formatCurrency(totalLimit - totalSpent)}</div>
         </Card>
       </div>
 

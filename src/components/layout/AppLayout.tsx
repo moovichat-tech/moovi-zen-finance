@@ -25,11 +25,17 @@ export const AppLayout = () => {
     return localStorage.getItem('moovi-sidebar-collapsed') === 'true';
   });
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
 
-  // Close mobile menu on route change
   useEffect(() => {
-    setMobileOpen(false);
-  }, [location.pathname]);
+    const mq = window.matchMedia('(min-width: 1024px)');
+    setIsDesktop(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
   const navKey = routeTitles[location.pathname] || 'dashboard';
   const title = t.nav[navKey as keyof typeof t.nav] || 'Moovi';
@@ -44,26 +50,13 @@ export const AppLayout = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Mobile overlay */}
       {mobileOpen && (
         <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setMobileOpen(false)} />
       )}
-
-      <AppSidebar
-        collapsed={collapsed}
-        onToggle={toggleCollapsed}
-        mobileOpen={mobileOpen}
-        onMobileClose={() => setMobileOpen(false)}
-      />
-
-      <div
-        className="transition-all duration-300"
-        style={{ paddingLeft: typeof window !== 'undefined' && window.innerWidth >= 1024 ? (collapsed ? 60 : 208) : 0 }}
-      >
+      <AppSidebar collapsed={collapsed} onToggle={toggleCollapsed} mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} isDesktop={isDesktop} />
+      <div className="transition-all duration-300" style={{ paddingLeft: isDesktop ? (collapsed ? 60 : 208) : 0 }}>
         <TopBar title={title} onMenuClick={() => setMobileOpen(true)} />
-        <main className="p-3 sm:p-4 md:p-6">
-          <Outlet />
-        </main>
+        <main className="p-3 sm:p-4 md:p-6"><Outlet /></main>
       </div>
     </div>
   );

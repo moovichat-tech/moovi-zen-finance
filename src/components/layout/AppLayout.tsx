@@ -24,6 +24,7 @@ export const AppLayout = () => {
   const [collapsed, setCollapsed] = useState(() => {
     return localStorage.getItem('moovi-sidebar-collapsed') === 'true';
   });
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const navKey = routeTitles[location.pathname] || 'dashboard';
   const title = t.nav[navKey as keyof typeof t.nav] || 'Moovi';
@@ -38,12 +39,29 @@ export const AppLayout = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppSidebar collapsed={collapsed} onToggle={toggleCollapsed} />
-      <div className={`transition-all duration-300 ${collapsed ? 'pl-[60px]' : 'pl-52'}`}>
-        <TopBar title={title} />
-        <main className="p-6">
-          <Outlet />
-        </main>
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setMobileOpen(false)} />
+      )}
+
+      <AppSidebar
+        collapsed={collapsed}
+        onToggle={toggleCollapsed}
+        mobileOpen={mobileOpen}
+        onMobileClose={() => setMobileOpen(false)}
+      />
+
+      <div className={`transition-all duration-300 lg:${collapsed ? 'pl-[60px]' : 'pl-52'}`} style={{ paddingLeft: undefined }}>
+        <div className={`hidden lg:block`}>
+          <div className={`transition-all duration-300 ${collapsed ? 'pl-[60px]' : 'pl-52'}`}>
+          </div>
+        </div>
+        <div className={`transition-all duration-300 ${collapsed ? 'lg:pl-[60px]' : 'lg:pl-52'}`}>
+          <TopBar title={title} onMenuClick={() => setMobileOpen(true)} />
+          <main className="p-3 sm:p-4 md:p-6">
+            <Outlet />
+          </main>
+        </div>
       </div>
     </div>
   );

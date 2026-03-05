@@ -16,6 +16,7 @@ import {
   PanelLeftClose,
   PanelLeft,
   ClipboardList,
+  X,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import mooviLogo from '@/assets/moovi-logo.jpeg';
@@ -36,9 +37,11 @@ const navItems = [
 interface AppSidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  mobileOpen: boolean;
+  onMobileClose: () => void;
 }
 
-export const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
+export const AppSidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }: AppSidebarProps) => {
   const { t, locale } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
@@ -56,28 +59,35 @@ export const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
     ai: t.nav.ai,
   };
 
+  const handleNavigate = (path: string) => {
+    navigate(path);
+    onMobileClose();
+  };
+
   const NavButton = ({ keyName, path, Icon, label }: { keyName: string; path: string; Icon: React.ElementType; label: string }) => {
     const isActive = location.pathname === path;
     const btn = (
       <button
-        onClick={() => navigate(path)}
+        onClick={() => handleNavigate(path)}
         className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200 ${
           isActive
             ? 'bg-sidebar-accent text-sidebar-accent-foreground'
             : 'text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground'
-        } ${collapsed ? 'justify-center px-2' : ''}`}
+        } ${collapsed ? 'lg:justify-center lg:px-2' : ''}`}
       >
         <Icon className="h-4 w-4 shrink-0" />
-        {!collapsed && <span className="truncate">{label}</span>}
+        <span className={`truncate ${collapsed ? 'lg:hidden' : ''}`}>{label}</span>
       </button>
     );
 
     if (collapsed) {
       return (
-        <Tooltip delayDuration={0}>
-          <TooltipTrigger asChild>{btn}</TooltipTrigger>
-          <TooltipContent side="right" className="text-xs">{label}</TooltipContent>
-        </Tooltip>
+        <span className="hidden lg:block">
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>{btn}</TooltipTrigger>
+            <TooltipContent side="right" className="text-xs">{label}</TooltipContent>
+          </Tooltip>
+        </span>
       );
     }
     return btn;
@@ -85,50 +95,64 @@ export const AppSidebar = ({ collapsed, onToggle }: AppSidebarProps) => {
 
   return (
     <aside
-      className={`fixed left-0 top-0 z-30 flex h-screen flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 ${
-        collapsed ? 'w-[60px]' : 'w-52'
-      }`}
+      className={`fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300
+        ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
+        lg:translate-x-0
+        w-64 lg:${collapsed ? 'w-[60px]' : 'w-52'}
+      `}
+      style={{ width: undefined }}
     >
-      {/* Logo */}
-      <div className={`flex h-14 items-center ${collapsed ? 'justify-center px-2' : 'gap-2.5 px-4'}`}>
-        <img src={mooviLogo} alt="Moovi" className="h-8 w-8 rounded-lg object-cover shrink-0" />
-        {!collapsed && (
-          <span className="text-base font-bold tracking-tight text-sidebar-accent-foreground">Moovi</span>
-        )}
+      {/* Use inline style for lg width since template literals in className don't work well */}
+      <style>{`
+        @media (min-width: 1024px) {
+          aside.sidebar-main { width: ${collapsed ? '60px' : '13rem'} !important; }
+        }
+        @media (max-width: 1023px) {
+          aside.sidebar-main { width: 16rem !important; }
+        }
+      `}</style>
+      <div className="sidebar-main fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300"
+        style={{
+          transform: mobileOpen ? 'translateX(0)' : undefined,
+        }}
+      >
+      </div>
+
+      {/* Logo + Close on mobile */}
+      <div className={`flex h-14 items-center justify-between ${collapsed ? 'lg:justify-center lg:px-2' : ''} gap-2.5 px-4`}>
+        <div className="flex items-center gap-2.5">
+          <img src={mooviLogo} alt="Moovi" className="h-8 w-8 rounded-lg object-cover shrink-0" />
+          <span className={`text-base font-bold tracking-tight text-sidebar-accent-foreground ${collapsed ? 'lg:hidden' : ''}`}>Moovi</span>
+        </div>
+        <button onClick={onMobileClose} className="lg:hidden text-sidebar-foreground">
+          <X className="h-5 w-5" />
+        </button>
       </div>
 
       {/* Navigation */}
-      <nav className={`flex-1 space-y-0.5 py-2 ${collapsed ? 'px-1.5' : 'px-2.5'}`}>
+      <nav className={`flex-1 space-y-0.5 overflow-y-auto py-2 ${collapsed ? 'lg:px-1.5' : ''} px-2.5`}>
         {navItems.map(({ key, path, icon: Icon }) => (
           <NavButton key={key} keyName={key} path={path} Icon={Icon} label={navLabels[key]} />
         ))}
       </nav>
 
       {/* Bottom */}
-      <div className={`space-y-0.5 border-t border-sidebar-border py-3 ${collapsed ? 'px-1.5' : 'px-2.5'}`}>
+      <div className={`space-y-0.5 border-t border-sidebar-border py-3 ${collapsed ? 'lg:px-1.5' : ''} px-2.5`}>
         <NavButton keyName="subscription" path="/subscription" Icon={Crown} label={t.nav.subscription} />
         <NavButton keyName="settings" path="/settings" Icon={Settings} label={t.nav.settings} />
 
-        {collapsed ? (
-          <Tooltip delayDuration={0}>
-            <TooltipTrigger asChild>
-              <button className="flex w-full items-center justify-center rounded-lg px-2 py-2 text-[13px] font-medium text-destructive transition-colors hover:bg-destructive/10">
-                <LogOut className="h-4 w-4 shrink-0" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="text-xs">{t.nav.logout}</TooltipContent>
-          </Tooltip>
-        ) : (
-          <button className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-destructive transition-colors hover:bg-destructive/10">
-            <LogOut className="h-4 w-4 shrink-0" />
-            <span className="truncate">{t.nav.logout}</span>
-          </button>
-        )}
+        <button
+          onClick={onMobileClose}
+          className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-destructive transition-colors hover:bg-destructive/10 ${collapsed ? 'lg:justify-center lg:px-2' : ''}`}
+        >
+          <LogOut className="h-4 w-4 shrink-0" />
+          <span className={`truncate ${collapsed ? 'lg:hidden' : ''}`}>{t.nav.logout}</span>
+        </button>
 
-        {/* Collapse toggle */}
+        {/* Collapse toggle - desktop only */}
         <button
           onClick={onToggle}
-          className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground ${collapsed ? 'justify-center px-2' : ''}`}
+          className={`hidden lg:flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground ${collapsed ? 'justify-center px-2' : ''}`}
         >
           {collapsed ? <PanelLeft className="h-4 w-4 shrink-0" /> : <PanelLeftClose className="h-4 w-4 shrink-0" />}
           {!collapsed && <span className="truncate">Recolher</span>}

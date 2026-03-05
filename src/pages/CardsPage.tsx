@@ -60,22 +60,22 @@ const CardsPage = () => {
   }, [transactions, selectedCard]);
 
   return (
-    <div className="space-y-6 animate-in-up">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6 animate-in-up">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold">{t.pages.cards.title}</h2>
+          <h2 className="text-lg sm:text-xl font-semibold">{t.pages.cards.title}</h2>
           <p className="text-sm text-muted-foreground">{t.pages.cards.subtitle}</p>
         </div>
-        <Button size="sm" className="gap-1.5" onClick={openAdd}>
+        <Button size="sm" className="gap-1.5 self-start" onClick={openAdd}>
           <Plus className="h-4 w-4" /> {t.common.add}
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {cards.map(card => {
           const usagePercent = Math.round((card.usedLimit / card.limit) * 100);
           return (
-            <Card key={card.id} className={`p-5 card-hover ${selectedCard === card.id ? 'border-primary' : ''}`}>
+            <Card key={card.id} className={`p-4 sm:p-5 card-hover ${selectedCard === card.id ? 'border-primary' : ''}`}>
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: card.color + '20' }}>
@@ -134,12 +134,12 @@ const CardsPage = () => {
 
       {/* Selected Card Transactions */}
       {selectedCardData && (
-        <Card className="p-5">
-          <div className="flex items-center justify-between mb-4">
+        <Card className="p-4 sm:p-5">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <h3 className="text-sm font-semibold">Lançamentos — {selectedCardData.name}</h3>
             <div className="flex items-center gap-2">
               <Select value={txFilterMonth} onValueChange={setTxFilterMonth}>
-                <SelectTrigger className="h-7 w-32 text-xs"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-7 w-28 sm:w-32 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
                   {cardTxMonths.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
@@ -157,12 +157,12 @@ const CardsPage = () => {
               {selectedCardTransactions.map(tr => {
                 const isRefund = tr.type === 'income';
                 return (
-                  <div key={tr.id} className="flex items-center justify-between text-xs py-1.5 border-b border-border last:border-0">
-                    <div>
+                  <div key={tr.id} className="flex items-center justify-between text-xs py-1.5 border-b border-border last:border-0 gap-2">
+                    <div className="truncate">
                       <span className="font-medium">{tr.description}</span>
                       <span className="ml-2 text-muted-foreground">{formatDate(tr.date)}</span>
                     </div>
-                    <span className={`font-medium ${isRefund ? 'text-success' : 'text-destructive'}`}>
+                    <span className={`font-medium shrink-0 ${isRefund ? 'text-success' : 'text-destructive'}`}>
                       {isRefund ? '+' : '-'}{formatCurrency(tr.amount)}
                     </span>
                   </div>
@@ -174,7 +174,7 @@ const CardsPage = () => {
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editingCard ? 'Editar' : t.common.add} Cartão</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5"><Label>Nome</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Ex: Nubank Gold" /></div>

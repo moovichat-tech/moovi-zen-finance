@@ -83,15 +83,15 @@ const AccountsPage = () => {
   const totalBalance = accounts.reduce((s, a) => s + a.balance, 0);
 
   return (
-    <div className="space-y-6 animate-in-up">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6 animate-in-up">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold">{t.pages.accounts.title}</h2>
+          <h2 className="text-lg sm:text-xl font-semibold">{t.pages.accounts.title}</h2>
           <p className="text-sm text-muted-foreground">{t.pages.accounts.subtitle}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 self-start">
           <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setOpenTransfer(true)}>
-            <ArrowRightLeft className="h-4 w-4" /> Transferir
+            <ArrowRightLeft className="h-4 w-4" /> <span className="hidden sm:inline">Transferir</span>
           </Button>
           <Button size="sm" className="gap-1.5" onClick={() => { setEditingAccount(null); setForm({ name: '', type: 'checking', balance: '', institution: '', color: 'hsl(234, 62%, 52%)' }); setOpenAdd(true); }}>
             <Plus className="h-4 w-4" /> {t.common.add}
@@ -99,16 +99,16 @@ const AccountsPage = () => {
         </div>
       </div>
 
-      <Card className="p-5">
+      <Card className="p-4 sm:p-5">
         <span className="text-xs font-medium text-muted-foreground">{t.dashboard.totalBalance}</span>
-        <div className="mt-1 text-2xl font-semibold">{formatCurrency(totalBalance)}</div>
+        <div className="mt-1 text-xl sm:text-2xl font-semibold">{formatCurrency(totalBalance)}</div>
       </Card>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {accounts.map(acc => {
           const Icon = typeIcons[acc.type] || Landmark;
           return (
-            <Card key={acc.id} className={`p-5 card-hover ${viewingAccount === acc.id ? 'border-primary' : ''}`}>
+            <Card key={acc.id} className={`p-4 sm:p-5 card-hover ${viewingAccount === acc.id ? 'border-primary' : ''}`}>
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: acc.color + '20' }}>
@@ -144,7 +144,7 @@ const AccountsPage = () => {
 
       {/* Viewing account transactions */}
       {viewingAccount && (
-        <Card className="p-5">
+        <Card className="p-4 sm:p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold">Lançamentos — {accounts.find(a => a.id === viewingAccount)?.name}</h3>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setViewingAccount(null)}>
@@ -156,13 +156,13 @@ const AccountsPage = () => {
           ) : (
             <div className="space-y-2">
               {viewTransactions.map(tr => (
-                <div key={tr.id} className="flex items-center justify-between text-xs py-1.5 border-b border-border last:border-0">
-                  <div>
+                <div key={tr.id} className="flex items-center justify-between text-xs py-1.5 border-b border-border last:border-0 gap-2">
+                  <div className="truncate">
                     <span className="font-medium">{tr.description}</span>
                     <span className="ml-2 text-muted-foreground">{formatDate(tr.date)}</span>
-                    <span className="ml-2 text-muted-foreground">{tr.category}</span>
+                    <span className="ml-2 text-muted-foreground hidden sm:inline">{tr.category}</span>
                   </div>
-                  <span className={`font-medium ${tr.type === 'income' ? 'text-success' : 'text-destructive'}`}>
+                  <span className={`font-medium shrink-0 ${tr.type === 'income' ? 'text-success' : 'text-destructive'}`}>
                     {tr.type === 'income' ? '+' : '-'}{formatCurrency(tr.amount)}
                   </span>
                 </div>
@@ -174,7 +174,7 @@ const AccountsPage = () => {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deletingAccount} onOpenChange={(open) => { if (!open) setDeletingAccount(null); }}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-h-[90vh] overflow-y-auto">
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir conta</AlertDialogTitle>
             <AlertDialogDescription>
@@ -216,7 +216,7 @@ const AccountsPage = () => {
 
       {/* Add/Edit Account Dialog */}
       <Dialog open={openAdd} onOpenChange={setOpenAdd}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editingAccount ? t.common.edit : t.common.add} Conta</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5"><Label>Nome</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
@@ -243,7 +243,7 @@ const AccountsPage = () => {
 
       {/* Transfer Dialog */}
       <Dialog open={openTransfer} onOpenChange={setOpenTransfer}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Transferência entre contas</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">

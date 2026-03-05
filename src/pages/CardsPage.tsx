@@ -179,7 +179,7 @@ const CardsPage = () => {
           <div className="space-y-4">
             <div className="space-y-1.5"><Label>Nome</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Ex: Nubank Gold" /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5"><Label>Últimos 4 dígitos</Label><Input maxLength={4} value={form.lastDigits} onChange={e => setForm({ ...form, lastDigits: e.target.value })} /></div>
+              <div className="space-y-1.5"><Label>Últimos 4 dígitos <span className="text-muted-foreground font-normal">(opcional)</span></Label><Input maxLength={4} value={form.lastDigits} onChange={e => setForm({ ...form, lastDigits: e.target.value })} placeholder="Ex: 4521" /></div>
               <div className="space-y-1.5"><Label>Limite</Label><Input type="number" value={form.limit} onChange={e => setForm({ ...form, limit: e.target.value })} /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">

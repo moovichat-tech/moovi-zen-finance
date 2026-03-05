@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useI18n } from '@/i18n/context';
 import { useData } from '@/store/DataContext';
-import { ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, Sparkles, Send } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, Sparkles, Send, Bot, User } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
@@ -14,14 +14,91 @@ import {
 
 const COLORS = ['hsl(145, 63%, 32%)', 'hsl(152, 60%, 42%)', 'hsl(38, 92%, 50%)', 'hsl(170, 50%, 40%)', 'hsl(200, 70%, 50%)', 'hsl(120, 40%, 55%)'];
 
+// Natural language parser (from AIPage)
+function parseNaturalLanguage(text: string, accountNames: { id: string; name: string }[]) {
+  const lower = text.toLowerCase();
+  let type: 'income' | 'expense' = 'expense';
+  if (lower.includes('recebi') || lower.includes('salário') || lower.includes('freelance') || lower.includes('receita') || lower.includes('ganhei')) type = 'income';
+  const amountMatch = lower.match(/(\d+[.,]?\d*)\s*(reais|real|r\$|brl|dólares|usd|euros|eur)/i) || lower.match(/r\$\s*(\d+[.,]?\d*)/i) || lower.match(/(\d+[.,]?\d*)/);
+  const amount = amountMatch ? parseFloat(amountMatch[1].replace(',', '.')) : 0;
+  const installMatch = lower.match(/(\d+)\s*x|(\d+)\s*parcela|em\s*(\d+)\s*vez/);
+  const installments = installMatch ? parseInt(installMatch[1] || installMatch[2] || installMatch[3]) : undefined;
+  let accountId = '';
+  for (const acc of accountNames) {
+    if (lower.includes(acc.name.toLowerCase())) { accountId = acc.id; break; }
+  }
+  let category = 'Outros';
+  const categoryMap: Record<string, string[]> = {
+    'Alimentação': ['mercado', 'supermercado', 'restaurante', 'ifood', 'lanche', 'padaria', 'café', 'comida', 'almoço', 'jantar'],
+    'Transporte': ['uber', 'taxi', '99', 'gasolina', 'combustível', 'estacionamento'],
+    'Moradia': ['aluguel', 'condomínio', 'luz', 'água', 'gás', 'internet', 'iptu'],
+    'Saúde': ['farmácia', 'médico', 'hospital', 'consulta', 'remédio'],
+    'Lazer': ['netflix', 'cinema', 'spotify', 'jogo', 'bar', 'show', 'viagem'],
+    'Educação': ['curso', 'livro', 'escola', 'faculdade', 'udemy'],
+    'Salário': ['salário', 'pagamento'],
+    'Freelance': ['freelance', 'projeto', 'cliente'],
+    'Investimentos': ['dividendo', 'rendimento', 'investimento'],
+  };
+  for (const [cat, keywords] of Object.entries(categoryMap)) {
+    if (keywords.some(k => lower.includes(k))) { category = cat; break; }
+  }
+  const description = text.replace(/\d+[.,]?\d*\s*(reais|real|r\$|brl|dólares|usd|euros|eur|x|parcela|vez)/gi, '').replace(/r\$\s*\d+[.,]?\d*/gi, '').replace(/(no|na|em|hoje|ontem)\s+\w+/gi, '').trim().slice(0, 40) || text.slice(0, 30);
+  return { type, amount, installments, category, description: description || category, accountId };
+}
+
+interface Message { id: string; role: 'user' | 'assistant'; content: string; }
+
 const Dashboard = () => {
   const { t, formatCurrency } = useI18n();
-  const { transactions, accounts, budgets } = useData();
+  const { transactions, accounts, budgets, addTransaction } = useData();
   const [quickEntry, setQuickEntry] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
+
+  // AI Assistant state
+  const [aiMessages, setAiMessages] = useState<Message[]>([
+    { id: '1', role: 'assistant', content: 'Olá! Envie um comando como:\n• "Mercado 320 reais no Nubank em 3x"\n• "Recebi 8500 salário"\n• "resumo do mês"' },
+  ]);
+  const [aiInput, setAiInput] = useState('');
+
+  const handleAiSend = () => {
+    if (!aiInput.trim()) return;
+    const userMsg: Message = { id: `u-${Date.now()}`, role: 'user', content: aiInput };
+    setAiMessages(prev => [...prev, userMsg]);
+    const lower = aiInput.toLowerCase();
+    let response: string;
+
+    if (lower.includes('resumo') || lower.includes('summary')) {
+      const totalInc = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+      const totalExp = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+      const topExpenses = transactions.filter(t => t.type === 'expense').reduce((map, t) => { map[t.category] = (map[t.category] || 0) + t.amount; return map; }, {} as Record<string, number>);
+      const topList = Object.entries(topExpenses).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([cat, val]) => `  • ${cat}: ${formatCurrency(val)}`).join('\n');
+      response = `📊 Resumo:\n💰 Receitas: ${formatCurrency(totalInc)}\n💸 Despesas: ${formatCurrency(totalExp)}\n📈 Resultado: ${formatCurrency(totalInc - totalExp)}\n\n${topList}`;
+    } else {
+      const accountNames = accounts.map(a => ({ id: a.id, name: a.name }));
+      const parsed = parseNaturalLanguage(aiInput, accountNames);
+      if (parsed.amount > 0) {
+        const finalAccountId = parsed.accountId || accounts[0]?.id || '';
+        const accountName = accounts.find(a => a.id === finalAccountId)?.name || 'padrão';
+        if (parsed.installments && parsed.installments > 1) {
+          const instAmount = parsed.amount / parsed.installments;
+          for (let i = 0; i < parsed.installments; i++) {
+            const date = new Date(); date.setMonth(date.getMonth() + i);
+            addTransaction({ type: parsed.type, description: parsed.description, amount: instAmount, category: parsed.category, date: date.toISOString().split('T')[0], status: i === 0 ? (parsed.type === 'income' ? 'received' : 'paid') : 'planned', recurrence: 'once', accountId: finalAccountId, installments: parsed.installments, currentInstallment: i + 1, tags: [] });
+          }
+        } else {
+          addTransaction({ type: parsed.type, description: parsed.description, amount: parsed.amount, category: parsed.category, date: new Date().toISOString().split('T')[0], status: parsed.type === 'income' ? 'received' : 'paid', recurrence: 'once', accountId: finalAccountId, tags: [] });
+        }
+        response = `✅ Registrado!\n• ${parsed.type === 'income' ? 'Receita' : 'Despesa'}: ${parsed.description}\n• ${formatCurrency(parsed.amount)} — ${accountName}${parsed.installments ? ` (${parsed.installments}x)` : ''}`;
+      } else {
+        response = 'Não entendi. Tente: "Mercado 320 reais" ou "resumo"';
+      }
+    }
+    setTimeout(() => { setAiMessages(prev => [...prev, { id: `a-${Date.now()}`, role: 'assistant', content: response }]); }, 300);
+    setAiInput('');
+  };
 
   const availableMonths = useMemo(() => {
     const set = new Set<string>();
@@ -58,12 +135,10 @@ const Dashboard = () => {
     const prevMonth = `${m === 1 ? y - 1 : y}-${String(m === 1 ? 12 : m - 1).padStart(2, '0')}`;
     const map: Record<string, { current: number; previous: number }> = {};
     transactions.filter(t => t.type === 'expense' && t.date.startsWith(curMonth)).forEach(t => {
-      if (!map[t.category]) map[t.category] = { current: 0, previous: 0 };
-      map[t.category].current += t.amount;
+      if (!map[t.category]) map[t.category] = { current: 0, previous: 0 }; map[t.category].current += t.amount;
     });
     transactions.filter(t => t.type === 'expense' && t.date.startsWith(prevMonth)).forEach(t => {
-      if (!map[t.category]) map[t.category] = { current: 0, previous: 0 };
-      map[t.category].previous += t.amount;
+      if (!map[t.category]) map[t.category] = { current: 0, previous: 0 }; map[t.category].previous += t.amount;
     });
     return Object.entries(map).map(([category, data]) => ({ category, ...data }));
   }, [transactions, selectedMonth]);
@@ -85,20 +160,8 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-in-up">
-      {/* Quick Entry + Period Filter */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <Card className="flex flex-1 items-center gap-3 p-3 sm:p-4 card-hover">
-          <Sparkles className="h-5 w-5 text-primary shrink-0" />
-          <Input
-            placeholder={t.dashboard.quickEntryPlaceholder}
-            value={quickEntry}
-            onChange={(e) => setQuickEntry(e.target.value)}
-            className="border-none bg-transparent text-sm shadow-none focus-visible:ring-0"
-          />
-          <Button size="sm" className="h-8 gap-1.5 px-3 text-xs shrink-0">
-            <Send className="h-3.5 w-3.5" />
-          </Button>
-        </Card>
+      {/* Period Filter */}
+      <div className="flex flex-col sm:flex-row gap-3 justify-end">
         <Select value={selectedMonth} onValueChange={setSelectedMonth}>
           <SelectTrigger className="h-auto w-full sm:w-40 text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -225,6 +288,50 @@ const Dashboard = () => {
           </Card>
         </div>
       </div>
+
+      {/* AI Assistant */}
+      <Card className="p-4 sm:p-5 card-hover">
+        <div className="flex items-center gap-2 mb-3">
+          <Sparkles className="h-5 w-5 text-primary" />
+          <div>
+            <h3 className="text-sm font-semibold">Assistente IA</h3>
+            <p className="text-[11px] text-muted-foreground">Digite um comando para lançar receitas e despesas rapidamente</p>
+          </div>
+        </div>
+
+        <div className="max-h-60 overflow-y-auto space-y-3 mb-3">
+          {aiMessages.map(msg => (
+            <div key={msg.id} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+              {msg.role === 'assistant' && (
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                  <Bot className="h-3.5 w-3.5 text-primary" />
+                </div>
+              )}
+              <div className={`max-w-[80%] rounded-lg px-3 py-2 text-xs ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
+                <p className="whitespace-pre-line">{msg.content}</p>
+              </div>
+              {msg.role === 'user' && (
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary">
+                  <User className="h-3.5 w-3.5 text-primary-foreground" />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="flex gap-2">
+          <Input
+            placeholder='Ex: "Mercado 320 reais no Nubank" ou "resumo"'
+            value={aiInput}
+            onChange={e => setAiInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAiSend()}
+            className="flex-1 text-xs"
+          />
+          <Button size="sm" onClick={handleAiSend} className="gap-1.5 h-9 px-3">
+            <Send className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </Card>
     </div>
   );
 };

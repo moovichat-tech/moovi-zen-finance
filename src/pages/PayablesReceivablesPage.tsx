@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CheckCircle2, Clock, AlertTriangle, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { toast } from 'sonner';
 
 const PayablesReceivablesPage = () => {
   const { t, formatCurrency, formatDate, locale } = useI18n();
@@ -15,19 +16,26 @@ const PayablesReceivablesPage = () => {
   const [filter, setFilter] = useState<'all' | 'overdue' | 'upcoming'>('all');
 
   const labels: Record<string, Record<string, string>> = {
-    pt: { title: 'Contas a Pagar e Receber', subtitle: 'Acompanhe suas pendências financeiras', payable: 'A Pagar', receivable: 'A Receber', all: 'Todos', overdue: 'Vencidos', upcoming: 'A vencer', markPaid: 'Pago', markReceived: 'Recebido', noItems: 'Nenhuma pendência', totalPayable: 'Total a Pagar', totalReceivable: 'Total a Receber', overdueLabel: 'Vencido', dueToday: 'Vence hoje', daysLeft: 'dias restantes', daysOverdue: 'dias em atraso' },
-    en: { title: 'Payables & Receivables', subtitle: 'Track your financial obligations', payable: 'Payable', receivable: 'Receivable', all: 'All', overdue: 'Overdue', upcoming: 'Upcoming', markPaid: 'Paid', markReceived: 'Received', noItems: 'No pending items', totalPayable: 'Total Payable', totalReceivable: 'Total Receivable', overdueLabel: 'Overdue', dueToday: 'Due today', daysLeft: 'days left', daysOverdue: 'days overdue' },
-    es: { title: 'Cuentas por Pagar y Cobrar', subtitle: 'Acompaña tus pendientes financieros', payable: 'Por Pagar', receivable: 'Por Cobrar', all: 'Todos', overdue: 'Vencidos', upcoming: 'Por vencer', markPaid: 'Pagado', markReceived: 'Recibido', noItems: 'Sin pendientes', totalPayable: 'Total por Pagar', totalReceivable: 'Total por Cobrar', overdueLabel: 'Vencido', dueToday: 'Vence hoy', daysLeft: 'días restantes', daysOverdue: 'días en atraso' },
-    fr: { title: 'Comptes à Payer et à Recevoir', subtitle: 'Suivez vos obligations financières', payable: 'À Payer', receivable: 'À Recevoir', all: 'Tous', overdue: 'En retard', upcoming: 'À venir', markPaid: 'Payé', markReceived: 'Reçu', noItems: 'Aucun élément en attente', totalPayable: 'Total à Payer', totalReceivable: 'Total à Recevoir', overdueLabel: 'En retard', dueToday: "Dû aujourd'hui", daysLeft: 'jours restants', daysOverdue: 'jours de retard' },
-    de: { title: 'Forderungen & Verbindlichkeiten', subtitle: 'Verfolgen Sie Ihre finanziellen Verpflichtungen', payable: 'Zu Zahlen', receivable: 'Zu Empfangen', all: 'Alle', overdue: 'Überfällig', upcoming: 'Anstehend', markPaid: 'Bezahlt', markReceived: 'Erhalten', noItems: 'Keine ausstehenden Posten', totalPayable: 'Gesamt zu Zahlen', totalReceivable: 'Gesamt zu Empfangen', overdueLabel: 'Überfällig', dueToday: 'Fällig heute', daysLeft: 'Tage übrig', daysOverdue: 'Tage überfällig' },
+    pt: { title: 'Contas a Pagar e Receber', subtitle: 'Acompanhe suas pendências financeiras', payable: 'A Pagar', receivable: 'A Receber', all: 'Todos', overdue: 'Vencidos', upcoming: 'A vencer', markPaid: 'Pago', markReceived: 'Recebido', noItems: 'Nenhuma pendência', totalPayable: 'Total a Pagar', totalReceivable: 'Total a Receber', overdueLabel: 'Vencido', dueToday: 'Vence hoje', daysLeft: 'dias restantes', daysOverdue: 'dias em atraso', paidSuccess: 'Pagamento concluído com sucesso!', receivedSuccess: 'Recebimento confirmado com sucesso!' },
+    en: { title: 'Payables & Receivables', subtitle: 'Track your financial obligations', payable: 'Payable', receivable: 'Receivable', all: 'All', overdue: 'Overdue', upcoming: 'Upcoming', markPaid: 'Paid', markReceived: 'Received', noItems: 'No pending items', totalPayable: 'Total Payable', totalReceivable: 'Total Receivable', overdueLabel: 'Overdue', dueToday: 'Due today', daysLeft: 'days left', daysOverdue: 'days overdue', paidSuccess: 'Payment completed successfully!', receivedSuccess: 'Receipt confirmed successfully!' },
+    es: { title: 'Cuentas por Pagar y Cobrar', subtitle: 'Acompaña tus pendientes financieros', payable: 'Por Pagar', receivable: 'Por Cobrar', all: 'Todos', overdue: 'Vencidos', upcoming: 'Por vencer', markPaid: 'Pagado', markReceived: 'Recibido', noItems: 'Sin pendientes', totalPayable: 'Total por Pagar', totalReceivable: 'Total por Cobrar', overdueLabel: 'Vencido', dueToday: 'Vence hoy', daysLeft: 'días restantes', daysOverdue: 'días en atraso', paidSuccess: '¡Pago completado!', receivedSuccess: '¡Recibo confirmado!' },
+    fr: { title: 'Comptes à Payer et à Recevoir', subtitle: 'Suivez vos obligations financières', payable: 'À Payer', receivable: 'À Recevoir', all: 'Tous', overdue: 'En retard', upcoming: 'À venir', markPaid: 'Payé', markReceived: 'Reçu', noItems: 'Aucun élément en attente', totalPayable: 'Total à Payer', totalReceivable: 'Total à Recevoir', overdueLabel: 'En retard', dueToday: "Dû aujourd'hui", daysLeft: 'jours restants', daysOverdue: 'jours de retard', paidSuccess: 'Paiement effectué!', receivedSuccess: 'Réception confirmée!' },
+    de: { title: 'Forderungen & Verbindlichkeiten', subtitle: 'Verfolgen Sie Ihre finanziellen Verpflichtungen', payable: 'Zu Zahlen', receivable: 'Zu Empfangen', all: 'Alle', overdue: 'Überfällig', upcoming: 'Anstehend', markPaid: 'Bezahlt', markReceived: 'Erhalten', noItems: 'Keine ausstehenden Posten', totalPayable: 'Gesamt zu Zahlen', totalReceivable: 'Gesamt zu Empfangen', overdueLabel: 'Überfällig', dueToday: 'Fällig heute', daysLeft: 'Tage übrig', daysOverdue: 'Tage überfällig', paidSuccess: 'Zahlung abgeschlossen!', receivedSuccess: 'Empfang bestätigt!' },
   };
   const l = labels[locale] || labels.pt;
 
   const today = new Date().toISOString().split('T')[0];
 
   const pendingTransactions = useMemo(() => {
-    return transactions.filter(tr => tr.status === 'planned').sort((a, b) => a.date.localeCompare(b.date));
-  }, [transactions]);
+    return transactions.filter(tr => tr.status === 'planned').sort((a, b) => {
+      const aOverdue = a.date < today;
+      const bOverdue = b.date < today;
+      // Overdue items first
+      if (aOverdue && !bOverdue) return -1;
+      if (!aOverdue && bOverdue) return 1;
+      return a.date.localeCompare(b.date);
+    });
+  }, [transactions, today]);
 
   const getFilteredItems = (type: 'expense' | 'income') => {
     let items = pendingTransactions.filter(tr => tr.type === type);
@@ -52,7 +60,15 @@ const PayablesReceivablesPage = () => {
   };
 
   const markAsCompleted = (tr: Transaction) => {
-    updateTransaction(tr.id, { status: tr.type === 'income' ? 'received' : 'paid' });
+    const newStatus = tr.type === 'income' ? 'received' : 'paid';
+    updateTransaction(tr.id, { status: newStatus });
+    toast.success(
+      tr.type === 'income' ? l.receivedSuccess : l.paidSuccess,
+      {
+        description: `${tr.description} — ${formatCurrency(tr.amount)}`,
+        position: 'bottom-right',
+      }
+    );
   };
 
   const renderTable = (items: Transaction[], type: 'expense' | 'income') => (
@@ -71,17 +87,19 @@ const PayablesReceivablesPage = () => {
         <TableBody>
           {items.map(tr => {
             const days = getDaysInfo(tr.date);
+            const isOverdue = tr.date < today;
             return (
-              <TableRow key={tr.id}>
+              <TableRow key={tr.id} className={isOverdue ? 'bg-destructive/5' : ''}>
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
-                    {type === 'expense' ? <ArrowDownRight className="h-3.5 w-3.5 text-destructive shrink-0" /> : <ArrowUpRight className="h-3.5 w-3.5 text-success shrink-0" />}
-                    <span className="truncate max-w-[100px] sm:max-w-none">{tr.description}</span>
+                    {type === 'expense' ? <ArrowDownRight className={`h-3.5 w-3.5 shrink-0 ${isOverdue ? 'text-destructive' : 'text-destructive'}`} /> : <ArrowUpRight className={`h-3.5 w-3.5 shrink-0 ${isOverdue ? 'text-destructive' : 'text-success'}`} />}
+                    <span className={`truncate max-w-[100px] sm:max-w-none ${isOverdue ? 'text-destructive' : ''}`}>{tr.description}</span>
+                    {isOverdue && <Badge variant="destructive" className="text-[9px] px-1 py-0 shrink-0">ATRASADO</Badge>}
                     {tr.installments && <Badge variant="outline" className="text-[10px] shrink-0">{tr.currentInstallment}/{tr.installments}</Badge>}
                   </div>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">{tr.category}</TableCell>
-                <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{formatDate(tr.date)}</TableCell>
+                <TableCell className={`text-sm whitespace-nowrap ${isOverdue ? 'text-destructive' : 'text-muted-foreground'}`}>{formatDate(tr.date)}</TableCell>
                 <TableCell className={`text-right font-medium whitespace-nowrap ${type === 'expense' ? 'text-destructive' : 'text-success'}`}>
                   {type === 'expense' ? '-' : '+'}{formatCurrency(tr.amount)}
                 </TableCell>

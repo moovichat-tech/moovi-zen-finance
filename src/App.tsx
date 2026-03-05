@@ -14,11 +14,12 @@ import CardsPage from "@/pages/CardsPage";
 import AccountsPage from "@/pages/AccountsPage";
 import BudgetPage from "@/pages/BudgetPage";
 import ReportsPage from "@/pages/ReportsPage";
-import AIPage from "@/pages/AIPage";
 import SettingsPage from "@/pages/SettingsPage";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import CategoriesPage from "@/pages/CategoriesPage";
 import PayablesReceivablesPage from "@/pages/PayablesReceivablesPage";
+import CommitmentsPage from "@/pages/CommitmentsPage";
+import OpenFinancePage from "@/pages/OpenFinancePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,11 +42,12 @@ const App = () => (
                   <Route path="/accounts" element={<AccountsPage />} />
                   <Route path="/budget" element={<BudgetPage />} />
                   <Route path="/reports" element={<ReportsPage />} />
-                  <Route path="/ai" element={<AIPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/subscription" element={<SubscriptionPage />} />
                   <Route path="/categories" element={<CategoriesPage />} />
                   <Route path="/payables" element={<PayablesReceivablesPage />} />
+                  <Route path="/commitments" element={<CommitmentsPage />} />
+                  <Route path="/open-finance" element={<OpenFinancePage />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>

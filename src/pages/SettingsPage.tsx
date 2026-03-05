@@ -40,8 +40,8 @@ const SettingsPage = () => {
             <Input value={localProfile.name} onChange={e => setLocalProfile({ ...localProfile, name: e.target.value })} />
           </div>
           <div className="space-y-1.5">
-            <Label>Telefone</Label>
-            <Input value={localProfile.phone} onChange={e => setLocalProfile({ ...localProfile, phone: e.target.value })} />
+            <Label className="text-muted-foreground">Telefone</Label>
+            <Input value={localProfile.phone} disabled className="opacity-60 cursor-not-allowed" />
           </div>
         </div>
         <div className="space-y-1.5">

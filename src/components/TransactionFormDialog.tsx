@@ -46,7 +46,7 @@ interface TransactionFormDialogProps {
 }
 
 export function TransactionFormDialog({ type, open, onOpenChange, editingId, initialData }: TransactionFormDialogProps) {
-  const { t, locale, translateRecurrence } = useI18n();
+  const { t, locale, translateRecurrence, formatCurrency } = useI18n();
   const { accounts, cards, categories, addTransaction, updateTransaction } = useData();
 
   const defaultCategory = type === 'income' ? categories.income[0] || '' : categories.expense[0] || '';

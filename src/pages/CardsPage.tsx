@@ -87,7 +87,8 @@ const CardsPage = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {cards.map(card => {
-          const usagePercent = Math.round((card.usedLimit / card.limit) * 100);
+          const usedLimit = cardUsedLimits[card.id] || 0;
+          const usagePercent = card.limit > 0 ? Math.round((usedLimit / card.limit) * 100) : 0;
           return (
             <Card key={card.id} className={`p-4 sm:p-5 card-hover ${selectedCard === card.id ? 'border-primary' : ''}`}>
               <div className="flex items-start justify-between">
@@ -97,7 +98,7 @@ const CardsPage = () => {
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold">{card.name}</h3>
-                    <p className="text-xs text-muted-foreground">•••• {card.lastDigits}</p>
+                    {card.lastDigits && <p className="text-xs text-muted-foreground">•••• {card.lastDigits}</p>}
                   </div>
                 </div>
                 <div className="flex gap-1">
@@ -115,10 +116,15 @@ const CardsPage = () => {
                   <span className="text-muted-foreground">Limite usado</span>
                   <span className={`font-medium ${usagePercent > 80 ? 'text-destructive' : ''}`}>{usagePercent}%</span>
                 </div>
-                <Progress value={usagePercent} className="h-1.5" />
+                <Progress value={Math.min(usagePercent, 100)} className="h-1.5" />
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{formatCurrency(card.usedLimit)}</span>
+                  <span>{formatCurrency(usedLimit)}</span>
                   <span>{formatCurrency(card.limit)}</span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Disponível: <span className="font-medium text-foreground">{formatCurrency(Math.max(card.limit - usedLimit, 0))}</span>
+                </div>
+              </div>
                 </div>
               </div>
 

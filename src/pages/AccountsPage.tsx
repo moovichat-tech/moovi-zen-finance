@@ -39,11 +39,12 @@ const AccountsPage = () => {
 
   const handleAdd = () => {
     if (!form.name || !form.balance) return;
+    const institution = form.institution || form.name;
     if (editingAccount) {
-      updateAccount(editingAccount, { name: form.name, type: form.type, balance: parseFloat(form.balance), institution: form.institution, color: form.color });
+      updateAccount(editingAccount, { name: form.name, type: form.type, balance: parseFloat(form.balance), institution, color: form.color });
       setEditingAccount(null);
     } else {
-      addAccount({ name: form.name, type: form.type, balance: parseFloat(form.balance), institution: form.institution, color: form.color });
+      addAccount({ name: form.name, type: form.type, balance: parseFloat(form.balance), institution, color: form.color });
     }
     setOpenAdd(false);
     setForm({ name: '', type: 'checking', balance: '', institution: '', color: 'hsl(234, 62%, 52%)' });

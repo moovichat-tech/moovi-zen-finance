@@ -123,7 +123,7 @@ const SubscriptionPage = () => {
       {/* Features */}
       <div>
         <h3 className="mb-3 text-sm font-semibold">Recursos incluídos</h3>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
             { icon: Zap, label: 'IA Inteligente', desc: 'Lançamentos por linguagem natural' },
             { icon: Shield, label: 'Dados Seguros', desc: 'Criptografia end-to-end' },

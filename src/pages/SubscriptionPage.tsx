@@ -73,7 +73,7 @@ const SubscriptionPage = () => {
       </div>
 
       {/* Current Plan */}
-      <Card className="flex items-center justify-between p-5">
+      <Card className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-5 gap-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
             <Crown className="h-5 w-5 text-primary" />

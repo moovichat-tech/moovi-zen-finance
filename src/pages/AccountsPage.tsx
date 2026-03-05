@@ -219,7 +219,7 @@ const AccountsPage = () => {
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editingAccount ? t.common.edit : t.common.add} Conta</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-1.5"><Label>Nome</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+            <div className="space-y-1.5"><Label>Nome / Instituição</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value, institution: e.target.value })} placeholder="Ex: Nubank, Itaú, Wise" /></div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Tipo</Label>
@@ -232,7 +232,6 @@ const AccountsPage = () => {
               </div>
               <div className="space-y-1.5"><Label>Saldo</Label><Input type="number" value={form.balance} onChange={e => setForm({ ...form, balance: e.target.value })} /></div>
             </div>
-            <div className="space-y-1.5"><Label>Instituição</Label><Input value={form.institution} onChange={e => setForm({ ...form, institution: e.target.value })} /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenAdd(false)}>{t.common.cancel}</Button>

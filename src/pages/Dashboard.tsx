@@ -160,6 +160,42 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-in-up">
+      {/* AI Quick Command Bar */}
+      <Card className="p-3 sm:p-4 border-primary/20 bg-primary/5">
+        <div className="flex items-center gap-2 mb-2">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <span className="text-xs font-semibold text-foreground">Dê seu comando para o Moovi</span>
+        </div>
+        <div className="flex gap-2">
+          <Input
+            placeholder='Ex: "Mercado 320 reais no Nubank" ou "resumo do mês"'
+            value={aiInput}
+            onChange={e => setAiInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAiSend()}
+            className="flex-1 text-xs h-9"
+          />
+          <Button size="sm" onClick={handleAiSend} className="gap-1.5 h-9 px-3">
+            <Send className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+        {aiMessages.length > 1 && (
+          <div className="mt-2 max-h-40 overflow-y-auto space-y-2">
+            {aiMessages.slice(-4).map(msg => (
+              <div key={msg.id} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+                {msg.role === 'assistant' && (
+                  <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                    <Bot className="h-3 w-3 text-primary" />
+                  </div>
+                )}
+                <div className={`max-w-[80%] rounded-lg px-2.5 py-1.5 text-[11px] ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
+                  <p className="whitespace-pre-line">{msg.content}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
       {/* Period Filter */}
       <div className="flex flex-col sm:flex-row gap-3 justify-end">
         <Select value={selectedMonth} onValueChange={setSelectedMonth}>
@@ -289,49 +325,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* AI Assistant */}
-      <Card className="p-4 sm:p-5 card-hover">
-        <div className="flex items-center gap-2 mb-3">
-          <Sparkles className="h-5 w-5 text-primary" />
-          <div>
-            <h3 className="text-sm font-semibold">Assistente IA</h3>
-            <p className="text-[11px] text-muted-foreground">Digite um comando para lançar receitas e despesas rapidamente</p>
-          </div>
-        </div>
-
-        <div className="max-h-60 overflow-y-auto space-y-3 mb-3">
-          {aiMessages.map(msg => (
-            <div key={msg.id} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : ''}`}>
-              {msg.role === 'assistant' && (
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/10">
-                  <Bot className="h-3.5 w-3.5 text-primary" />
-                </div>
-              )}
-              <div className={`max-w-[80%] rounded-lg px-3 py-2 text-xs ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
-                <p className="whitespace-pre-line">{msg.content}</p>
-              </div>
-              {msg.role === 'user' && (
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary">
-                  <User className="h-3.5 w-3.5 text-primary-foreground" />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        <div className="flex gap-2">
-          <Input
-            placeholder='Ex: "Mercado 320 reais no Nubank" ou "resumo"'
-            value={aiInput}
-            onChange={e => setAiInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAiSend()}
-            className="flex-1 text-xs"
-          />
-          <Button size="sm" onClick={handleAiSend} className="gap-1.5 h-9 px-3">
-            <Send className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      </Card>
     </div>
   );
 };

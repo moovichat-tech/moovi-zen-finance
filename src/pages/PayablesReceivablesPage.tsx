@@ -67,6 +67,12 @@ const PayablesReceivablesPage = () => {
       {
         description: `${tr.description} — ${formatCurrency(tr.amount)}`,
         position: 'bottom-right',
+        style: {
+          backgroundColor: 'hsl(152, 60%, 42%)',
+          color: '#fff',
+          border: 'none',
+        },
+        descriptionClassName: 'text-white/90',
       }
     );
   };

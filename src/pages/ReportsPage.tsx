@@ -65,9 +65,10 @@ const ReportsPage = () => {
     filteredTransactions.forEach(tr => {
       const acc = accounts.find(a => a.id === tr.accountId);
       const name = acc?.name || 'Desconhecida';
-      if (!map[tr.accountId]) map[tr.accountId] = { income: 0, expense: 0, name };
-      if (tr.type === 'income') map[tr.accountId].income += tr.amount;
-      else map[tr.accountId].expense += tr.amount;
+      const key = acc?.id || '__unknown__';
+      if (!map[key]) map[key] = { income: 0, expense: 0, name };
+      if (tr.type === 'income') map[key].income += tr.amount;
+      else map[key].expense += tr.amount;
     });
     return Object.values(map);
   }, [filteredTransactions, accounts]);

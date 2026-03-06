@@ -204,18 +204,20 @@ export function TransactionFormDialog({ type, open, onOpenChange, editingId, ini
             </div>
           </div>
 
-          {/* Card + Installments (both available for income and expense) */}
+          {/* Card + Installments (expense only for card) */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>{l.card}</Label>
-              <Select value={form.cardId || 'none'} onValueChange={v => setForm({ ...form, cardId: v === 'none' ? '' : v })}>
-                <SelectTrigger><SelectValue placeholder={l.noCard} /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">{l.noCard}</SelectItem>
-                  {cards.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
+            {type === 'expense' && (
+              <div className="space-y-1.5">
+                <Label>{l.card}</Label>
+                <Select value={form.cardId || 'none'} onValueChange={v => setForm({ ...form, cardId: v === 'none' ? '' : v })}>
+                  <SelectTrigger><SelectValue placeholder={l.noCard} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{l.noCard}</SelectItem>
+                    {cards.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             {!editingId && (
               <div className="space-y-1.5">
                 <Label>{l.installments}</Label>
@@ -224,11 +226,13 @@ export function TransactionFormDialog({ type, open, onOpenChange, editingId, ini
             )}
           </div>
 
-          {/* Fixed toggle */}
-          <div className="flex items-center gap-3">
-            <Switch checked={form.fixed} onCheckedChange={v => setForm({ ...form, fixed: v })} />
-            <Label>{type === 'income' ? l.fixedIncome : l.fixedExpense}</Label>
-          </div>
+          {/* Fixed toggle (expense only) */}
+          {type === 'expense' && (
+            <div className="flex items-center gap-3">
+              <Switch checked={form.fixed} onCheckedChange={v => setForm({ ...form, fixed: v })} />
+              <Label>{l.fixedExpense}</Label>
+            </div>
+          )}
 
           {/* Tags */}
           <div className="space-y-1.5">

@@ -292,7 +292,7 @@ const SubscriptionPage = () => {
                 <Button className="w-full gap-2" onClick={handleCancelClose}>
                   <Heart className="h-4 w-4" /> Não, quero continuar usando
                 </Button>
-                <Button variant="destructive" className="w-full text-xs" onClick={handleFinalCancel}>
+                <Button variant="ghost" className="w-full text-muted-foreground text-xs" onClick={handleFinalCancel}>
                   Cancelar definitivamente minha assinatura
                 </Button>
               </DialogFooter>

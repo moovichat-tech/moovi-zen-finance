@@ -275,10 +275,10 @@ const Dashboard = () => {
           <h3 className="mb-4 text-sm font-semibold">{t.dashboard.comparison}</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={comparisonData} barGap={2}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(240, 6%, 92%)" />
-              <XAxis dataKey="category" tick={{ fontSize: 10, fontFamily: 'var(--font-sans)' }} stroke="hsl(240, 4%, 46%)" />
-              <YAxis tick={{ fontSize: 10, fontFamily: 'var(--font-sans)' }} stroke="hsl(240, 4%, 46%)" width={50} />
-              <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(240, 6%, 92%)', fontSize: '12px', fontFamily: 'var(--font-sans)' }} formatter={(value: number) => formatCurrency(value)} />
+              <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border/30" strokeOpacity={0.3} />
+              <XAxis dataKey="category" tick={{ fontSize: 10, fontFamily: 'var(--font-sans)' }} stroke="currentColor" className="text-muted-foreground" />
+              <YAxis tick={{ fontSize: 10, fontFamily: 'var(--font-sans)' }} stroke="currentColor" className="text-muted-foreground" width={50} />
+              <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--foreground))', fontSize: '12px', fontFamily: 'var(--font-sans)' }} formatter={(value: number) => formatCurrency(value)} />
               <Bar dataKey="previous" fill="hsl(140, 8%, 80%)" radius={[3, 3, 0, 0]} barSize={16} name={t.dashboard.comparison + ' (anterior)'} />
               <Bar dataKey="current" fill="hsl(145, 63%, 32%)" radius={[3, 3, 0, 0]} barSize={16} name={t.dashboard.comparison + ' (atual)'} />
             </BarChart>

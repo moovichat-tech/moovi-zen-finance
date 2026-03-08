@@ -21,6 +21,8 @@ interface Commitment {
   id: string;
   title: string;
   date: string;
+  time?: string;
+  recurrence: 'once' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly';
   type: 'financial' | 'personal';
   notes?: string;
 }

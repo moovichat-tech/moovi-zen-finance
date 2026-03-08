@@ -49,10 +49,10 @@ export const AppSidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose, isD
   const showLabels = !isDesktop || !collapsed;
   const sidebarWidth = isDesktop ? (collapsed ? 60 : 208) : 256;
 
-  const NavButton = ({ keyName, path, Icon, label }: { keyName: string; path: string; Icon: React.ElementType; label: string }) => {
-    const isActive = location.pathname === path;
+  const NavButton = ({ keyName, path, Icon, label, external }: { keyName: string; path: string; Icon: React.ElementType; label: string; external?: string }) => {
+    const isActive = !external && location.pathname === path;
     const btn = (
-      <button onClick={() => handleNavigate(path)} className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200 ${isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground'} ${!showLabels ? 'justify-center px-2' : ''}`}>
+      <button onClick={() => handleNavigate(path, external)} className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200 ${isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground'} ${!showLabels ? 'justify-center px-2' : ''}`}>
         <Icon className="h-4 w-4 shrink-0" />
         {showLabels && <span className="truncate">{label}</span>}
       </button>

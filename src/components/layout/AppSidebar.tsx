@@ -34,9 +34,17 @@ export const AppSidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose, isD
     commitments: locale === 'pt' ? 'Compromissos' : locale === 'en' ? 'Commitments' : locale === 'es' ? 'Compromisos' : locale === 'fr' ? 'Engagements' : 'Verpflichtungen',
     reports: t.nav.reports,
     openfinance: 'Open Finance',
+    investments: locale === 'pt' ? 'Investimentos' : locale === 'en' ? 'Investments' : locale === 'es' ? 'Inversiones' : locale === 'fr' ? 'Investissements' : 'Investitionen',
   };
 
-  const handleNavigate = (path: string) => { navigate(path); onMobileClose(); };
+  const handleNavigate = (path: string, external?: string) => {
+    if (external) {
+      window.open(external, '_blank', 'noopener,noreferrer');
+    } else {
+      navigate(path);
+    }
+    onMobileClose();
+  };
 
   const showLabels = !isDesktop || !collapsed;
   const sidebarWidth = isDesktop ? (collapsed ? 60 : 208) : 256;

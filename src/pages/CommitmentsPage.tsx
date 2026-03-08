@@ -94,6 +94,8 @@ const CommitmentsPage = () => {
       id: c.id,
       title: c.title,
       date: c.date,
+      time: c.time,
+      recurrence: c.recurrence,
       type: 'personal' as const,
       notes: c.notes,
     }));

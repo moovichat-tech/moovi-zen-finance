@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Plus, Trash2, Pencil, Search, ArrowDownRight, ArrowUpDown } from 'lucide-react';
 import { TransactionFormDialog, useTransactionForm } from '@/components/TransactionFormDialog';
 import { DatePicker } from '@/components/DatePicker';
+import { MonthYearPicker } from '@/components/MonthYearPicker';
 
 type SortKey = 'description' | 'category' | 'date' | 'amount' | 'status';
 
@@ -125,12 +126,7 @@ const ExpensesPage = () => {
           </SelectContent>
         </Select>
         {period === 'month' && (
-          <Select value={filterMonth} onValueChange={setFilterMonth}>
-            <SelectTrigger className="w-28 sm:w-36"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {availableMonths.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <MonthYearPicker value={filterMonth} onChange={setFilterMonth} availableMonths={availableMonths} />
         )}
         {period === 'year' && (
           <Select value={filterYear} onValueChange={setFilterYear}>

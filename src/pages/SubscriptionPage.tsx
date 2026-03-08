@@ -4,8 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Crown, Check, Zap, Shield, BarChart3, Bot, AlertTriangle, Heart, Gift, X, ArrowLeft } from 'lucide-react';
+import { Crown, Check, Zap, Shield, BarChart3, Bot, AlertTriangle, Heart, Gift, X, ArrowLeft, MessageCircle, HelpCircle, DollarSign, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 
 const plans = [
@@ -39,13 +38,53 @@ const plans = [
 ];
 
 const cancelReasons = [
-  'Estou usando outra ferramenta',
-  'Achei caro para meu uso',
-  'Não uso o suficiente',
-  'Faltam funcionalidades que preciso',
-  'Problemas técnicos',
-  'Outro motivo',
+  { id: 'other-tool', label: 'Estou usando outra ferramenta', icon: MessageCircle },
+  { id: 'expensive', label: 'Achei caro para meu uso', icon: DollarSign },
+  { id: 'not-enough', label: 'Não uso o suficiente', icon: HelpCircle },
+  { id: 'missing-features', label: 'Faltam funcionalidades que preciso', icon: Wrench },
+  { id: 'technical', label: 'Problemas técnicos', icon: AlertTriangle },
+  { id: 'other', label: 'Outro motivo', icon: MessageCircle },
 ];
+
+// Resolution cards based on reason
+const resolutionCards: Record<string, { title: string; description: string; offer?: string; cta: string }> = {
+  'other-tool': {
+    title: '🔄 Vamos comparar?',
+    description: 'Gostaríamos de entender melhor sua necessidade. O Moovi possui IA integrada, relatórios avançados e exportação completa. Que tal um desconto exclusivo para continuar?',
+    offer: '30% OFF por 6 meses',
+    cta: 'Aceitar desconto e continuar',
+  },
+  'expensive': {
+    title: '💰 Temos uma oferta especial!',
+    description: 'Sabemos que o preço importa. Por isso, preparamos um desconto exclusivo para você continuar aproveitando todas as funcionalidades.',
+    offer: '50% OFF por 3 meses',
+    cta: 'Aceitar oferta e continuar',
+  },
+  'not-enough': {
+    title: '📱 Você sabia?',
+    description: 'O Moovi tem funcionalidades que você talvez ainda não conheça: assistente IA, lançamentos por comando, relatórios detalhados, orçamentos automáticos e muito mais!',
+    offer: '2 meses grátis para explorar',
+    cta: 'Aceitar e descobrir mais',
+  },
+  'missing-features': {
+    title: '🚀 Sua opinião é valiosa!',
+    description: 'Estamos constantemente evoluindo. Conte-nos quais funcionalidades faltam e teremos prioridade em implementá-las. Enquanto isso, aceite nosso desconto!',
+    offer: '40% OFF por 3 meses',
+    cta: 'Aceitar e enviar sugestões',
+  },
+  'technical': {
+    title: '🔧 Vamos resolver juntos!',
+    description: 'Lamentamos pelos problemas técnicos. Nossa equipe de suporte está pronta para ajudar. Vamos agendar um atendimento prioritário para resolver tudo?',
+    offer: 'Suporte VIP + 1 mês grátis',
+    cta: 'Agendar suporte e continuar',
+  },
+  'other': {
+    title: '💜 Não queremos te perder!',
+    description: 'Seja qual for o motivo, gostaríamos de oferecer um benefício especial para que você continue fazendo parte da família Moovi.',
+    offer: '50% OFF por 3 meses',
+    cta: 'Aceitar oferta e continuar',
+  },
+};
 
 const SubscriptionPage = () => {
   const { formatCurrency } = useI18n();
@@ -55,8 +94,9 @@ const SubscriptionPage = () => {
   const handleStartCancel = () => setCancelStep(1);
   const handleCancelClose = () => { setCancelStep(0); setCancelReason(''); };
 
-  const handleAcceptDiscount = () => {
-    toast.success('🎉 Desconto de 50% aplicado por 3 meses! Obrigado por ficar conosco.');
+  const handleAcceptOffer = () => {
+    const resolution = resolutionCards[cancelReason];
+    toast.success(`🎉 ${resolution?.offer || 'Desconto'} aplicado! Obrigado por ficar conosco.`);
     handleCancelClose();
   };
 
@@ -68,6 +108,11 @@ const SubscriptionPage = () => {
   const handleBack = () => {
     if (cancelStep <= 1) handleCancelClose();
     else setCancelStep(cancelStep - 1);
+  };
+
+  const handleReasonSelect = (reasonId: string) => {
+    setCancelReason(reasonId);
+    setCancelStep(3); // Go directly to resolution card
   };
 
   return (
@@ -139,7 +184,7 @@ const SubscriptionPage = () => {
         </div>
       </div>
 
-      {/* Cancel subscription - subtle, at the bottom */}
+      {/* Cancel subscription */}
       <div className="pt-6 border-t border-border">
         <button
           onClick={handleStartCancel}
@@ -188,7 +233,7 @@ const SubscriptionPage = () => {
             </>
           )}
 
-          {/* Step 2: Why? */}
+          {/* Step 2: Why? — clicking a reason goes to resolution */}
           {cancelStep === 2 && (
             <>
               <DialogHeader>
@@ -202,59 +247,54 @@ const SubscriptionPage = () => {
               <div className="space-y-2 py-2">
                 <p className="text-sm text-muted-foreground mb-3">Seu feedback nos ajuda a melhorar:</p>
                 {cancelReasons.map(reason => (
-                  <label key={reason} className="flex items-center gap-3 p-2.5 rounded-lg border border-border cursor-pointer hover:bg-secondary/50 transition-colors">
-                    <input
-                      type="radio"
-                      name="reason"
-                      checked={cancelReason === reason}
-                      onChange={() => setCancelReason(reason)}
-                      className="accent-primary"
-                    />
-                    <span className="text-sm">{reason}</span>
-                  </label>
+                  <button
+                    key={reason.id}
+                    className="flex items-center gap-3 w-full p-3 rounded-lg border border-border cursor-pointer hover:bg-secondary/50 transition-colors text-left"
+                    onClick={() => handleReasonSelect(reason.id)}
+                  >
+                    <reason.icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-sm">{reason.label}</span>
+                  </button>
                 ))}
               </div>
               <DialogFooter className="flex-col gap-2 sm:flex-col">
                 <Button className="w-full gap-2" onClick={handleCancelClose}>
                   <Heart className="h-4 w-4" /> Mudei de ideia, vou continuar
                 </Button>
-                <Button variant="ghost" className="w-full text-muted-foreground text-xs" onClick={() => setCancelStep(3)} disabled={!cancelReason}>
-                  Continuar cancelamento
-                </Button>
               </DialogFooter>
             </>
           )}
 
-          {/* Step 3: Discount offer */}
-          {cancelStep === 3 && (
+          {/* Step 3: Resolution card based on reason */}
+          {cancelStep === 3 && cancelReason && (
             <>
               <DialogHeader>
                 <div className="flex items-center gap-2">
-                  <button onClick={handleBack} className="p-1 rounded-md hover:bg-secondary transition-colors">
+                  <button onClick={() => setCancelStep(2)} className="p-1 rounded-md hover:bg-secondary transition-colors">
                     <ArrowLeft className="h-4 w-4 text-muted-foreground" />
                   </button>
                   <DialogTitle className="flex items-center gap-2">
                     <Gift className="h-5 w-5 text-primary" />
-                    Temos uma oferta especial para você!
+                    {resolutionCards[cancelReason]?.title}
                   </DialogTitle>
                 </div>
               </DialogHeader>
               <div className="space-y-4 py-2">
-                <Card className="p-5 border-primary bg-primary/5">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-primary">50% OFF</p>
-                    <p className="text-sm text-muted-foreground mt-1">nos próximos 3 meses</p>
-                    <p className="text-lg font-semibold mt-2">{formatCurrency(12.45)}/mês</p>
-                    <p className="text-xs text-muted-foreground line-through">{formatCurrency(24.90)}/mês</p>
-                  </div>
-                </Card>
-                <p className="text-sm text-muted-foreground text-center">
-                  Essa oferta é exclusiva e válida apenas agora. Não queremos te perder! 💜
+                <p className="text-sm text-muted-foreground">
+                  {resolutionCards[cancelReason]?.description}
                 </p>
+                {resolutionCards[cancelReason]?.offer && (
+                  <Card className="p-5 border-primary bg-primary/5">
+                    <div className="text-center">
+                      <p className="text-xl font-bold text-primary">{resolutionCards[cancelReason].offer}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Oferta exclusiva válida apenas agora 💜</p>
+                    </div>
+                  </Card>
+                )}
               </div>
               <DialogFooter className="flex-col gap-2 sm:flex-col">
-                <Button className="w-full gap-2" onClick={handleAcceptDiscount}>
-                  <Gift className="h-4 w-4" /> Aceitar oferta e continuar
+                <Button className="w-full gap-2" onClick={handleAcceptOffer}>
+                  <Gift className="h-4 w-4" /> {resolutionCards[cancelReason]?.cta}
                 </Button>
                 <Button variant="ghost" className="w-full text-muted-foreground text-xs" onClick={() => setCancelStep(4)}>
                   Não, quero cancelar mesmo

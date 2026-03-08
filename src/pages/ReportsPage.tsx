@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/DatePicker';
+import { MonthYearPicker } from '@/components/MonthYearPicker';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -119,21 +120,21 @@ const ReportsPage = () => {
 
   const exportCSV = () => {
     const BOM = '\uFEFF';
-    const sep = ',';
+    const sep = ';';
     const esc = (s: string) => `"${s.replace(/"/g, '""')}"`;
-    const headers = ['Tipo', 'Descrição', 'Valor', 'Categoria', 'Data', 'Status', 'Conta'].map(esc).join(sep) + '\n';
+    const headers = ['Tipo', 'Descrição', 'Valor', 'Categoria', 'Data', 'Status', 'Conta'].map(esc).join(sep) + '\r\n';
     const rows = filteredTransactions.map(tr => {
       const acc = accounts.find(a => a.id === tr.accountId)?.name || '';
       return [
         tr.type === 'income' ? 'Receita' : 'Despesa',
         tr.description,
-        tr.amount.toFixed(2),
+        tr.amount.toFixed(2).replace('.', ','),
         tr.category,
         tr.date,
         tr.status,
         acc,
       ].map(esc).join(sep);
-    }).join('\n');
+    }).join('\r\n');
     const blob = new Blob([BOM + headers + rows], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -142,26 +143,23 @@ const ReportsPage = () => {
   };
 
   const exportExcel = () => {
-    const xmlHeader = '<?xml version="1.0" encoding="UTF-8"?>\n<?mso-application progid="Excel.Sheet"?>\n';
-    const workbookStart = '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n<Worksheet ss:Name="Relatório"><Table>\n';
-    const workbookEnd = '</Table></Worksheet></Workbook>';
-    const headerRow = '<Row>' + ['Tipo', 'Descrição', 'Valor', 'Categoria', 'Data', 'Status', 'Conta']
-      .map(h => `<Cell><Data ss:Type="String">${h}</Data></Cell>`).join('') + '</Row>\n';
-    const dataRows = filteredTransactions.map(tr => {
+    const BOM = '\uFEFF';
+    const sep = '\t';
+    const esc = (s: string) => s.replace(/\t/g, ' ').replace(/\n/g, ' ');
+    const headers = ['Tipo', 'Descrição', 'Valor', 'Categoria', 'Data', 'Status', 'Conta'].map(esc).join(sep) + '\r\n';
+    const rows = filteredTransactions.map(tr => {
       const acc = accounts.find(a => a.id === tr.accountId)?.name || '';
-      const cells = [
-        { v: tr.type === 'income' ? 'Receita' : 'Despesa', t: 'String' },
-        { v: tr.description, t: 'String' },
-        { v: tr.amount.toFixed(2), t: 'Number' },
-        { v: tr.category, t: 'String' },
-        { v: tr.date, t: 'String' },
-        { v: tr.status, t: 'String' },
-        { v: acc, t: 'String' },
-      ];
-      return '<Row>' + cells.map(c => `<Cell><Data ss:Type="${c.t}">${c.v}</Data></Cell>`).join('') + '</Row>';
-    }).join('\n');
-    const xml = xmlHeader + workbookStart + headerRow + dataRows + '\n' + workbookEnd;
-    const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+      return [
+        tr.type === 'income' ? 'Receita' : 'Despesa',
+        esc(tr.description),
+        tr.amount.toFixed(2).replace('.', ','),
+        esc(tr.category),
+        tr.date,
+        tr.status,
+        esc(acc),
+      ].join(sep);
+    }).join('\r\n');
+    const blob = new Blob([BOM + headers + rows], { type: 'application/vnd.ms-excel;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = 'moovi-relatorio.xls'; a.click();
@@ -219,12 +217,12 @@ const ReportsPage = () => {
 
   return (
     <div className="space-y-6 animate-in-up">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold">{t.pages.reports.title}</h2>
           <p className="text-sm text-muted-foreground">{t.pages.reports.subtitle}</p>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-center">
           <Select value={period} onValueChange={setPeriod}>
             <SelectTrigger className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -234,10 +232,7 @@ const ReportsPage = () => {
             </SelectContent>
           </Select>
           {period === 'month' && (
-            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>{availableMonths.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
-            </Select>
+            <MonthYearPicker value={selectedMonth} onChange={setSelectedMonth} availableMonths={availableMonths} />
           )}
           {period === 'year' && (
             <Select value={selectedYear} onValueChange={setSelectedYear}>
@@ -317,7 +312,7 @@ const ReportsPage = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', fontSize: '12px' }} formatter={(value: number) => formatCurrency(value)} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--foreground))', fontSize: '12px' }} formatter={(value: number) => formatCurrency(value)} />
                   <Bar dataKey="income" fill="hsl(152, 60%, 42%)" radius={[4, 4, 0, 0]} barSize={20} name="Receitas" />
                   <Bar dataKey="expense" fill="hsl(0, 72%, 51%)" radius={[4, 4, 0, 0]} barSize={20} name="Despesas" />
                 </BarChart>

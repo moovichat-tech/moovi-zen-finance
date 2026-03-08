@@ -77,7 +77,7 @@ export const AppSidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose, isD
       </div>
 
       <nav className={`flex-1 space-y-0.5 overflow-y-auto py-2 ${!showLabels ? 'px-1.5' : 'px-2.5'}`}>
-        {navItems.map(({ key, path, icon: Icon }) => <NavButton key={key} keyName={key} path={path} Icon={Icon} label={navLabels[key]} />)}
+        {navItems.map(({ key, path, icon: Icon, ...rest }) => <NavButton key={key} keyName={key} path={path} Icon={Icon} label={navLabels[key]} external={'external' in rest ? (rest as any).external : undefined} />)}
       </nav>
 
       <div className={`space-y-0.5 border-t border-sidebar-border py-3 ${!showLabels ? 'px-1.5' : 'px-2.5'}`}>

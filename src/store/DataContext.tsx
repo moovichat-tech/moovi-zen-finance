@@ -229,6 +229,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (list.includes(name)) return prev;
       return { ...prev, [type]: [...list, name] };
     });
+    // Auto-create a budget entry with limit 0 for new expense categories
+    if (type === 'expense') {
+      setBudgets(prev => {
+        if (prev.some(b => b.category === name)) return prev;
+        return [...prev, { id: `b-${Date.now()}`, category: name, limit: 0, spent: 0 }];
+      });
+    }
   }, []);
 
   const deleteCategory = useCallback((type: 'income' | 'expense', name: string) => {

@@ -1,6 +1,6 @@
 import { useI18n } from '@/i18n/context';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, TrendingUp, TrendingDown, CreditCard, Landmark, Target, BarChart3, Settings, LogOut, Crown, Tag, PanelLeftClose, PanelLeft, ClipboardList, X, CalendarDays, Building2 } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, TrendingDown, CreditCard, Landmark, Target, BarChart3, Settings, LogOut, Crown, Tag, PanelLeftClose, PanelLeft, ClipboardList, X, CalendarDays, Building2, LineChart } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import mooviLogo from '@/assets/moovi-logo.jpeg';
 
@@ -16,6 +16,7 @@ const navItems = [
   { key: 'commitments', path: '/commitments', icon: CalendarDays },
   { key: 'reports', path: '/reports', icon: BarChart3 },
   { key: 'openfinance', path: '/open-finance', icon: Building2 },
+  { key: 'investments', path: '/investments', icon: LineChart, external: 'https://stoots.com.br' },
 ] as const;
 
 interface AppSidebarProps { collapsed: boolean; onToggle: () => void; mobileOpen: boolean; onMobileClose: () => void; isDesktop: boolean; }

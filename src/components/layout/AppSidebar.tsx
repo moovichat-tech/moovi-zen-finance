@@ -1,6 +1,6 @@
 import { useI18n } from '@/i18n/context';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, TrendingUp, TrendingDown, CreditCard, Landmark, Target, BarChart3, Settings, LogOut, Crown, Tag, PanelLeftClose, PanelLeft, ClipboardList, X, CalendarDays, Building2 } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, TrendingDown, CreditCard, Landmark, Target, BarChart3, Settings, LogOut, Crown, Tag, PanelLeftClose, PanelLeft, ClipboardList, X, CalendarDays, Building2, LineChart } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import mooviLogo from '@/assets/moovi-logo.jpeg';
 
@@ -16,6 +16,7 @@ const navItems = [
   { key: 'commitments', path: '/commitments', icon: CalendarDays },
   { key: 'reports', path: '/reports', icon: BarChart3 },
   { key: 'openfinance', path: '/open-finance', icon: Building2 },
+  { key: 'investments', path: '/investments', icon: LineChart, external: 'https://stoots.com.br' },
 ] as const;
 
 interface AppSidebarProps { collapsed: boolean; onToggle: () => void; mobileOpen: boolean; onMobileClose: () => void; isDesktop: boolean; }
@@ -33,17 +34,25 @@ export const AppSidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose, isD
     commitments: locale === 'pt' ? 'Compromissos' : locale === 'en' ? 'Commitments' : locale === 'es' ? 'Compromisos' : locale === 'fr' ? 'Engagements' : 'Verpflichtungen',
     reports: t.nav.reports,
     openfinance: 'Open Finance',
+    investments: locale === 'pt' ? 'Investimentos' : locale === 'en' ? 'Investments' : locale === 'es' ? 'Inversiones' : locale === 'fr' ? 'Investissements' : 'Investitionen',
   };
 
-  const handleNavigate = (path: string) => { navigate(path); onMobileClose(); };
+  const handleNavigate = (path: string, external?: string) => {
+    if (external) {
+      window.open(external, '_blank', 'noopener,noreferrer');
+    } else {
+      navigate(path);
+    }
+    onMobileClose();
+  };
 
   const showLabels = !isDesktop || !collapsed;
   const sidebarWidth = isDesktop ? (collapsed ? 60 : 208) : 256;
 
-  const NavButton = ({ keyName, path, Icon, label }: { keyName: string; path: string; Icon: React.ElementType; label: string }) => {
-    const isActive = location.pathname === path;
+  const NavButton = ({ keyName, path, Icon, label, external }: { keyName: string; path: string; Icon: React.ElementType; label: string; external?: string }) => {
+    const isActive = !external && location.pathname === path;
     const btn = (
-      <button onClick={() => handleNavigate(path)} className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200 ${isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground'} ${!showLabels ? 'justify-center px-2' : ''}`}>
+      <button onClick={() => handleNavigate(path, external)} className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200 ${isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground'} ${!showLabels ? 'justify-center px-2' : ''}`}>
         <Icon className="h-4 w-4 shrink-0" />
         {showLabels && <span className="truncate">{label}</span>}
       </button>
@@ -68,7 +77,7 @@ export const AppSidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose, isD
       </div>
 
       <nav className={`flex-1 space-y-0.5 overflow-y-auto py-2 ${!showLabels ? 'px-1.5' : 'px-2.5'}`}>
-        {navItems.map(({ key, path, icon: Icon }) => <NavButton key={key} keyName={key} path={path} Icon={Icon} label={navLabels[key]} />)}
+        {navItems.map(({ key, path, icon: Icon, ...rest }) => <NavButton key={key} keyName={key} path={path} Icon={Icon} label={navLabels[key]} external={'external' in rest ? (rest as any).external : undefined} />)}
       </nav>
 
       <div className={`space-y-0.5 border-t border-sidebar-border py-3 ${!showLabels ? 'px-1.5' : 'px-2.5'}`}>

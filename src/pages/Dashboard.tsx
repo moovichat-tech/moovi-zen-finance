@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MonthYearPicker } from '@/components/MonthYearPicker';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, BarChart, Bar,
@@ -14,7 +14,6 @@ import {
 
 const COLORS = ['hsl(145, 63%, 32%)', 'hsl(152, 60%, 42%)', 'hsl(38, 92%, 50%)', 'hsl(170, 50%, 40%)', 'hsl(200, 70%, 50%)', 'hsl(120, 40%, 55%)'];
 
-// Natural language parser (from AIPage)
 function parseNaturalLanguage(text: string, accountNames: { id: string; name: string }[]) {
   const lower = text.toLowerCase();
   let type: 'income' | 'expense' = 'expense';
@@ -51,13 +50,11 @@ interface Message { id: string; role: 'user' | 'assistant'; content: string; }
 const Dashboard = () => {
   const { t, formatCurrency } = useI18n();
   const { transactions, accounts, budgets, addTransaction } = useData();
-  const [quickEntry, setQuickEntry] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
 
-  // AI Assistant state
   const [aiMessages, setAiMessages] = useState<Message[]>([
     { id: '1', role: 'assistant', content: 'Olá! Envie um comando como:\n• "Mercado 320 reais no Nubank em 3x"\n• "Recebi 8500 salário"\n• "resumo do mês"' },
   ]);
@@ -160,11 +157,14 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-in-up">
-      {/* AI Quick Command Bar */}
+      {/* AI + Period Filter in same row */}
       <Card className="p-3 sm:p-4 border-primary/20 bg-primary/5">
-        <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="h-4 w-4 text-primary" />
-          <span className="text-xs font-semibold text-foreground">Dê seu comando para o Moovi</span>
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <span className="text-xs font-semibold text-foreground">Dê seu comando para o Moovi</span>
+          </div>
+          <MonthYearPicker value={selectedMonth} onChange={setSelectedMonth} availableMonths={availableMonths} />
         </div>
         <div className="flex gap-2">
           <Input
@@ -195,16 +195,6 @@ const Dashboard = () => {
           </div>
         )}
       </Card>
-
-      {/* Period Filter */}
-      <div className="flex flex-col sm:flex-row gap-3 justify-end">
-        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-          <SelectTrigger className="h-auto w-full sm:w-40 text-xs"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {availableMonths.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
 
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">

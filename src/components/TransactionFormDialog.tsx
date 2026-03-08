@@ -16,6 +16,8 @@ export interface TransactionFormData {
   date: string;
   status: 'paid' | 'received' | 'planned';
   recurrence: Transaction['recurrence'];
+  customRecurrenceDays?: string;
+  customRecurrenceDayOfMonth?: string;
   accountId: string;
   cardId: string;
   installments: string;
@@ -52,20 +54,18 @@ export function TransactionFormDialog({ type, open, onOpenChange, editingId, ini
   const defaultCategory = type === 'income' ? categories.income[0] || '' : categories.expense[0] || '';
   const [form, setForm] = useState<TransactionFormData>(initialData || emptyForm(type, defaultCategory));
 
-  // Reset form when dialog opens with new data
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen && initialData) setForm(initialData);
     else if (isOpen) setForm(emptyForm(type, defaultCategory));
     onOpenChange(isOpen);
   };
 
-  // Labels
   const labels = {
-    pt: { account: 'Conta', card: 'Cartão (opcional)', installments: 'Parcelas', fixedExpense: 'Despesa fixa', fixedIncome: 'Receita fixa', tags: 'Tags', tagsPlaceholder: 'ex: tech, assinatura', recurrence: 'Recorrência', noCard: 'Nenhum', selectAccount: 'Selecionar' },
-    en: { account: 'Account', card: 'Card (optional)', installments: 'Installments', fixedExpense: 'Fixed expense', fixedIncome: 'Fixed income', tags: 'Tags', tagsPlaceholder: 'e.g.: tech, subscription', recurrence: 'Recurrence', noCard: 'None', selectAccount: 'Select' },
-    es: { account: 'Cuenta', card: 'Tarjeta (opcional)', installments: 'Cuotas', fixedExpense: 'Gasto fijo', fixedIncome: 'Ingreso fijo', tags: 'Tags', tagsPlaceholder: 'ej: tech, suscripción', recurrence: 'Recurrencia', noCard: 'Ninguna', selectAccount: 'Seleccionar' },
-    fr: { account: 'Compte', card: 'Carte (optionnel)', installments: 'Versements', fixedExpense: 'Dépense fixe', fixedIncome: 'Revenu fixe', tags: 'Tags', tagsPlaceholder: 'ex: tech, abonnement', recurrence: 'Récurrence', noCard: 'Aucune', selectAccount: 'Sélectionner' },
-    de: { account: 'Konto', card: 'Karte (optional)', installments: 'Raten', fixedExpense: 'Fixe Ausgabe', fixedIncome: 'Fixes Einkommen', tags: 'Tags', tagsPlaceholder: 'z.B.: Tech, Abo', recurrence: 'Wiederholung', noCard: 'Keine', selectAccount: 'Auswählen' },
+    pt: { account: 'Conta', card: 'Cartão (opcional)', installments: 'Parcelas', fixedExpense: 'Despesa fixa', tags: 'Tags', tagsPlaceholder: 'ex: tech, assinatura', recurrence: 'Recorrência', noCard: 'Nenhum', selectAccount: 'Selecionar', custom: 'Personalizado', everyXDays: 'A cada X dias', dayOfMonth: 'Dia do mês' },
+    en: { account: 'Account', card: 'Card (optional)', installments: 'Installments', fixedExpense: 'Fixed expense', tags: 'Tags', tagsPlaceholder: 'e.g.: tech, subscription', recurrence: 'Recurrence', noCard: 'None', selectAccount: 'Select', custom: 'Custom', everyXDays: 'Every X days', dayOfMonth: 'Day of month' },
+    es: { account: 'Cuenta', card: 'Tarjeta (opcional)', installments: 'Cuotas', fixedExpense: 'Gasto fijo', tags: 'Tags', tagsPlaceholder: 'ej: tech, suscripción', recurrence: 'Recurrencia', noCard: 'Ninguna', selectAccount: 'Seleccionar', custom: 'Personalizado', everyXDays: 'Cada X días', dayOfMonth: 'Día del mes' },
+    fr: { account: 'Compte', card: 'Carte (optionnel)', installments: 'Versements', fixedExpense: 'Dépense fixe', tags: 'Tags', tagsPlaceholder: 'ex: tech, abonnement', recurrence: 'Récurrence', noCard: 'Aucune', selectAccount: 'Sélectionner', custom: 'Personnalisé', everyXDays: 'Tous les X jours', dayOfMonth: 'Jour du mois' },
+    de: { account: 'Konto', card: 'Karte (optional)', installments: 'Raten', fixedExpense: 'Fixe Ausgabe', tags: 'Tags', tagsPlaceholder: 'z.B.: Tech, Abo', recurrence: 'Wiederholung', noCard: 'Keine', selectAccount: 'Auswählen', custom: 'Benutzerdefiniert', everyXDays: 'Alle X Tage', dayOfMonth: 'Tag des Monats' },
   };
   const l = labels[locale];
 
@@ -128,6 +128,7 @@ export function TransactionFormDialog({ type, open, onOpenChange, editingId, ini
     onOpenChange(false);
   };
 
+  // Use ALL categories from the categories context
   const categoryList = type === 'income' ? categories.income : categories.expense;
   const statusCompleted = type === 'income' ? 'received' : 'paid';
   const statusCompletedLabel = type === 'income' ? t.common.received : t.common.paid;
@@ -190,6 +191,8 @@ export function TransactionFormDialog({ type, open, onOpenChange, editingId, ini
                   <SelectItem value="monthly">{translateRecurrence('monthly')}</SelectItem>
                   <SelectItem value="weekly">{translateRecurrence('weekly')}</SelectItem>
                   <SelectItem value="yearly">{translateRecurrence('yearly')}</SelectItem>
+                  <SelectItem value="biweekly">{translateRecurrence('biweekly')}</SelectItem>
+                  <SelectItem value="custom">{l.custom}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -203,6 +206,20 @@ export function TransactionFormDialog({ type, open, onOpenChange, editingId, ini
               </Select>
             </div>
           </div>
+
+          {/* Custom recurrence fields */}
+          {form.recurrence === 'custom' && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>{l.everyXDays}</Label>
+                <Input type="number" min="1" placeholder="15" value={form.customRecurrenceDays || ''} onChange={e => setForm({ ...form, customRecurrenceDays: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{l.dayOfMonth}</Label>
+                <Input type="number" min="1" max="31" placeholder="1" value={form.customRecurrenceDayOfMonth || ''} onChange={e => setForm({ ...form, customRecurrenceDayOfMonth: e.target.value })} />
+              </div>
+            </div>
+          )}
 
           {/* Card + Installments (expense only for card) */}
           <div className="grid grid-cols-2 gap-3">

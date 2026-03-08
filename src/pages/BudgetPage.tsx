@@ -8,7 +8,8 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { AlertTriangle, CheckCircle2, Edit2, Plus, Trash2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Edit2, Plus, Trash2, Lock } from 'lucide-react';
+import { MonthYearPicker } from '@/components/MonthYearPicker';
 
 const BudgetPage = () => {
   const { t, formatCurrency } = useI18n();
@@ -18,6 +19,25 @@ const BudgetPage = () => {
   const [openAdd, setOpenAdd] = useState(false);
   const [newCategory, setNewCategory] = useState('');
   const [newLimit, setNewLimit] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
+
+  const currentMonth = useMemo(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  }, []);
+
+  const isPastMonth = selectedMonth < currentMonth;
+
+  // Available months from transactions
+  const availableMonths = useMemo(() => {
+    const set = new Set<string>();
+    set.add(currentMonth);
+    transactions.forEach(tr => set.add(tr.date.substring(0, 7)));
+    return Array.from(set).sort().reverse();
+  }, [transactions, currentMonth]);
 
   // Only show budgets whose category exists in categories.expense
   const validBudgets = useMemo(() =>
@@ -31,17 +51,15 @@ const BudgetPage = () => {
     [categories.expense, budgets]
   );
 
-  // Compute spent from real transactions for current month
+  // Compute spent from real transactions for selected month
   const budgetsWithSpent = useMemo(() => {
-    const now = new Date();
-    const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     return validBudgets.map(b => {
       const spent = transactions
-        .filter(t => t.type === 'expense' && t.category === b.category && t.date.startsWith(curMonth))
+        .filter(t => t.type === 'expense' && t.category === b.category && t.date.startsWith(selectedMonth))
         .reduce((s, t) => s + t.amount, 0);
       return { ...b, spent };
     });
-  }, [validBudgets, transactions]);
+  }, [validBudgets, transactions, selectedMonth]);
 
   const totalLimit = budgetsWithSpent.reduce((s, b) => s + b.limit, 0);
   const totalSpent = budgetsWithSpent.reduce((s, b) => s + b.spent, 0);
@@ -66,12 +84,22 @@ const BudgetPage = () => {
           <h2 className="text-lg sm:text-xl font-semibold">{t.pages.budget.title}</h2>
           <p className="text-sm text-muted-foreground">{t.pages.budget.subtitle}</p>
         </div>
-        {availableCategories.length > 0 && (
-          <Button size="sm" className="gap-1.5 self-start" onClick={() => { setNewCategory(availableCategories[0]); setOpenAdd(true); }}>
-            <Plus className="h-4 w-4" /> {t.common.add}
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <MonthYearPicker value={selectedMonth} onChange={setSelectedMonth} availableMonths={availableMonths} />
+          {!isPastMonth && availableCategories.length > 0 && (
+            <Button size="sm" className="gap-1.5" onClick={() => { setNewCategory(availableCategories[0]); setOpenAdd(true); }}>
+              <Plus className="h-4 w-4" /> {t.common.add}
+            </Button>
+          )}
+        </div>
       </div>
+
+      {isPastMonth && (
+        <Card className="p-3 flex items-center gap-2 bg-muted/50 border-muted">
+          <Lock className="h-4 w-4 text-muted-foreground" />
+          <span className="text-xs text-muted-foreground">Visualização de histórico — os valores deste mês não podem ser alterados.</span>
+        </Card>
+      )}
 
       {/* Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
@@ -110,35 +138,39 @@ const BudgetPage = () => {
                   <span className="text-sm font-semibold">{budget.category}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  {editing === budget.id ? (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        className="h-7 w-28 text-xs"
-                        value={editValue}
-                        onChange={e => setEditValue(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && handleSave(budget.id)}
-                      />
-                      <Button size="sm" className="h-7 text-xs" onClick={() => handleSave(budget.id)}>{t.common.save}</Button>
-                    </div>
-                  ) : (
+                  {!isPastMonth && (
                     <>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => { setEditing(budget.id); setEditValue(String(budget.limit)); }}
-                      >
-                        <Edit2 className="h-3.5 w-3.5 text-muted-foreground" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => deleteBudget(budget.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                      </Button>
+                      {editing === budget.id ? (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            className="h-7 w-28 text-xs"
+                            value={editValue}
+                            onChange={e => setEditValue(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleSave(budget.id)}
+                          />
+                          <Button size="sm" className="h-7 text-xs" onClick={() => handleSave(budget.id)}>{t.common.save}</Button>
+                        </div>
+                      ) : (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => { setEditing(budget.id); setEditValue(String(budget.limit)); }}
+                          >
+                            <Edit2 className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => deleteBudget(budget.id)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        </>
+                      )}
                     </>
                   )}
                   <span className={`text-sm font-medium ${isOver ? 'text-destructive' : isWarning ? 'text-warning' : ''}`}>

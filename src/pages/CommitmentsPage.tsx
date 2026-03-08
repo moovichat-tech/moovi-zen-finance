@@ -38,7 +38,7 @@ const CommitmentsPage = () => {
       return stored ? JSON.parse(stored) : [];
     } catch { return []; }
   });
-  const [newCommitment, setNewCommitment] = useState({ title: '', date: new Date().toISOString().split('T')[0], notes: '' });
+  const [newCommitment, setNewCommitment] = useState({ title: '', date: new Date().toISOString().split('T')[0], time: '', recurrence: 'once' as const, notes: '' });
 
   const saveCommitments = (items: Commitment[]) => {
     setCommitments(items);

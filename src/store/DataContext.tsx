@@ -9,7 +9,7 @@ export interface Transaction {
   subcategory?: string;
   date: string;
   status: 'planned' | 'paid' | 'received';
-  recurrence: 'once' | 'monthly' | 'weekly' | 'yearly';
+  recurrence: 'once' | 'monthly' | 'weekly' | 'yearly' | 'biweekly' | 'custom';
   installments?: number;
   currentInstallment?: number;
   accountId: string;

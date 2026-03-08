@@ -32,11 +32,11 @@ export const currencyLocales: Record<Currency, string> = {
 };
 
 export const recurrenceLabels: Record<Locale, Record<string, string>> = {
-  pt: { once: 'Única', monthly: 'Mensal', weekly: 'Semanal', yearly: 'Anual' },
-  en: { once: 'Once', monthly: 'Monthly', weekly: 'Weekly', yearly: 'Yearly' },
-  es: { once: 'Única', monthly: 'Mensual', weekly: 'Semanal', yearly: 'Anual' },
-  fr: { once: 'Unique', monthly: 'Mensuel', weekly: 'Hebdomadaire', yearly: 'Annuel' },
-  de: { once: 'Einmalig', monthly: 'Monatlich', weekly: 'Wöchentlich', yearly: 'Jährlich' },
+  pt: { once: 'Única', monthly: 'Mensal', weekly: 'Semanal', yearly: 'Anual', biweekly: 'Quinzenal', custom: 'Personalizado' },
+  en: { once: 'Once', monthly: 'Monthly', weekly: 'Weekly', yearly: 'Yearly', biweekly: 'Biweekly', custom: 'Custom' },
+  es: { once: 'Única', monthly: 'Mensual', weekly: 'Semanal', yearly: 'Anual', biweekly: 'Quincenal', custom: 'Personalizado' },
+  fr: { once: 'Unique', monthly: 'Mensuel', weekly: 'Hebdomadaire', yearly: 'Annuel', biweekly: 'Bimensuel', custom: 'Personnalisé' },
+  de: { once: 'Einmalig', monthly: 'Monatlich', weekly: 'Wöchentlich', yearly: 'Jährlich', biweekly: 'Zweiwöchentlich', custom: 'Benutzerdefiniert' },
 };
 
 export const periodLabels: Record<Locale, Record<string, string>> = {

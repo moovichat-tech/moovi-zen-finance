@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { DatePicker } from '@/components/DatePicker';
 import { ArrowUpRight, ArrowDownRight, CalendarDays, Plus, Bell, Clock, Trash2 } from 'lucide-react';
@@ -20,6 +21,8 @@ interface Commitment {
   id: string;
   title: string;
   date: string;
+  time?: string;
+  recurrence: 'once' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly';
   type: 'financial' | 'personal';
   notes?: string;
 }
@@ -35,7 +38,7 @@ const CommitmentsPage = () => {
       return stored ? JSON.parse(stored) : [];
     } catch { return []; }
   });
-  const [newCommitment, setNewCommitment] = useState({ title: '', date: new Date().toISOString().split('T')[0], notes: '' });
+  const [newCommitment, setNewCommitment] = useState({ title: '', date: new Date().toISOString().split('T')[0], time: '', recurrence: 'once' as const, notes: '' });
 
   const saveCommitments = (items: Commitment[]) => {
     setCommitments(items);
@@ -48,12 +51,14 @@ const CommitmentsPage = () => {
       id: `c-${Date.now()}`,
       title: newCommitment.title,
       date: newCommitment.date,
+      time: newCommitment.time || undefined,
+      recurrence: newCommitment.recurrence,
       type: 'personal',
       notes: newCommitment.notes,
     };
     saveCommitments([...commitments, item]);
     setOpenSchedule(false);
-    setNewCommitment({ title: '', date: new Date().toISOString().split('T')[0], notes: '' });
+    setNewCommitment({ title: '', date: new Date().toISOString().split('T')[0], time: '', recurrence: 'once', notes: '' });
   };
 
   const handleDeleteCommitment = (id: string) => {
@@ -61,11 +66,11 @@ const CommitmentsPage = () => {
   };
 
   const labels: Record<string, Record<string, string>> = {
-    pt: { title: 'Compromissos', subtitle: 'Sua agenda financeira e pessoal', noItems: 'Nenhum compromisso nesta data', upcoming: 'Próximos compromissos', recent: 'Compromissos recentes', schedule: 'Agendar compromisso', commitTitle: 'Título', notes: 'Observações', save: 'Salvar', cancel: 'Cancelar', today: 'Hoje', inDays: 'em {n} dia(s)', personal: 'Pessoal', planned: 'Previsto', paid: 'Pago', received: 'Recebido', selectedDay: 'Compromissos do dia' },
-    en: { title: 'Commitments', subtitle: 'Your financial and personal agenda', noItems: 'No commitments on this date', upcoming: 'Upcoming commitments', recent: 'Recent commitments', schedule: 'Schedule commitment', commitTitle: 'Title', notes: 'Notes', save: 'Save', cancel: 'Cancel', today: 'Today', inDays: 'in {n} day(s)', personal: 'Personal', planned: 'Planned', paid: 'Paid', received: 'Received', selectedDay: 'Day commitments' },
-    es: { title: 'Compromisos', subtitle: 'Tu agenda financiera y personal', noItems: 'Sin compromisos en esta fecha', upcoming: 'Próximos compromisos', recent: 'Compromisos recientes', schedule: 'Agendar compromiso', commitTitle: 'Título', notes: 'Notas', save: 'Guardar', cancel: 'Cancelar', today: 'Hoy', inDays: 'en {n} día(s)', personal: 'Personal', planned: 'Previsto', paid: 'Pagado', received: 'Recibido', selectedDay: 'Compromisos del día' },
-    fr: { title: 'Engagements', subtitle: 'Votre agenda financier et personnel', noItems: "Aucun engagement à cette date", upcoming: 'Prochains engagements', recent: 'Engagements récents', schedule: 'Planifier un engagement', commitTitle: 'Titre', notes: 'Notes', save: 'Enregistrer', cancel: 'Annuler', today: "Aujourd'hui", inDays: 'dans {n} jour(s)', personal: 'Personnel', planned: 'Prévu', paid: 'Payé', received: 'Reçu', selectedDay: 'Engagements du jour' },
-    de: { title: 'Verpflichtungen', subtitle: 'Ihre finanzielle und persönliche Agenda', noItems: 'Keine Verpflichtungen', upcoming: 'Kommende Verpflichtungen', recent: 'Letzte Verpflichtungen', schedule: 'Verpflichtung planen', commitTitle: 'Titel', notes: 'Notizen', save: 'Speichern', cancel: 'Abbrechen', today: 'Heute', inDays: 'in {n} Tag(en)', personal: 'Persönlich', planned: 'Geplant', paid: 'Bezahlt', received: 'Erhalten', selectedDay: 'Tagesverpflichtungen' },
+    pt: { title: 'Compromissos', subtitle: 'Sua agenda financeira e pessoal', noItems: 'Nenhum compromisso nesta data', upcoming: 'Próximos compromissos', recent: 'Compromissos recentes', schedule: 'Agendar compromisso', commitTitle: 'Título', notes: 'Observações', save: 'Salvar', cancel: 'Cancelar', today: 'Hoje', inDays: 'em {n} dia(s)', personal: 'Pessoal', planned: 'Previsto', paid: 'Pago', received: 'Recebido', selectedDay: 'Compromissos do dia', time: 'Horário', recurrence: 'Recorrência', once: 'Única vez', daily: 'Diário', weekly: 'Semanal', biweekly: 'Quinzenal', monthly: 'Mensal', yearly: 'Anual' },
+    en: { title: 'Commitments', subtitle: 'Your financial and personal agenda', noItems: 'No commitments on this date', upcoming: 'Upcoming commitments', recent: 'Recent commitments', schedule: 'Schedule commitment', commitTitle: 'Title', notes: 'Notes', save: 'Save', cancel: 'Cancel', today: 'Today', inDays: 'in {n} day(s)', personal: 'Personal', planned: 'Planned', paid: 'Paid', received: 'Received', selectedDay: 'Day commitments', time: 'Time', recurrence: 'Recurrence', once: 'Once', daily: 'Daily', weekly: 'Weekly', biweekly: 'Biweekly', monthly: 'Monthly', yearly: 'Yearly' },
+    es: { title: 'Compromisos', subtitle: 'Tu agenda financiera y personal', noItems: 'Sin compromisos en esta fecha', upcoming: 'Próximos compromisos', recent: 'Compromisos recientes', schedule: 'Agendar compromiso', commitTitle: 'Título', notes: 'Notas', save: 'Guardar', cancel: 'Cancelar', today: 'Hoy', inDays: 'en {n} día(s)', personal: 'Personal', planned: 'Previsto', paid: 'Pagado', received: 'Recibido', selectedDay: 'Compromisos del día', time: 'Hora', recurrence: 'Recurrencia', once: 'Una vez', daily: 'Diario', weekly: 'Semanal', biweekly: 'Quincenal', monthly: 'Mensual', yearly: 'Anual' },
+    fr: { title: 'Engagements', subtitle: 'Votre agenda financier et personnel', noItems: "Aucun engagement à cette date", upcoming: 'Prochains engagements', recent: 'Engagements récents', schedule: 'Planifier un engagement', commitTitle: 'Titre', notes: 'Notes', save: 'Enregistrer', cancel: 'Annuler', today: "Aujourd'hui", inDays: 'dans {n} jour(s)', personal: 'Personnel', planned: 'Prévu', paid: 'Payé', received: 'Reçu', selectedDay: 'Engagements du jour', time: 'Heure', recurrence: 'Récurrence', once: 'Une fois', daily: 'Quotidien', weekly: 'Hebdomadaire', biweekly: 'Bimensuel', monthly: 'Mensuel', yearly: 'Annuel' },
+    de: { title: 'Verpflichtungen', subtitle: 'Ihre finanzielle und persönliche Agenda', noItems: 'Keine Verpflichtungen', upcoming: 'Kommende Verpflichtungen', recent: 'Letzte Verpflichtungen', schedule: 'Verpflichtung planen', commitTitle: 'Titel', notes: 'Notizen', save: 'Speichern', cancel: 'Abbrechen', today: 'Heute', inDays: 'in {n} Tag(en)', personal: 'Persönlich', planned: 'Geplant', paid: 'Bezahlt', received: 'Erhalten', selectedDay: 'Tagesverpflichtungen', time: 'Uhrzeit', recurrence: 'Wiederholung', once: 'Einmalig', daily: 'Täglich', weekly: 'Wöchentlich', biweekly: 'Zweiwöchentlich', monthly: 'Monatlich', yearly: 'Jährlich' },
   };
   const l = labels[locale] || labels.pt;
 
@@ -89,6 +94,8 @@ const CommitmentsPage = () => {
       id: c.id,
       title: c.title,
       date: c.date,
+      time: c.time,
+      recurrence: c.recurrence,
       type: 'personal' as const,
       notes: c.notes,
     }));
@@ -142,10 +149,14 @@ const CommitmentsPage = () => {
             <Bell className={`h-4 w-4 shrink-0 ${isMuted ? 'text-muted-foreground' : 'text-primary'}`} />
           )}
           <div className="min-w-0 flex-1">
-            <p className={`text-sm font-medium truncate ${isMuted ? 'text-muted-foreground' : ''}`}>{item.title}</p>
+            <p className={`text-sm font-medium truncate ${isMuted ? 'text-muted-foreground' : ''}`}>
+              {item.title}
+              {'time' in item && item.time && <span className="ml-1.5 text-xs text-muted-foreground">({item.time})</span>}
+            </p>
             {variant === 'compact' && (
               <p className="text-[11px] text-muted-foreground">
                 {formatDate(item.date)}
+                {'recurrence' in item && item.recurrence && item.recurrence !== 'once' && ` • ${l[item.recurrence] || item.recurrence}`}
                 {item.date >= today && (() => {
                   const diff = getDaysDiff(item.date);
                   return ` • ${diff === 0 ? l.today : l.inDays.replace('{n}', String(diff))}`;
@@ -271,9 +282,29 @@ const CommitmentsPage = () => {
               <Label>{l.commitTitle}</Label>
               <Input value={newCommitment.title} onChange={e => setNewCommitment({ ...newCommitment, title: e.target.value })} placeholder="Ex: Reunião, Consulta médica..." />
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Data</Label>
+                <DatePicker value={newCommitment.date} onChange={v => setNewCommitment({ ...newCommitment, date: v })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{l.time}</Label>
+                <Input type="time" value={newCommitment.time} onChange={e => setNewCommitment({ ...newCommitment, time: e.target.value })} />
+              </div>
+            </div>
             <div className="space-y-1.5">
-              <Label>Data</Label>
-              <DatePicker value={newCommitment.date} onChange={v => setNewCommitment({ ...newCommitment, date: v })} />
+              <Label>{l.recurrence}</Label>
+              <Select value={newCommitment.recurrence} onValueChange={v => setNewCommitment({ ...newCommitment, recurrence: v as any })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="once">{l.once}</SelectItem>
+                  <SelectItem value="daily">{l.daily}</SelectItem>
+                  <SelectItem value="weekly">{l.weekly}</SelectItem>
+                  <SelectItem value="biweekly">{l.biweekly}</SelectItem>
+                  <SelectItem value="monthly">{l.monthly}</SelectItem>
+                  <SelectItem value="yearly">{l.yearly}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label>{l.notes}</Label>

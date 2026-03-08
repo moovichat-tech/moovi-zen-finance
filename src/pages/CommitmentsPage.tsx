@@ -276,9 +276,29 @@ const CommitmentsPage = () => {
               <Label>{l.commitTitle}</Label>
               <Input value={newCommitment.title} onChange={e => setNewCommitment({ ...newCommitment, title: e.target.value })} placeholder="Ex: Reunião, Consulta médica..." />
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Data</Label>
+                <DatePicker value={newCommitment.date} onChange={v => setNewCommitment({ ...newCommitment, date: v })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{l.time}</Label>
+                <Input type="time" value={newCommitment.time} onChange={e => setNewCommitment({ ...newCommitment, time: e.target.value })} />
+              </div>
+            </div>
             <div className="space-y-1.5">
-              <Label>Data</Label>
-              <DatePicker value={newCommitment.date} onChange={v => setNewCommitment({ ...newCommitment, date: v })} />
+              <Label>{l.recurrence}</Label>
+              <Select value={newCommitment.recurrence} onValueChange={v => setNewCommitment({ ...newCommitment, recurrence: v as any })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="once">{l.once}</SelectItem>
+                  <SelectItem value="daily">{l.daily}</SelectItem>
+                  <SelectItem value="weekly">{l.weekly}</SelectItem>
+                  <SelectItem value="biweekly">{l.biweekly}</SelectItem>
+                  <SelectItem value="monthly">{l.monthly}</SelectItem>
+                  <SelectItem value="yearly">{l.yearly}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label>{l.notes}</Label>

@@ -51,12 +51,14 @@ const CommitmentsPage = () => {
       id: `c-${Date.now()}`,
       title: newCommitment.title,
       date: newCommitment.date,
+      time: newCommitment.time || undefined,
+      recurrence: newCommitment.recurrence,
       type: 'personal',
       notes: newCommitment.notes,
     };
     saveCommitments([...commitments, item]);
     setOpenSchedule(false);
-    setNewCommitment({ title: '', date: new Date().toISOString().split('T')[0], notes: '' });
+    setNewCommitment({ title: '', date: new Date().toISOString().split('T')[0], time: '', recurrence: 'once', notes: '' });
   };
 
   const handleDeleteCommitment = (id: string) => {

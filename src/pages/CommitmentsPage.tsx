@@ -149,10 +149,14 @@ const CommitmentsPage = () => {
             <Bell className={`h-4 w-4 shrink-0 ${isMuted ? 'text-muted-foreground' : 'text-primary'}`} />
           )}
           <div className="min-w-0 flex-1">
-            <p className={`text-sm font-medium truncate ${isMuted ? 'text-muted-foreground' : ''}`}>{item.title}</p>
+            <p className={`text-sm font-medium truncate ${isMuted ? 'text-muted-foreground' : ''}`}>
+              {item.title}
+              {'time' in item && item.time && <span className="ml-1.5 text-xs text-muted-foreground">({item.time})</span>}
+            </p>
             {variant === 'compact' && (
               <p className="text-[11px] text-muted-foreground">
                 {formatDate(item.date)}
+                {'recurrence' in item && item.recurrence && item.recurrence !== 'once' && ` • ${l[item.recurrence] || item.recurrence}`}
                 {item.date >= today && (() => {
                   const diff = getDaysDiff(item.date);
                   return ` • ${diff === 0 ? l.today : l.inDays.replace('{n}', String(diff))}`;

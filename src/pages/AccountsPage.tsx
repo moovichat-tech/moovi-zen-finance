@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
+import { MonthYearPicker } from '@/components/MonthYearPicker';
 import { Plus, Trash2, ArrowRightLeft, Landmark, Globe, Building2, TrendingUp, Pencil, Eye, X } from 'lucide-react';
 
 const typeIcons: Record<string, any> = {
@@ -34,6 +35,11 @@ const AccountsPage = () => {
   const [deleteAction, setDeleteAction] = useState<'delete' | 'move'>('delete');
   const [moveToAccount, setMoveToAccount] = useState('');
   const [viewingAccount, setViewingAccount] = useState<string | null>(null);
+  const [viewFilterMonth, setViewFilterMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [viewFilterAll, setViewFilterAll] = useState(true);
   const [form, setForm] = useState({ name: '', type: 'checking' as any, balance: '', institution: '', color: 'hsl(234, 62%, 52%)' });
   const [transfer, setTransfer] = useState({ from: '', to: '', amount: '' });
 
@@ -78,8 +84,11 @@ const AccountsPage = () => {
 
   const viewTransactions = useMemo(() => {
     if (!viewingAccount) return [];
-    return transactions.filter(t => t.accountId === viewingAccount).sort((a, b) => b.date.localeCompare(a.date));
-  }, [viewingAccount, transactions]);
+    return transactions
+      .filter(t => t.accountId === viewingAccount)
+      .filter(t => viewFilterAll || t.date.startsWith(viewFilterMonth))
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [viewingAccount, transactions, viewFilterMonth, viewFilterAll]);
 
   const totalBalance = accounts.reduce((s, a) => s + a.balance, 0);
 
@@ -134,7 +143,7 @@ const AccountsPage = () => {
                 variant="outline"
                 size="sm"
                 className="mt-3 w-full gap-1.5 text-xs"
-                onClick={() => setViewingAccount(viewingAccount === acc.id ? null : acc.id)}
+                onClick={() => { setViewingAccount(viewingAccount === acc.id ? null : acc.id); setViewFilterAll(true); }}
               >
                 <Eye className="h-3.5 w-3.5" /> Ver lançamentos
               </Button>
@@ -146,11 +155,32 @@ const AccountsPage = () => {
       {/* Viewing account transactions */}
       {viewingAccount && (
         <Card className="p-4 sm:p-5">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <h3 className="text-sm font-semibold">Lançamentos — {accounts.find(a => a.id === viewingAccount)?.name}</h3>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setViewingAccount(null)}>
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={viewFilterAll ? 'default' : 'outline'}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setViewFilterAll(true)}
+              >
+                Todos
+              </Button>
+              <Button
+                variant={!viewFilterAll ? 'default' : 'outline'}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setViewFilterAll(false)}
+              >
+                Por mês
+              </Button>
+              {!viewFilterAll && (
+                <MonthYearPicker value={viewFilterMonth} onChange={setViewFilterMonth} triggerClassName="h-7 w-24 text-xs" />
+              )}
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setViewingAccount(null)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
           {viewTransactions.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">Nenhum lançamento nesta conta</p>

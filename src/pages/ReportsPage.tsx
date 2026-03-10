@@ -305,7 +305,7 @@ const ReportsPage = () => {
 
         <TabsContent value="overview">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <Card className="col-span-2 p-5">
+            <Card className="lg:col-span-2 p-3 sm:p-5">
               <h3 className="mb-4 text-sm font-semibold">Receitas vs Despesas</h3>
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={monthlyData} barGap={4}>

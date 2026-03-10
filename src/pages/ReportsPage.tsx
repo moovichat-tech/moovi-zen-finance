@@ -277,18 +277,18 @@ const ReportsPage = () => {
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="p-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <Card className="p-3 sm:p-4">
           <span className="text-xs font-medium text-muted-foreground">Total Receitas</span>
-          <div className="mt-1 text-xl font-semibold text-success">{formatCurrency(totalIncome)}</div>
+          <div className="mt-1 text-lg sm:text-xl font-semibold text-success">{formatCurrency(totalIncome)}</div>
         </Card>
-        <Card className="p-4">
+        <Card className="p-3 sm:p-4">
           <span className="text-xs font-medium text-muted-foreground">Total Despesas</span>
-          <div className="mt-1 text-xl font-semibold text-destructive">{formatCurrency(totalExpenses)}</div>
+          <div className="mt-1 text-lg sm:text-xl font-semibold text-destructive">{formatCurrency(totalExpenses)}</div>
         </Card>
-        <Card className="p-4">
+        <Card className="p-3 sm:p-4">
           <span className="text-xs font-medium text-muted-foreground">Resultado</span>
-          <div className={`mt-1 text-xl font-semibold ${totalIncome - totalExpenses >= 0 ? 'text-success' : 'text-destructive'}`}>
+          <div className={`mt-1 text-lg sm:text-xl font-semibold ${totalIncome - totalExpenses >= 0 ? 'text-success' : 'text-destructive'}`}>
             {formatCurrency(totalIncome - totalExpenses)}
           </div>
         </Card>

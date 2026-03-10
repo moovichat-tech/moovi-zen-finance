@@ -274,6 +274,10 @@ const translations = {
       settings: 'Paramètres',
       logout: 'Déconnexion',
       subscription: 'Gérer l\'abonnement',
+      commitments: 'Engagements',
+      openfinance: 'Open Finance',
+      categories: 'Catégories',
+      payables: 'Comptes à Payer et Recevoir',
     },
     dashboard: {
       title: 'Vue d\'ensemble',

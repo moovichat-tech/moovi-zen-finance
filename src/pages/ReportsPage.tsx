@@ -296,11 +296,11 @@ const ReportsPage = () => {
 
       {/* Tabs for different report views */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="category">Por Categoria</TabsTrigger>
-          <TabsTrigger value="account">Por Conta</TabsTrigger>
-          <TabsTrigger value="detail">Detalhado</TabsTrigger>
+        <TabsList className="flex-wrap h-auto gap-1">
+          <TabsTrigger value="overview" className="text-xs sm:text-sm">Visão Geral</TabsTrigger>
+          <TabsTrigger value="category" className="text-xs sm:text-sm">Por Categoria</TabsTrigger>
+          <TabsTrigger value="account" className="text-xs sm:text-sm">Por Conta</TabsTrigger>
+          <TabsTrigger value="detail" className="text-xs sm:text-sm">Detalhado</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">

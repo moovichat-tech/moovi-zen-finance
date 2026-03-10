@@ -216,15 +216,15 @@ const ReportsPage = () => {
   );
 
   return (
-    <div className="space-y-6 animate-in-up">
+    <div className="space-y-4 sm:space-y-6 animate-in-up">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold">{t.pages.reports.title}</h2>
+          <h2 className="text-lg sm:text-xl font-semibold">{t.pages.reports.title}</h2>
           <p className="text-sm text-muted-foreground">{t.pages.reports.subtitle}</p>
         </div>
         <div className="flex gap-2 flex-wrap items-center">
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-8 w-28 sm:w-32 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="month">{translatePeriod('month')}</SelectItem>
               <SelectItem value="year">{translatePeriod('year')}</SelectItem>
@@ -242,19 +242,19 @@ const ReportsPage = () => {
           )}
           {period === 'custom' && (
             <>
-              <DatePicker value={customStart} onChange={setCustomStart} placeholder="Data início" className="w-44" />
-              <DatePicker value={customEnd} onChange={setCustomEnd} placeholder="Data fim" className="w-44" />
+              <DatePicker value={customStart} onChange={setCustomStart} placeholder="Data início" className="w-36 sm:w-44" />
+              <DatePicker value={customEnd} onChange={setCustomEnd} placeholder="Data fim" className="w-36 sm:w-44" />
             </>
           )}
           <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Categoria" /></SelectTrigger>
+            <SelectTrigger className="h-8 w-28 sm:w-36 text-xs"><SelectValue placeholder="Categoria" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas categorias</SelectItem>
               {allCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={filterAccount} onValueChange={setFilterAccount}>
-            <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Conta" /></SelectTrigger>
+            <SelectTrigger className="h-8 w-28 sm:w-36 text-xs"><SelectValue placeholder="Conta" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas contas</SelectItem>
               {accounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}

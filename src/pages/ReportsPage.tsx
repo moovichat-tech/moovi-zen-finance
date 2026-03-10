@@ -318,7 +318,7 @@ const ReportsPage = () => {
                 </BarChart>
               </ResponsiveContainer>
             </Card>
-            <Card className="p-5">
+            <Card className="p-3 sm:p-5">
               <h3 className="mb-4 text-sm font-semibold">Despesas por Categoria</h3>
               <ResponsiveContainer width="100%" height={180}>
                 <PieChart>

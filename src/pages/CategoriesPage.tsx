@@ -76,14 +76,14 @@ const CategoriesPage = () => {
         </div>
       </div>
 
-      <Card className="p-5">
+      <Card className="p-3 sm:p-5">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="flex items-center justify-between mb-4">
-            <TabsList>
-              <TabsTrigger value="expense">Despesas ({categories.expense.length})</TabsTrigger>
-              <TabsTrigger value="income">Receitas ({categories.income.length})</TabsTrigger>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <TabsList className="h-auto flex-wrap gap-1">
+              <TabsTrigger value="expense" className="text-xs sm:text-sm">Despesas ({categories.expense.length})</TabsTrigger>
+              <TabsTrigger value="income" className="text-xs sm:text-sm">Receitas ({categories.income.length})</TabsTrigger>
             </TabsList>
-            <Button size="sm" className="gap-1.5" onClick={() => openAdd(activeTab as 'income' | 'expense')}>
+            <Button size="sm" className="gap-1.5 self-start sm:self-auto" onClick={() => openAdd(activeTab as 'income' | 'expense')}>
               <Plus className="h-4 w-4" /> {t.common.add}
             </Button>
           </div>

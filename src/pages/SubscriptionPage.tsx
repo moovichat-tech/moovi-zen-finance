@@ -159,7 +159,7 @@ const SubscriptionPage = () => {
   return (
     <div className="space-y-6 animate-in-up">
       <div>
-        <h2 className="text-xl font-semibold">Gerenciar Assinatura</h2>
+        <h2 className="text-lg sm:text-xl font-semibold">Gerenciar Assinatura</h2>
         <p className="text-sm text-muted-foreground">Escolha o plano ideal para suas necessidades</p>
       </div>
 

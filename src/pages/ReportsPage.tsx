@@ -406,7 +406,7 @@ const ReportsPage = () => {
         </TabsContent>
 
         <TabsContent value="detail">
-          <Card>
+          <Card className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>

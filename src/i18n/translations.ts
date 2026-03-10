@@ -345,6 +345,10 @@ const translations = {
       settings: 'Einstellungen',
       logout: 'Abmelden',
       subscription: 'Abo verwalten',
+      commitments: 'Verpflichtungen',
+      openfinance: 'Open Finance',
+      categories: 'Kategorien',
+      payables: 'Verbindlichkeiten & Forderungen',
     },
     dashboard: {
       title: 'Übersicht',

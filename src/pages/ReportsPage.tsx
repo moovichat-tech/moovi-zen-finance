@@ -382,7 +382,7 @@ const ReportsPage = () => {
         <TabsContent value="account">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {accountBreakdown.map((acc, i) => (
-              <Card key={i} className="p-5">
+              <Card key={i} className="p-3 sm:p-5">
                 <h3 className="text-sm font-semibold mb-3">{acc.name}</h3>
                 <div className="grid grid-cols-2 gap-3">
                   <div>

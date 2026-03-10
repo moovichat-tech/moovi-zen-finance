@@ -61,6 +61,10 @@ const translations = {
       settings: 'Configurações',
       logout: 'Sair',
       subscription: 'Gerenciar Assinatura',
+      commitments: 'Compromissos',
+      openfinance: 'Open Finance',
+      categories: 'Categorias',
+      payables: 'Contas a Pagar e Receber',
     },
     dashboard: {
       title: 'Visão Geral',

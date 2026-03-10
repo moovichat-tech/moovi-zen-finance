@@ -203,6 +203,10 @@ const translations = {
       settings: 'Configuración',
       logout: 'Salir',
       subscription: 'Gestionar Suscripción',
+      commitments: 'Compromisos',
+      openfinance: 'Open Finance',
+      categories: 'Categorías',
+      payables: 'Cuentas por Pagar y Cobrar',
     },
     dashboard: {
       title: 'Resumen',

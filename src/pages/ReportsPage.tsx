@@ -344,8 +344,8 @@ const ReportsPage = () => {
         </TabsContent>
 
         <TabsContent value="category">
-          <div className="grid grid-cols-2 gap-4">
-            <Card className="p-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="p-3 sm:p-5">
               <h3 className="mb-4 text-sm font-semibold">Despesas por Categoria</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={categoryBreakdown} layout="vertical">

@@ -132,6 +132,10 @@ const translations = {
       settings: 'Settings',
       logout: 'Logout',
       subscription: 'Manage Subscription',
+      commitments: 'Commitments',
+      openfinance: 'Open Finance',
+      categories: 'Categories',
+      payables: 'Payables & Receivables',
     },
     dashboard: {
       title: 'Overview',

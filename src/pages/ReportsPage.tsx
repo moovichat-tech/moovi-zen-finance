@@ -357,7 +357,7 @@ const ReportsPage = () => {
                 </BarChart>
               </ResponsiveContainer>
             </Card>
-            <Card className="p-5">
+            <Card className="p-3 sm:p-5">
               <h3 className="mb-4 text-sm font-semibold">Detalhamento</h3>
               <div className="space-y-3">
                 {categoryBreakdown.map((cat, i) => {

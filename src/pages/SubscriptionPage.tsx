@@ -12,8 +12,17 @@ const plans = [
     name: 'Mensal',
     priceMonth: 24.90,
     priceTotal: null,
-    label: null,
-    features: ['Lançamentos ilimitados', 'Contas ilimitadas', 'Cartões ilimitados', 'Relatórios avançados', 'Assistente IA', 'Exportação PDF/Excel'],
+    label: 'Mais flexível',
+    features: [
+      'Entende áudio/texto/imagem',
+      'Gestão de receitas e despesas',
+      'Gestão de categorias ilimitadas',
+      'Lembretes de compromissos',
+      'Painel de acompanhamento',
+      'Exportação via Excel ou PDF',
+      'Suporte VIP prioritário',
+      'Preço congelado por 1 ano',
+    ],
     current: true,
     popular: false,
   },
@@ -21,17 +30,39 @@ const plans = [
     name: 'Anual',
     priceMonth: 19.00,
     priceTotal: 228.00,
-    label: 'Economize 24%',
-    features: ['Tudo do Mensal', 'Prioridade no suporte', 'Funcionalidades beta', 'Backup automático'],
+    label: 'Melhor custo-benefício',
+    features: [
+      'Entende áudio/texto/imagem',
+      'Gestão de receitas e despesas',
+      'Gestão de categorias ilimitadas',
+      'Lembretes de compromissos',
+      'Painel de acompanhamento',
+      'Exportação via Excel ou PDF',
+      'Suporte VIP prioritário',
+      'Preço congelado por 1 ano',
+      'Bônus exclusivos para assinantes',
+      'Acesso antecipado a novidades',
+    ],
     current: false,
     popular: true,
   },
   {
-    name: 'Bianual',
+    name: '2 Anos',
     priceMonth: 14.90,
     priceTotal: 357.60,
-    label: 'Melhor custo',
-    features: ['Tudo do Anual', 'Multi-usuário', 'API integrada', 'WhatsApp Bot', 'Suporte prioritário'],
+    label: 'Maior economia',
+    features: [
+      'Entende áudio/texto/imagem',
+      'Gestão de receitas e despesas',
+      'Gestão de categorias ilimitadas',
+      'Lembretes de compromissos',
+      'Painel de acompanhamento',
+      'Exportação via Excel ou PDF',
+      'Suporte VIP prioritário',
+      'Preço congelado por 2 anos',
+      'Bônus exclusivos para assinantes',
+      'Acesso antecipado a novidades',
+    ],
     current: false,
     popular: false,
   },
@@ -46,7 +77,6 @@ const cancelReasons = [
   { id: 'other', label: 'Outro motivo', icon: MessageCircle },
 ];
 
-// Resolution cards based on reason
 const resolutionCards: Record<string, { title: string; description: string; offer?: string; cta: string }> = {
   'other-tool': {
     title: '🔄 Vamos comparar?',
@@ -112,7 +142,7 @@ const SubscriptionPage = () => {
 
   const handleReasonSelect = (reasonId: string) => {
     setCancelReason(reasonId);
-    setCancelStep(3); // Go directly to resolution card
+    setCancelStep(3);
   };
 
   return (
@@ -140,7 +170,7 @@ const SubscriptionPage = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {plans.map(plan => (
           <Card key={plan.name} className={`relative p-5 card-hover ${plan.popular ? 'border-primary' : ''}`}>
-            {plan.popular && <Badge className="absolute -top-2.5 right-4 text-[10px]">Popular</Badge>}
+            {plan.popular && <Badge className="absolute -top-2.5 right-4 text-[10px]">Mais recomendado</Badge>}
             {plan.label && !plan.popular && <Badge variant="secondary" className="absolute -top-2.5 right-4 text-[10px]">{plan.label}</Badge>}
             <h3 className="text-lg font-semibold">{plan.name}</h3>
             <div className="mt-2">
@@ -148,12 +178,12 @@ const SubscriptionPage = () => {
               <span className="text-xs text-muted-foreground">/mês</span>
             </div>
             {plan.priceTotal && (
-              <p className="mt-1 text-xs text-muted-foreground">{formatCurrency(plan.priceTotal)} no total</p>
+              <p className="mt-1 text-xs text-muted-foreground">Cobrado {formatCurrency(plan.priceTotal)} {plan.name === 'Anual' ? 'anualmente' : 'bianualmente'}</p>
             )}
             <ul className="mt-4 space-y-2">
               {plan.features.map((feat, i) => (
                 <li key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Check className="h-3.5 w-3.5 text-success" />
+                  <Check className="h-3.5 w-3.5 text-success shrink-0" />
                   {feat}
                 </li>
               ))}
@@ -197,7 +227,6 @@ const SubscriptionPage = () => {
       {/* Cancellation Flow Dialog */}
       <Dialog open={cancelStep > 0} onOpenChange={(open) => { if (!open) handleCancelClose(); }}>
         <DialogContent className="sm:max-w-md">
-          {/* Step 1: Are you sure? */}
           {cancelStep === 1 && (
             <>
               <DialogHeader>
@@ -233,7 +262,6 @@ const SubscriptionPage = () => {
             </>
           )}
 
-          {/* Step 2: Why? — clicking a reason goes to resolution */}
           {cancelStep === 2 && (
             <>
               <DialogHeader>
@@ -265,7 +293,6 @@ const SubscriptionPage = () => {
             </>
           )}
 
-          {/* Step 3: Resolution card based on reason */}
           {cancelStep === 3 && cancelReason && (
             <>
               <DialogHeader>
@@ -303,7 +330,6 @@ const SubscriptionPage = () => {
             </>
           )}
 
-          {/* Step 4: Final confirmation */}
           {cancelStep === 4 && (
             <>
               <DialogHeader>

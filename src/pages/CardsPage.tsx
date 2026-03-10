@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { MonthYearPicker } from '@/components/MonthYearPicker';
 import { Plus, Trash2, CreditCard, Pencil, X, Eye } from 'lucide-react';
 import type { CreditCard as CreditCardType } from '@/store/DataContext';
 
@@ -17,7 +18,11 @@ const CardsPage = () => {
   const [open, setOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<CreditCardType | null>(null);
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
-  const [txFilterMonth, setTxFilterMonth] = useState('all');
+  const [txFilterMonth, setTxFilterMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [txFilterAll, setTxFilterAll] = useState(true);
   const [form, setForm] = useState({ name: '', lastDigits: '', limit: '', closingDay: '3', dueDay: '10', color: 'hsl(234, 62%, 52%)' });
 
   const openAdd = () => {
@@ -42,12 +47,9 @@ const CardsPage = () => {
     setOpen(false);
   };
 
-  // Compute usedLimit dynamically from transactions linked to each card
   const cardUsedLimits = useMemo(() => {
     const limits: Record<string, number> = {};
     cards.forEach(card => {
-      // Sum all expense transactions linked to this card that are not yet paid (status === 'planned')
-      // OR that are paid in the current billing cycle
       const used = transactions
         .filter(tr => tr.cardId === card.id && tr.type === 'expense')
         .reduce((sum, tr) => sum + tr.amount, 0);
@@ -62,16 +64,9 @@ const CardsPage = () => {
     if (!selectedCard) return [];
     return transactions
       .filter(tr => tr.cardId === selectedCard)
-      .filter(tr => txFilterMonth === 'all' || tr.date.startsWith(txFilterMonth))
+      .filter(tr => txFilterAll || tr.date.startsWith(txFilterMonth))
       .sort((a, b) => b.date.localeCompare(a.date));
-  }, [transactions, selectedCard, txFilterMonth]);
-
-  const cardTxMonths = useMemo(() => {
-    if (!selectedCard) return [];
-    const set = new Set<string>();
-    transactions.filter(tr => tr.cardId === selectedCard).forEach(tr => set.add(tr.date.substring(0, 7)));
-    return Array.from(set).sort().reverse();
-  }, [transactions, selectedCard]);
+  }, [transactions, selectedCard, txFilterMonth, txFilterAll]);
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-in-up">
@@ -141,7 +136,7 @@ const CardsPage = () => {
                 variant="outline"
                 size="sm"
                 className="mt-3 w-full gap-1.5 text-xs"
-                onClick={() => { setSelectedCard(selectedCard === card.id ? null : card.id); setTxFilterMonth('all'); }}
+                onClick={() => { setSelectedCard(selectedCard === card.id ? null : card.id); setTxFilterAll(true); }}
               >
                 <Eye className="h-3.5 w-3.5" /> Ver lançamentos
               </Button>
@@ -156,13 +151,25 @@ const CardsPage = () => {
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <h3 className="text-sm font-semibold">Lançamentos — {selectedCardData.name}</h3>
             <div className="flex items-center gap-2">
-              <Select value={txFilterMonth} onValueChange={setTxFilterMonth}>
-                <SelectTrigger className="h-7 w-28 sm:w-32 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  {cardTxMonths.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Button
+                variant={txFilterAll ? 'default' : 'outline'}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setTxFilterAll(true)}
+              >
+                Todos
+              </Button>
+              <Button
+                variant={!txFilterAll ? 'default' : 'outline'}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setTxFilterAll(false)}
+              >
+                Por mês
+              </Button>
+              {!txFilterAll && (
+                <MonthYearPicker value={txFilterMonth} onChange={setTxFilterMonth} triggerClassName="h-7 w-24 text-xs" />
+              )}
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedCard(null)}>
                 <X className="h-4 w-4" />
               </Button>

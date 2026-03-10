@@ -19,7 +19,7 @@ export function getMonthLabel(yyyymm: string, locale: string): string {
 interface MonthYearPickerProps {
   value: string; // YYYY-MM
   onChange: (value: string) => void;
-  availableMonths: string[]; // list of YYYY-MM
+  availableMonths?: string[]; // optional - only used for highlighting, not restricting
   className?: string;
   triggerClassName?: string;
 }
@@ -28,29 +28,25 @@ export function MonthYearPicker({ value, onChange, availableMonths, className, t
   const { locale } = useI18n();
   const names = monthNames[locale] || monthNames.pt;
 
-  // Extract available years
-  const availableYears = useMemo(() => {
+  // Generate full range of years: data years + current ± 3
+  const allYears = useMemo(() => {
     const set = new Set<string>();
-    availableMonths.forEach(m => set.add(m.substring(0, 4)));
+    const now = new Date().getFullYear();
+    for (let y = now - 3; y <= now + 1; y++) set.add(String(y));
+    if (availableMonths) {
+      availableMonths.forEach(m => set.add(m.substring(0, 4)));
+    }
     return Array.from(set).sort().reverse();
   }, [availableMonths]);
 
   const currentYear = value.substring(0, 4);
   const currentMonthNum = value.substring(5, 7);
 
-  // Months available for the selected year
-  const monthsForYear = useMemo(() => {
-    return availableMonths
-      .filter(m => m.startsWith(currentYear))
-      .map(m => m.substring(5, 7))
-      .sort();
-  }, [availableMonths, currentYear]);
+  // Always show all 12 months
+  const allMonthNums = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
 
   const handleYearChange = (year: string) => {
-    // Pick the same month in the new year, or the latest available
-    const monthsInNewYear = availableMonths.filter(m => m.startsWith(year)).sort().reverse();
-    const sameMonth = monthsInNewYear.find(m => m.endsWith(`-${currentMonthNum}`));
-    onChange(sameMonth || monthsInNewYear[0] || `${year}-01`);
+    onChange(`${year}-${currentMonthNum}`);
   };
 
   return (
@@ -60,7 +56,7 @@ export function MonthYearPicker({ value, onChange, availableMonths, className, t
           <SelectValue>{names[parseInt(currentMonthNum) - 1]}</SelectValue>
         </SelectTrigger>
         <SelectContent>
-          {monthsForYear.map(m => (
+          {allMonthNums.map(m => (
             <SelectItem key={m} value={m}>{names[parseInt(m) - 1]}</SelectItem>
           ))}
         </SelectContent>
@@ -70,7 +66,7 @@ export function MonthYearPicker({ value, onChange, availableMonths, className, t
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {availableYears.map(y => (
+          {allYears.map(y => (
             <SelectItem key={y} value={y}>{y}</SelectItem>
           ))}
         </SelectContent>

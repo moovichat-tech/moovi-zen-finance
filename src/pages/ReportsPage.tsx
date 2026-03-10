@@ -216,15 +216,15 @@ const ReportsPage = () => {
   );
 
   return (
-    <div className="space-y-6 animate-in-up">
+    <div className="space-y-4 sm:space-y-6 animate-in-up">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold">{t.pages.reports.title}</h2>
+          <h2 className="text-lg sm:text-xl font-semibold">{t.pages.reports.title}</h2>
           <p className="text-sm text-muted-foreground">{t.pages.reports.subtitle}</p>
         </div>
         <div className="flex gap-2 flex-wrap items-center">
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-8 w-28 sm:w-32 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="month">{translatePeriod('month')}</SelectItem>
               <SelectItem value="year">{translatePeriod('year')}</SelectItem>
@@ -242,19 +242,19 @@ const ReportsPage = () => {
           )}
           {period === 'custom' && (
             <>
-              <DatePicker value={customStart} onChange={setCustomStart} placeholder="Data início" className="w-44" />
-              <DatePicker value={customEnd} onChange={setCustomEnd} placeholder="Data fim" className="w-44" />
+              <DatePicker value={customStart} onChange={setCustomStart} placeholder="Data início" className="w-36 sm:w-44" />
+              <DatePicker value={customEnd} onChange={setCustomEnd} placeholder="Data fim" className="w-36 sm:w-44" />
             </>
           )}
           <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Categoria" /></SelectTrigger>
+            <SelectTrigger className="h-8 w-28 sm:w-36 text-xs"><SelectValue placeholder="Categoria" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas categorias</SelectItem>
               {allCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={filterAccount} onValueChange={setFilterAccount}>
-            <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Conta" /></SelectTrigger>
+            <SelectTrigger className="h-8 w-28 sm:w-36 text-xs"><SelectValue placeholder="Conta" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas contas</SelectItem>
               {accounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
@@ -277,18 +277,18 @@ const ReportsPage = () => {
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="p-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <Card className="p-3 sm:p-4">
           <span className="text-xs font-medium text-muted-foreground">Total Receitas</span>
-          <div className="mt-1 text-xl font-semibold text-success">{formatCurrency(totalIncome)}</div>
+          <div className="mt-1 text-lg sm:text-xl font-semibold text-success">{formatCurrency(totalIncome)}</div>
         </Card>
-        <Card className="p-4">
+        <Card className="p-3 sm:p-4">
           <span className="text-xs font-medium text-muted-foreground">Total Despesas</span>
-          <div className="mt-1 text-xl font-semibold text-destructive">{formatCurrency(totalExpenses)}</div>
+          <div className="mt-1 text-lg sm:text-xl font-semibold text-destructive">{formatCurrency(totalExpenses)}</div>
         </Card>
-        <Card className="p-4">
+        <Card className="p-3 sm:p-4">
           <span className="text-xs font-medium text-muted-foreground">Resultado</span>
-          <div className={`mt-1 text-xl font-semibold ${totalIncome - totalExpenses >= 0 ? 'text-success' : 'text-destructive'}`}>
+          <div className={`mt-1 text-lg sm:text-xl font-semibold ${totalIncome - totalExpenses >= 0 ? 'text-success' : 'text-destructive'}`}>
             {formatCurrency(totalIncome - totalExpenses)}
           </div>
         </Card>
@@ -296,16 +296,16 @@ const ReportsPage = () => {
 
       {/* Tabs for different report views */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="category">Por Categoria</TabsTrigger>
-          <TabsTrigger value="account">Por Conta</TabsTrigger>
-          <TabsTrigger value="detail">Detalhado</TabsTrigger>
+        <TabsList className="flex-wrap h-auto gap-1">
+          <TabsTrigger value="overview" className="text-xs sm:text-sm">Visão Geral</TabsTrigger>
+          <TabsTrigger value="category" className="text-xs sm:text-sm">Por Categoria</TabsTrigger>
+          <TabsTrigger value="account" className="text-xs sm:text-sm">Por Conta</TabsTrigger>
+          <TabsTrigger value="detail" className="text-xs sm:text-sm">Detalhado</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
-          <div className="grid grid-cols-3 gap-4">
-            <Card className="col-span-2 p-5">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <Card className="lg:col-span-2 p-3 sm:p-5">
               <h3 className="mb-4 text-sm font-semibold">Receitas vs Despesas</h3>
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={monthlyData} barGap={4}>
@@ -318,7 +318,7 @@ const ReportsPage = () => {
                 </BarChart>
               </ResponsiveContainer>
             </Card>
-            <Card className="p-5">
+            <Card className="p-3 sm:p-5">
               <h3 className="mb-4 text-sm font-semibold">Despesas por Categoria</h3>
               <ResponsiveContainer width="100%" height={180}>
                 <PieChart>
@@ -344,8 +344,8 @@ const ReportsPage = () => {
         </TabsContent>
 
         <TabsContent value="category">
-          <div className="grid grid-cols-2 gap-4">
-            <Card className="p-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="p-3 sm:p-5">
               <h3 className="mb-4 text-sm font-semibold">Despesas por Categoria</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={categoryBreakdown} layout="vertical">
@@ -357,7 +357,7 @@ const ReportsPage = () => {
                 </BarChart>
               </ResponsiveContainer>
             </Card>
-            <Card className="p-5">
+            <Card className="p-3 sm:p-5">
               <h3 className="mb-4 text-sm font-semibold">Detalhamento</h3>
               <div className="space-y-3">
                 {categoryBreakdown.map((cat, i) => {
@@ -380,9 +380,9 @@ const ReportsPage = () => {
         </TabsContent>
 
         <TabsContent value="account">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {accountBreakdown.map((acc, i) => (
-              <Card key={i} className="p-5">
+              <Card key={i} className="p-3 sm:p-5">
                 <h3 className="text-sm font-semibold mb-3">{acc.name}</h3>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -406,7 +406,7 @@ const ReportsPage = () => {
         </TabsContent>
 
         <TabsContent value="detail">
-          <Card>
+          <Card className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>

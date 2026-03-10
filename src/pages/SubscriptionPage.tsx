@@ -7,31 +7,61 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Crown, Check, Zap, Shield, BarChart3, Bot, AlertTriangle, Heart, Gift, X, ArrowLeft, MessageCircle, HelpCircle, DollarSign, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 
+const allFeatures = [
+  'Entende áudio/texto/imagem',
+  'Gestão de receitas e despesas',
+  'Gestão de categorias ilimitadas',
+  'Lembretes de compromissos',
+  'Painel de acompanhamento',
+  'Exportação via Excel ou PDF',
+  'Suporte VIP prioritário',
+  'Preço congelado por 1 ano',
+  'Bônus exclusivos para assinantes',
+  'Preço congelado por 2 anos',
+  'Acesso antecipado a novidades',
+];
+
 const plans = [
   {
-    name: 'Mensal',
+    name: 'Plano Mensal',
     priceMonth: 24.90,
     priceTotal: null,
     label: 'Mais flexível',
-    features: [
+    included: [
       'Entende áudio/texto/imagem',
       'Gestão de receitas e despesas',
       'Gestão de categorias ilimitadas',
       'Lembretes de compromissos',
       'Painel de acompanhamento',
       'Exportação via Excel ou PDF',
-      'Suporte VIP prioritário',
-      'Preço congelado por 1 ano',
     ],
     current: true,
     popular: false,
   },
   {
-    name: 'Anual',
+    name: 'Plano Anual',
     priceMonth: 19.00,
     priceTotal: 228.00,
     label: 'Melhor custo-benefício',
-    features: [
+    included: [
+      'Entende áudio/texto/imagem',
+      'Gestão de receitas e despesas',
+      'Gestão de categorias ilimitadas',
+      'Lembretes de compromissos',
+      'Painel de acompanhamento',
+      'Exportação via Excel ou PDF',
+      'Suporte VIP prioritário',
+      'Preço congelado por 1 ano',
+    ],
+    current: false,
+    popular: true,
+  },
+  {
+    name: 'Plano 2 anos',
+    priceMonth: 14.90,
+    priceTotal: 357.60,
+    label: 'Maior economia no longo prazo',
+    included: [
       'Entende áudio/texto/imagem',
       'Gestão de receitas e despesas',
       'Gestão de categorias ilimitadas',
@@ -41,26 +71,7 @@ const plans = [
       'Suporte VIP prioritário',
       'Preço congelado por 1 ano',
       'Bônus exclusivos para assinantes',
-      'Acesso antecipado a novidades',
-    ],
-    current: false,
-    popular: true,
-  },
-  {
-    name: '2 Anos',
-    priceMonth: 14.90,
-    priceTotal: 357.60,
-    label: 'Maior economia',
-    features: [
-      'Entende áudio/texto/imagem',
-      'Gestão de receitas e despesas',
-      'Gestão de categorias ilimitadas',
-      'Lembretes de compromissos',
-      'Painel de acompanhamento',
-      'Exportação via Excel ou PDF',
-      'Suporte VIP prioritário',
       'Preço congelado por 2 anos',
-      'Bônus exclusivos para assinantes',
       'Acesso antecipado a novidades',
     ],
     current: false,

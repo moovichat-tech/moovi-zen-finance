@@ -35,6 +35,18 @@ interface Conta {
   nome: string;
 }
 
+interface Transacao {
+  id: number | string;
+  tipo: string;
+  valor: number;
+  descricao: string;
+  categoria: string;
+  cartao: string;
+  data_transacao: string;
+  conta: string;
+  status: string;
+}
+
 async function callApi(fnName: string, token: string, body?: Record<string, unknown>) {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/${fnName}`, {
     method: 'POST',

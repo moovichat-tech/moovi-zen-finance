@@ -1,12 +1,12 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useI18n } from '@/i18n/context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Phone, Lock, KeyRound, ArrowLeft, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Lock, KeyRound, ArrowLeft, Loader2, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
+import { CountryCodeSelector, countries, applyMask, Country } from '@/components/CountryCodeSelector';
 
 type Step = 'phone' | 'password' | 'otp' | 'create-password';
 
@@ -31,7 +31,8 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [step, setStep] = useState<Step>('phone');
-  const [telefone, setTelefone] = useState('');
+  const [country, setCountry] = useState<Country>(countries[0]); // Brazil default
+  const [phoneDigits, setPhoneDigits] = useState('');
   const [senha, setSenha] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [confirmSenha, setConfirmSenha] = useState('');
@@ -39,38 +40,34 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
-  const [hasPassword, setHasPassword] = useState(false);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const formatPhone = (value: string) => {
-    const digits = value.replace(/\D/g, '');
-    if (digits.length <= 2) return digits;
-    if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
-  };
+  // Build the clean full number: DDI + local digits (all numeric, no special chars)
+  const fullPhone = country.ddi.replace(/\D/g, '') + phoneDigits.replace(/\D/g, '');
+
+  const displayPhone = applyMask(phoneDigits.replace(/\D/g, ''), country.mask, country.maxDigits);
+  const displayFull = `+${country.ddi} ${displayPhone}`;
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/\D/g, '');
-    if (raw.length <= 11) setTelefone(formatPhone(raw));
+    if (raw.length <= country.maxDigits) setPhoneDigits(raw);
   };
 
-  const rawPhone = telefone.replace(/\D/g, '');
+  const localDigits = phoneDigits.replace(/\D/g, '');
+  const isPhoneValid = localDigits.length >= country.maxDigits - 1;
 
   const handleCheckPhone = async () => {
-    if (rawPhone.length < 10) {
+    if (!isPhoneValid) {
       toast.error('Digite um telefone válido');
       return;
     }
     setLoading(true);
     try {
-      const data = await callEdge('auth-check-phone', { telefone: rawPhone });
+      const data = await callEdge('auth-check-phone', { telefone: fullPhone });
       if (data.exists && data.has_password) {
-        setHasPassword(true);
         setStep('password');
       } else {
-        setHasPassword(false);
-        // Send OTP
-        await callEdge('auth-send-otp', { telefone: rawPhone });
+        await callEdge('auth-send-otp', { telefone: fullPhone });
         toast.success('Código enviado para seu WhatsApp!');
         setStep('otp');
       }
@@ -82,14 +79,11 @@ const LoginPage = () => {
   };
 
   const handleLogin = async () => {
-    if (!senha) {
-      toast.error('Digite sua senha');
-      return;
-    }
+    if (!senha) { toast.error('Digite sua senha'); return; }
     setLoading(true);
     try {
-      const data = await callEdge('auth-login-password', { telefone: rawPhone, senha });
-      login(data.token, data.user_id, rawPhone);
+      const data = await callEdge('auth-login-password', { telefone: fullPhone, senha });
+      login(data.token, data.user_id, fullPhone);
       toast.success('Login realizado com sucesso!');
       navigate('/');
     } catch (err: any) {
@@ -102,7 +96,7 @@ const LoginPage = () => {
   const handleForgotPassword = async () => {
     setLoading(true);
     try {
-      await callEdge('auth-send-otp', { telefone: rawPhone });
+      await callEdge('auth-send-otp', { telefone: fullPhone });
       toast.success('Código enviado para seu WhatsApp!');
       setStep('otp');
     } catch (err: any) {
@@ -118,35 +112,24 @@ const LoginPage = () => {
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
-    if (value && index < 5) {
-      otpRefs.current[index + 1]?.focus();
-    }
+    if (value && index < 5) otpRefs.current[index + 1]?.focus();
   };
 
   const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      otpRefs.current[index - 1]?.focus();
-    }
+    if (e.key === 'Backspace' && !otp[index] && index > 0) otpRefs.current[index - 1]?.focus();
   };
 
   const handleOtpPaste = (e: React.ClipboardEvent) => {
     const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    if (pasted.length === 6) {
-      setOtp(pasted.split(''));
-      otpRefs.current[5]?.focus();
-      e.preventDefault();
-    }
+    if (pasted.length === 6) { setOtp(pasted.split('')); otpRefs.current[5]?.focus(); e.preventDefault(); }
   };
 
   const handleVerifyOtp = async () => {
     const code = otp.join('');
-    if (code.length !== 6) {
-      toast.error('Digite o código completo');
-      return;
-    }
+    if (code.length !== 6) { toast.error('Digite o código completo'); return; }
     setLoading(true);
     try {
-      await callEdge('auth-verify-otp', { telefone: rawPhone, codigo: code });
+      await callEdge('auth-verify-otp', { telefone: fullPhone, codigo: code });
       toast.success('Código verificado!');
       setStep('create-password');
     } catch (err: any) {
@@ -157,18 +140,12 @@ const LoginPage = () => {
   };
 
   const handleCreatePassword = async () => {
-    if (novaSenha.length < 6) {
-      toast.error('A senha deve ter pelo menos 6 caracteres');
-      return;
-    }
-    if (novaSenha !== confirmSenha) {
-      toast.error('As senhas não coincidem');
-      return;
-    }
+    if (novaSenha.length < 6) { toast.error('A senha deve ter pelo menos 6 caracteres'); return; }
+    if (novaSenha !== confirmSenha) { toast.error('As senhas não coincidem'); return; }
     setLoading(true);
     try {
-      const data = await callEdge('auth-set-password', { telefone: rawPhone, senha: novaSenha });
-      login(data.token, data.user_id, rawPhone);
+      const data = await callEdge('auth-set-password', { telefone: fullPhone, senha: novaSenha });
+      login(data.token, data.user_id, fullPhone);
       toast.success('Senha criada com sucesso!');
       navigate('/');
     } catch (err: any) {
@@ -202,18 +179,18 @@ const LoginPage = () => {
           {/* PHONE STEP */}
           {step === 'phone' && (
             <>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <div className="flex">
+                <CountryCodeSelector selected={country} onSelect={setCountry} />
                 <Input
-                  placeholder="(11) 99999-9999"
-                  value={telefone}
+                  placeholder={country.mask.replace(/#/g, '9')}
+                  value={applyMask(phoneDigits, country.mask, country.maxDigits)}
                   onChange={handlePhoneChange}
                   onKeyDown={(e) => handleKeyDown(e, handleCheckPhone)}
-                  className="pl-10 h-12 text-base"
+                  className="rounded-l-none h-12 text-base flex-1"
                   autoFocus
                 />
               </div>
-              <Button onClick={handleCheckPhone} disabled={loading || rawPhone.length < 10} className="w-full h-12 text-base">
+              <Button onClick={handleCheckPhone} disabled={loading || !isPhoneValid} className="w-full h-12 text-base">
                 {loading ? <Loader2 className="animate-spin h-5 w-5" /> : 'Continuar'}
               </Button>
             </>
@@ -223,8 +200,8 @@ const LoginPage = () => {
           {step === 'password' && (
             <>
               <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">{telefone}</span>
+                <span className="text-lg leading-none">{country.flag}</span>
+                <span className="text-sm text-muted-foreground">{displayFull}</span>
               </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -237,11 +214,7 @@ const LoginPage = () => {
                   className="pl-10 pr-10 h-12 text-base"
                   autoFocus
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
@@ -263,8 +236,8 @@ const LoginPage = () => {
           {step === 'otp' && (
             <>
               <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">{telefone}</span>
+                <span className="text-lg leading-none">{country.flag}</span>
+                <span className="text-sm text-muted-foreground">{displayFull}</span>
               </div>
               <div className="flex justify-center gap-2" onPaste={handleOtpPaste}>
                 {otp.map((digit, i) => (
@@ -313,11 +286,7 @@ const LoginPage = () => {
                   className="pl-10 pr-10 h-12 text-base"
                   autoFocus
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
+                <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                   {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>

@@ -290,6 +290,33 @@ export type Database = {
           },
         ]
       }
+      usuarios: {
+        Row: {
+          created_at: string
+          id: string
+          senha_hash: string | null
+          telefone: string
+          ultimo_login: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          senha_hash?: string | null
+          telefone: string
+          ultimo_login?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          senha_hash?: string | null
+          telefone?: string
+          ultimo_login?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

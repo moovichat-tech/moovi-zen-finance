@@ -1,5 +1,5 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
+import postgres from "https://deno.land/x/postgresjs@v3.4.5/mod.js";
 import bcrypt from "https://esm.sh/bcryptjs@2.4.3";
 import { create, getNumericDate } from "https://deno.land/x/djwt@v3.0.2/mod.ts";
 
@@ -21,6 +21,8 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  const sql = postgres(Deno.env.get("EXTERNAL_DATABASE_URL")!, { max: 1 });
+
   try {
     const { telefone, senha } = await req.json();
     if (!telefone || !senha) {
@@ -30,25 +32,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const rows = await sql`SELECT id, senha_hash FROM usuarios WHERE telefone = ${telefone} LIMIT 1`;
 
-    const { data: user, error } = await supabase
-      .from("usuarios")
-      .select("id, senha_hash")
-      .eq("telefone", telefone)
-      .maybeSingle();
-
-    if (error) throw error;
-    if (!user || !user.senha_hash) {
+    if (rows.length === 0 || !rows[0].senha_hash) {
       return new Response(JSON.stringify({ error: "Credenciais inválidas" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    const user = rows[0];
     const valid = bcrypt.compareSync(senha, user.senha_hash);
     if (!valid) {
       return new Response(JSON.stringify({ error: "Credenciais inválidas" }), {
@@ -57,20 +50,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Update ultimo_login
-    await supabase
-      .from("usuarios")
-      .update({ ultimo_login: new Date().toISOString() })
-      .eq("id", user.id);
+    await sql`UPDATE usuarios SET ultimo_login = now() WHERE id = ${user.id}`;
 
-    // Generate JWT
     const key = await getKey();
     const token = await create(
       { alg: "HS256", typ: "JWT" },
       {
         sub: user.id,
         telefone,
-        exp: getNumericDate(60 * 60 * 24 * 7), // 7 days
+        exp: getNumericDate(60 * 60 * 24 * 7),
       },
       key
     );
@@ -84,5 +72,7 @@ Deno.serve(async (req) => {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+  } finally {
+    await sql.end();
   }
 });

@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
-import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
+import bcrypt from "https://esm.sh/bcryptjs@2.4.3";
 import { create, getNumericDate } from "https://deno.land/x/djwt@v3.0.2/mod.ts";
 
 const JWT_SECRET = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const hash = await bcrypt.hash(senha);
+    const hash = bcrypt.hashSync(senha, 10);
 
     const { data, error } = await supabase
       .from("usuarios")

@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
 
     const rows = await sql`
       INSERT INTO cartoes (telefone_usuario, nome, nome_conta, icone, limite_total, dia_fechamento, dia_vencimento, tipo_cartao, ultimos_digitos)
-      VALUES (${telefone}, ${nome}, ${nome_conta || null}, ${icone || null}, ${limite_total || null}, ${dia_fechamento || null}, ${dia_vencimento || null}, ${tipo_cartao || null}, ${ultimos_digitos || null})
+      VALUES (${telefone}, ${nome}, ${nome_conta || nome}, ${icone || null}, ${limite_total || null}, ${dia_fechamento || null}, ${dia_vencimento || null}, ${tipo_cartao || null}, ${ultimos_digitos || null})
       RETURNING id, nome, nome_conta, icone, limite_total, dia_fechamento, dia_vencimento, tipo_cartao, ultimos_digitos
     `;
 

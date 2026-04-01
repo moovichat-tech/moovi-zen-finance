@@ -161,13 +161,6 @@ const CardsPage = () => {
     enabled: !!token && !!sheetCardName,
   });
 
-  // Compute used limits from real transaction data per card
-  const cardUsedLimits = useMemo(() => {
-    // We only have transaction data for the selected card via the sheet query
-    // For now, return empty — this could be enhanced with a dedicated endpoint
-    const limits: Record<string, number> = {};
-    return limits;
-  }, []);
 
   const selectedCardData = sheetCardName ? cards.find(c => c.name === sheetCardName) : null;
 

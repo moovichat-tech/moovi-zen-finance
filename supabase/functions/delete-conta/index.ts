@@ -33,18 +33,22 @@ Deno.serve(async (req) => {
 
   try {
     const telefone = await getTelefoneFromToken(req);
-    const { nome, nome_conta, icone, limite_total, dia_fechamento, dia_vencimento, tipo_cartao, ultimos_digitos } = await req.json();
+    const { id } = await req.json();
 
-    if (!nome) throw new Error("Nome é obrigatório");
+    if (!id) throw new Error("ID é obrigatório");
 
     const rows = await sql`
-      INSERT INTO cartoes (telefone_usuario, nome, nome_conta, icone, limite_total, dia_fechamento, dia_vencimento, tipo_cartao, ultimos_digitos)
-      VALUES (${telefone}, ${nome}, ${nome_conta || nome}, ${icone || null}, ${limite_total || null}, ${dia_fechamento || null}, ${dia_vencimento || null}, ${tipo_cartao || null}, ${ultimos_digitos || null})
-      RETURNING id, nome, nome_conta, icone, limite_total, dia_fechamento, dia_vencimento, tipo_cartao, ultimos_digitos
+      DELETE FROM contas WHERE id = ${id} AND telefone_usuario = ${telefone} RETURNING id
     `;
 
-    return new Response(JSON.stringify(rows[0]), {
-      status: 201,
+    if (rows.length === 0) {
+      return new Response(JSON.stringify({ error: "Conta não encontrada" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useI18n } from '@/i18n/context';
+import { useAuth } from '@/hooks/useAuth';
 import { useData } from '@/store/DataContext';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,27 +12,58 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { MonthYearPicker } from '@/components/MonthYearPicker';
 import { Plus, Trash2, ArrowRightLeft, Landmark, Globe, Building2, TrendingUp, Pencil, Eye, X } from 'lucide-react';
+import { toast } from 'sonner';
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+interface Conta {
+  id: number | string;
+  nome: string;
+  tipo: string | null;
+  icone: string | null;
+  saldo_inicial: number | null;
+}
+
+async function callApi(fnName: string, token: string, body?: Record<string, unknown>) {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/${fnName}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      'apikey': SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify(body ?? {}),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Erro na requisição');
+  return data;
+}
 
 const typeIcons: Record<string, any> = {
-  checking: Landmark,
-  business: Building2,
-  international: Globe,
-  investment: TrendingUp,
+  corrente: Landmark,
+  poupanca: Landmark,
+  pj: Building2,
+  internacional: Globe,
+  investimento: TrendingUp,
 };
 
 const typeLabels: Record<string, string> = {
-  checking: 'Conta Corrente',
-  business: 'Conta PJ',
-  international: 'Conta Internacional',
-  investment: 'Conta Investimento',
+  corrente: 'Conta Corrente',
+  poupanca: 'Conta Poupança',
+  pj: 'Conta PJ',
+  internacional: 'Conta Internacional',
+  investimento: 'Conta Investimento',
 };
 
 const AccountsPage = () => {
   const { t, formatCurrency, formatDate } = useI18n();
-  const { accounts, transactions, addAccount, updateAccount, deleteAccountWithTransactions, moveAccountTransactions, transferBetweenAccounts } = useData();
+  const { token } = useAuth();
+  const { transactions } = useData();
+  const queryClient = useQueryClient();
   const [openAdd, setOpenAdd] = useState(false);
   const [openTransfer, setOpenTransfer] = useState(false);
-  const [editingAccount, setEditingAccount] = useState<string | null>(null);
+  const [editingAccount, setEditingAccount] = useState<Conta | null>(null);
   const [deletingAccount, setDeletingAccount] = useState<string | null>(null);
   const [deleteAction, setDeleteAction] = useState<'delete' | 'move'>('delete');
   const [moveToAccount, setMoveToAccount] = useState('');
@@ -40,42 +73,79 @@ const AccountsPage = () => {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
   const [viewFilterAll, setViewFilterAll] = useState(true);
-  const [form, setForm] = useState({ name: '', type: 'checking' as any, balance: '', institution: '', color: 'hsl(234, 62%, 52%)' });
+  const [form, setForm] = useState({ name: '', type: 'corrente', balance: '', institution: '', color: 'hsl(234, 62%, 52%)' });
   const [transfer, setTransfer] = useState({ from: '', to: '', amount: '' });
+
+  const { data: contas = [] } = useQuery<Conta[]>({
+    queryKey: ['contas'],
+    queryFn: () => callApi('get-contas', token!),
+    enabled: !!token,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: Record<string, unknown>) => callApi('create-conta', token!, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['contas'] }); toast.success('Conta criada!'); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: Record<string, unknown>) => callApi('update-conta', token!, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['contas'] }); toast.success('Conta atualizada!'); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number | string) => callApi('delete-conta', token!, { id }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['contas'] }); toast.success('Conta excluída!'); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  // Map API data to UI shape
+  const accounts = useMemo(() => contas.map(c => ({
+    id: String(c.id),
+    name: c.nome,
+    type: (c.tipo || 'corrente').toLowerCase(),
+    balance: c.saldo_inicial || 0,
+    institution: c.nome,
+    color: 'hsl(234, 62%, 52%)',
+  })), [contas]);
 
   const handleAdd = () => {
     if (!form.name || !form.balance) return;
-    const institution = form.institution || form.name;
+    const payload = {
+      nome: form.name,
+      tipo: form.type || null,
+      saldo_inicial: parseFloat(form.balance),
+    };
     if (editingAccount) {
-      updateAccount(editingAccount, { name: form.name, type: form.type, balance: parseFloat(form.balance), institution, color: form.color });
-      setEditingAccount(null);
+      updateMutation.mutate({ id: editingAccount.id, ...payload });
     } else {
-      addAccount({ name: form.name, type: form.type, balance: parseFloat(form.balance), institution, color: form.color });
+      createMutation.mutate(payload);
     }
     setOpenAdd(false);
-    setForm({ name: '', type: 'checking', balance: '', institution: '', color: 'hsl(234, 62%, 52%)' });
+    setForm({ name: '', type: 'corrente', balance: '', institution: '', color: 'hsl(234, 62%, 52%)' });
+    setEditingAccount(null);
   };
 
   const openEdit = (acc: typeof accounts[0]) => {
-    setEditingAccount(acc.id);
-    setForm({ name: acc.name, type: acc.type, balance: String(acc.balance), institution: acc.institution, color: acc.color });
+    const conta = contas.find(c => String(c.id) === acc.id);
+    if (!conta) return;
+    setEditingAccount(conta);
+    setForm({ name: conta.nome, type: (conta.tipo || 'corrente').toLowerCase(), balance: String(conta.saldo_inicial || 0), institution: conta.nome, color: 'hsl(234, 62%, 52%)' });
     setOpenAdd(true);
   };
 
   const handleTransfer = () => {
+    // Transfer between accounts is local-only for now
     if (!transfer.from || !transfer.to || !transfer.amount || transfer.from === transfer.to) return;
-    transferBetweenAccounts(transfer.from, transfer.to, parseFloat(transfer.amount));
+    toast.info('Transferência entre contas será implementada em breve.');
     setOpenTransfer(false);
     setTransfer({ from: '', to: '', amount: '' });
   };
 
   const confirmDelete = () => {
     if (!deletingAccount) return;
-    if (deleteAction === 'delete') {
-      deleteAccountWithTransactions(deletingAccount);
-    } else if (deleteAction === 'move' && moveToAccount) {
-      moveAccountTransactions(deletingAccount, moveToAccount);
-    }
+    deleteMutation.mutate(deletingAccount);
     setDeletingAccount(null);
     setMoveToAccount('');
   };
@@ -103,7 +173,7 @@ const AccountsPage = () => {
           <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setOpenTransfer(true)}>
             <ArrowRightLeft className="h-4 w-4" /> <span className="hidden sm:inline">Transferir</span>
           </Button>
-          <Button size="sm" className="gap-1.5" onClick={() => { setEditingAccount(null); setForm({ name: '', type: 'checking', balance: '', institution: '', color: 'hsl(234, 62%, 52%)' }); setOpenAdd(true); }}>
+          <Button size="sm" className="gap-1.5" onClick={() => { setEditingAccount(null); setForm({ name: '', type: 'corrente', balance: '', institution: '', color: 'hsl(234, 62%, 52%)' }); setOpenAdd(true); }}>
             <Plus className="h-4 w-4" /> {t.common.add}
           </Button>
         </div>
@@ -261,7 +331,7 @@ const AccountsPage = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5"><Label>Saldo</Label><Input type="number" value={form.balance} onChange={e => setForm({ ...form, balance: e.target.value })} /></div>
+              <div className="space-y-1.5"><Label>Saldo Inicial</Label><Input type="number" value={form.balance} onChange={e => setForm({ ...form, balance: e.target.value })} /></div>
             </div>
           </div>
           <DialogFooter>

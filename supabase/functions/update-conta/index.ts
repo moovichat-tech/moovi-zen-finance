@@ -33,18 +33,25 @@ Deno.serve(async (req) => {
 
   try {
     const telefone = await getTelefoneFromToken(req);
-    const { nome, nome_conta, icone, limite_total, dia_fechamento, dia_vencimento, tipo_cartao, ultimos_digitos } = await req.json();
+    const { id, nome, tipo, icone, saldo_inicial } = await req.json();
 
-    if (!nome) throw new Error("Nome é obrigatório");
+    if (!id || !nome) throw new Error("ID e Nome são obrigatórios");
 
     const rows = await sql`
-      INSERT INTO cartoes (telefone_usuario, nome, nome_conta, icone, limite_total, dia_fechamento, dia_vencimento, tipo_cartao, ultimos_digitos)
-      VALUES (${telefone}, ${nome}, ${nome_conta || nome}, ${icone || null}, ${limite_total || null}, ${dia_fechamento || null}, ${dia_vencimento || null}, ${tipo_cartao || null}, ${ultimos_digitos || null})
-      RETURNING id, nome, nome_conta, icone, limite_total, dia_fechamento, dia_vencimento, tipo_cartao, ultimos_digitos
+      UPDATE contas
+      SET nome = ${nome}, tipo = ${tipo || null}, icone = ${icone || null}, saldo_inicial = ${saldo_inicial ?? 0}
+      WHERE id = ${id} AND telefone_usuario = ${telefone}
+      RETURNING id, nome, tipo, icone, saldo_inicial
     `;
 
+    if (rows.length === 0) {
+      return new Response(JSON.stringify({ error: "Conta não encontrada" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify(rows[0]), {
-      status: 201,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

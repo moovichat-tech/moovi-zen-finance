@@ -33,22 +33,13 @@ Deno.serve(async (req) => {
 
   try {
     const telefone = await getTelefoneFromToken(req);
-    const { nome, nome_conta, icone, limite_total, dia_fechamento, dia_vencimento, tipo_cartao, ultimos_digitos } = await req.json();
+    const rows = await sql`SELECT id, nome, tipo, icone, saldo_inicial FROM contas WHERE telefone_usuario = ${telefone} ORDER BY nome`;
 
-    if (!nome) throw new Error("Nome é obrigatório");
-
-    const rows = await sql`
-      INSERT INTO cartoes (telefone_usuario, nome, nome_conta, icone, limite_total, dia_fechamento, dia_vencimento, tipo_cartao, ultimos_digitos)
-      VALUES (${telefone}, ${nome}, ${nome_conta || nome}, ${icone || null}, ${limite_total || null}, ${dia_fechamento || null}, ${dia_vencimento || null}, ${tipo_cartao || null}, ${ultimos_digitos || null})
-      RETURNING id, nome, nome_conta, icone, limite_total, dia_fechamento, dia_vencimento, tipo_cartao, ultimos_digitos
-    `;
-
-    return new Response(JSON.stringify(rows[0]), {
-      status: 201,
+    return new Response(JSON.stringify(rows), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    const status = e.message.includes("Token") ? 401 : 400;
+    const status = e.message.includes("Token") ? 401 : 500;
     return new Response(JSON.stringify({ error: e.message }), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

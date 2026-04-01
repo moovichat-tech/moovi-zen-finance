@@ -33,14 +33,14 @@ Deno.serve(async (req) => {
 
   try {
     const telefone = await getTelefoneFromToken(req);
-    const { nome, nome_conta, icone, limite_total, dia_fechamento, dia_vencimento, tipo_cartao, ultimos_digitos } = await req.json();
+    const { nome, tipo, icone, saldo_inicial } = await req.json();
 
     if (!nome) throw new Error("Nome é obrigatório");
 
     const rows = await sql`
-      INSERT INTO cartoes (telefone_usuario, nome, nome_conta, icone, limite_total, dia_fechamento, dia_vencimento, tipo_cartao, ultimos_digitos)
-      VALUES (${telefone}, ${nome}, ${nome_conta || nome}, ${icone || null}, ${limite_total || null}, ${dia_fechamento || null}, ${dia_vencimento || null}, ${tipo_cartao || null}, ${ultimos_digitos || null})
-      RETURNING id, nome, nome_conta, icone, limite_total, dia_fechamento, dia_vencimento, tipo_cartao, ultimos_digitos
+      INSERT INTO contas (telefone_usuario, nome, tipo, icone, saldo_inicial)
+      VALUES (${telefone}, ${nome}, ${tipo || null}, ${icone || null}, ${saldo_inicial ?? 0})
+      RETURNING id, nome, tipo, icone, saldo_inicial
     `;
 
     return new Response(JSON.stringify(rows[0]), {

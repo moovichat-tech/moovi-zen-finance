@@ -1,48 +1,131 @@
 import { useState, useMemo } from 'react';
 import { useI18n } from '@/i18n/context';
+import { useAuth } from '@/hooks/useAuth';
 import { useData } from '@/store/DataContext';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { MonthYearPicker } from '@/components/MonthYearPicker';
 import { Plus, Trash2, CreditCard, Pencil, X, Eye } from 'lucide-react';
-import type { CreditCard as CreditCardType } from '@/store/DataContext';
+import { toast } from 'sonner';
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+interface Cartao {
+  id: number | string;
+  nome: string;
+  nome_conta: string | null;
+  icone: string | null;
+  limite_total: number | null;
+  dia_fechamento: number | null;
+  dia_vencimento: number | null;
+  tipo_cartao: string | null;
+  ultimos_digitos: string | null;
+}
+
+async function callApi(fnName: string, token: string, body?: Record<string, unknown>) {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/${fnName}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      'apikey': SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify(body ?? {}),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Erro na requisição');
+  return data;
+}
 
 const CardsPage = () => {
   const { t, formatCurrency, formatDate } = useI18n();
-  const { cards, transactions, addCard, deleteCard, updateCard } = useData();
+  const { token } = useAuth();
+  const { transactions } = useData();
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [editingCard, setEditingCard] = useState<CreditCardType | null>(null);
+  const [editingCard, setEditingCard] = useState<Cartao | null>(null);
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
   const [txFilterMonth, setTxFilterMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
   const [txFilterAll, setTxFilterAll] = useState(true);
-  const [form, setForm] = useState({ name: '', lastDigits: '', limit: '', closingDay: '3', dueDay: '10', color: 'hsl(234, 62%, 52%)' });
+  const [form, setForm] = useState({ name: '', lastDigits: '', limit: '', closingDay: '3', dueDay: '10' });
+
+  const { data: cartoes = [] } = useQuery<Cartao[]>({
+    queryKey: ['cartoes'],
+    queryFn: () => callApi('get-cartoes', token!),
+    enabled: !!token,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: Record<string, unknown>) => callApi('create-cartao', token!, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['cartoes'] }); toast.success('Cartão criado!'); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: Record<string, unknown>) => callApi('update-cartao', token!, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['cartoes'] }); toast.success('Cartão atualizado!'); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number | string) => callApi('delete-cartao', token!, { id }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['cartoes'] }); toast.success('Cartão excluído!'); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  // Map API data to the shape used in the UI
+  const cards = useMemo(() => cartoes.map(c => ({
+    id: String(c.id),
+    name: c.nome,
+    lastDigits: c.ultimos_digitos || '',
+    limit: c.limite_total || 0,
+    closingDay: c.dia_fechamento || 1,
+    dueDay: c.dia_vencimento || 10,
+    color: 'hsl(234, 62%, 52%)',
+  })), [cartoes]);
 
   const openAdd = () => {
     setEditingCard(null);
-    setForm({ name: '', lastDigits: '', limit: '', closingDay: '3', dueDay: '10', color: 'hsl(234, 62%, 52%)' });
+    setForm({ name: '', lastDigits: '', limit: '', closingDay: '3', dueDay: '10' });
     setOpen(true);
   };
 
-  const openEdit = (card: CreditCardType) => {
-    setEditingCard(card);
-    setForm({ name: card.name, lastDigits: card.lastDigits, limit: String(card.limit), closingDay: String(card.closingDay), dueDay: String(card.dueDay), color: card.color });
+  const openEdit = (cardId: string) => {
+    const cartao = cartoes.find(c => String(c.id) === cardId);
+    if (!cartao) return;
+    setEditingCard(cartao);
+    setForm({
+      name: cartao.nome,
+      lastDigits: cartao.ultimos_digitos || '',
+      limit: String(cartao.limite_total || ''),
+      closingDay: String(cartao.dia_fechamento || ''),
+      dueDay: String(cartao.dia_vencimento || ''),
+    });
     setOpen(true);
   };
 
   const handleSubmit = () => {
     if (!form.name || !form.limit) return;
+    const payload = {
+      nome: form.name,
+      ultimos_digitos: form.lastDigits || null,
+      limite_total: parseFloat(form.limit),
+      dia_fechamento: form.closingDay ? parseInt(form.closingDay) : null,
+      dia_vencimento: form.dueDay ? parseInt(form.dueDay) : null,
+    };
     if (editingCard) {
-      updateCard(editingCard.id, { name: form.name, lastDigits: form.lastDigits, limit: parseFloat(form.limit), closingDay: parseInt(form.closingDay), dueDay: parseInt(form.dueDay), color: form.color });
+      updateMutation.mutate({ id: editingCard.id, ...payload });
     } else {
-      addCard({ name: form.name, lastDigits: form.lastDigits, limit: parseFloat(form.limit), usedLimit: 0, closingDay: parseInt(form.closingDay), dueDay: parseInt(form.dueDay), color: form.color });
+      createMutation.mutate(payload);
     }
     setOpen(false);
   };
@@ -97,10 +180,10 @@ const CardsPage = () => {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(card)}>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(card.id)}>
                     <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteCard(card.id)}>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteMutation.mutate(cartoes.find(c => String(c.id) === card.id)?.id!)}>
                     <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
                   </Button>
                 </div>

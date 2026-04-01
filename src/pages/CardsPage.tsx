@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { MonthYearPicker } from '@/components/MonthYearPicker';
@@ -26,6 +27,11 @@ interface Cartao {
   dia_vencimento: number | null;
   tipo_cartao: string | null;
   ultimos_digitos: string | null;
+}
+
+interface Conta {
+  id: number | string;
+  nome: string;
 }
 
 async function callApi(fnName: string, token: string, body?: Record<string, unknown>) {
@@ -56,11 +62,17 @@ const CardsPage = () => {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
   const [txFilterAll, setTxFilterAll] = useState(true);
-  const [form, setForm] = useState({ name: '', lastDigits: '', limit: '', closingDay: '3', dueDay: '10' });
+  const [form, setForm] = useState({ name: '', lastDigits: '', limit: '', closingDay: '3', dueDay: '10', nomeConta: '' });
 
   const { data: cartoes = [] } = useQuery<Cartao[]>({
     queryKey: ['cartoes'],
     queryFn: () => callApi('get-cartoes', token!),
+    enabled: !!token,
+  });
+
+  const { data: contas = [] } = useQuery<Conta[]>({
+    queryKey: ['contas'],
+    queryFn: () => callApi('get-contas', token!),
     enabled: !!token,
   });
 
@@ -91,11 +103,12 @@ const CardsPage = () => {
     closingDay: c.dia_fechamento || 1,
     dueDay: c.dia_vencimento || 10,
     color: 'hsl(234, 62%, 52%)',
+    nomeConta: c.nome_conta || null,
   })), [cartoes]);
 
   const openAdd = () => {
     setEditingCard(null);
-    setForm({ name: '', lastDigits: '', limit: '', closingDay: '3', dueDay: '10' });
+    setForm({ name: '', lastDigits: '', limit: '', closingDay: '3', dueDay: '10', nomeConta: '' });
     setOpen(true);
   };
 
@@ -109,6 +122,7 @@ const CardsPage = () => {
       limit: String(cartao.limite_total || ''),
       closingDay: String(cartao.dia_fechamento || ''),
       dueDay: String(cartao.dia_vencimento || ''),
+      nomeConta: cartao.nome_conta || '',
     });
     setOpen(true);
   };
@@ -121,6 +135,7 @@ const CardsPage = () => {
       limite_total: parseFloat(form.limit),
       dia_fechamento: form.closingDay ? parseInt(form.closingDay) : null,
       dia_vencimento: form.dueDay ? parseInt(form.dueDay) : null,
+      nome_conta: form.nomeConta || form.name,
     };
     if (editingCard) {
       updateMutation.mutate({ id: editingCard.id, ...payload });
@@ -177,6 +192,7 @@ const CardsPage = () => {
                   <div>
                     <h3 className="text-sm font-semibold">{card.name}</h3>
                     {card.lastDigits && <p className="text-xs text-muted-foreground">•••• {card.lastDigits}</p>}
+                    {card.nomeConta && <p className="text-xs text-muted-foreground">Conta: {card.nomeConta}</p>}
                   </div>
                 </div>
                 <div className="flex gap-1">
@@ -293,6 +309,17 @@ const CardsPage = () => {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label>Dia fechamento</Label><Input type="number" min={1} max={31} value={form.closingDay} onChange={e => setForm({ ...form, closingDay: e.target.value })} /></div>
               <div className="space-y-1.5"><Label>Dia vencimento</Label><Input type="number" min={1} max={31} value={form.dueDay} onChange={e => setForm({ ...form, dueDay: e.target.value })} /></div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Conta Vinculada</Label>
+              <Select value={form.nomeConta} onValueChange={v => setForm({ ...form, nomeConta: v })}>
+                <SelectTrigger><SelectValue placeholder="Selecionar conta" /></SelectTrigger>
+                <SelectContent>
+                  {contas.map(c => (
+                    <SelectItem key={String(c.id)} value={c.nome}>{c.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>

@@ -24,6 +24,7 @@ interface AppSidebarProps { collapsed: boolean; onToggle: () => void; mobileOpen
 
 export const AppSidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose, isDesktop }: AppSidebarProps) => {
   const { t, locale } = useI18n();
+  const { logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 

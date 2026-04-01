@@ -112,6 +112,7 @@ const CardsPage = () => {
     dueDay: c.dia_vencimento || 10,
     color: 'hsl(234, 62%, 52%)',
     nomeConta: c.nome_conta || null,
+    gastoTotal: Number(c.gasto_total) || 0,
   })), [cartoes]);
 
   const openAdd = () => {

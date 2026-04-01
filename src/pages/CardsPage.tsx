@@ -63,18 +63,12 @@ async function callApi(fnName: string, token: string, body?: Record<string, unkn
 }
 
 const CardsPage = () => {
-  const { t, formatCurrency, formatDate } = useI18n();
+  const { t, formatCurrency } = useI18n();
   const { token } = useAuth();
-  const { transactions } = useData();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<Cartao | null>(null);
-  const [selectedCard, setSelectedCard] = useState<string | null>(null);
-  const [txFilterMonth, setTxFilterMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
-  const [txFilterAll, setTxFilterAll] = useState(true);
+  const [sheetCardName, setSheetCardName] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', lastDigits: '', limit: '', closingDay: '3', dueDay: '10', nomeConta: '' });
 
   const { data: cartoes = [] } = useQuery<Cartao[]>({

@@ -187,7 +187,7 @@ const CardsPage = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {cards.map(card => {
-          const usedLimit = cardUsedLimits[card.id] || 0;
+          const usedLimit = card.gastoTotal;
           const usagePercent = card.limit > 0 ? Math.round((usedLimit / card.limit) * 100) : 0;
           return (
             <Card key={card.id} className="p-4 sm:p-5 card-hover">

@@ -28,6 +28,7 @@ interface Cartao {
   dia_vencimento: number | null;
   tipo_cartao: string | null;
   ultimos_digitos: string | null;
+  gasto_total: number | string | null;
 }
 
 interface Conta {

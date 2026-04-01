@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const valid = await bcrypt.compare(senha, user.senha_hash);
+    const valid = bcrypt.compareSync(senha, user.senha_hash);
     if (!valid) {
       return new Response(JSON.stringify({ error: "Credenciais inválidas" }), {
         status: 401,

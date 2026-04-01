@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const hash = await bcrypt.hash(senha);
+    const hash = bcrypt.hashSync(senha, 10);
 
     const { data, error } = await supabase
       .from("usuarios")

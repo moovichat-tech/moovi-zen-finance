@@ -1,5 +1,5 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
+import postgres from "https://deno.land/x/postgresjs@v3.4.5/mod.js";
 import bcrypt from "https://esm.sh/bcryptjs@2.4.3";
 import { create, getNumericDate } from "https://deno.land/x/djwt@v3.0.2/mod.ts";
 
@@ -21,6 +21,8 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  const sql = postgres(Deno.env.get("EXTERNAL_DATABASE_URL")!, { max: 1 });
+
   try {
     const { telefone, senha } = await req.json();
     if (!telefone || !senha) {
@@ -37,34 +39,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
     const hash = bcrypt.hashSync(senha, 10);
 
-    const { data, error } = await supabase
-      .from("usuarios")
-      .update({ senha_hash: hash, ultimo_login: new Date().toISOString() })
-      .eq("telefone", telefone)
-      .select("id")
-      .maybeSingle();
+    const rows = await sql`UPDATE usuarios SET senha_hash = ${hash}, ultimo_login = now() WHERE telefone = ${telefone} RETURNING id`;
 
-    if (error) throw error;
-    if (!data) {
+    if (rows.length === 0) {
       return new Response(JSON.stringify({ error: "Usuário não encontrado" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Generate JWT
+    const userId = rows[0].id;
+
     const key = await getKey();
     const token = await create(
       { alg: "HS256", typ: "JWT" },
       {
-        sub: data.id,
+        sub: userId,
         telefone,
         exp: getNumericDate(60 * 60 * 24 * 7),
       },
@@ -72,7 +64,7 @@ Deno.serve(async (req) => {
     );
 
     return new Response(
-      JSON.stringify({ token, user_id: data.id }),
+      JSON.stringify({ token, user_id: userId }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
@@ -80,5 +72,7 @@ Deno.serve(async (req) => {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+  } finally {
+    await sql.end();
   }
 });

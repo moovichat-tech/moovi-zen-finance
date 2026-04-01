@@ -152,26 +152,31 @@ const CardsPage = () => {
     setOpen(false);
   };
 
+  // Fetch transactions for selected card
+  const { data: transacoesCartao = [], isLoading: loadingTx } = useQuery<Transacao[]>({
+    queryKey: ['transacoes-cartao', sheetCardName],
+    queryFn: () => callApi('get-transacoes-cartao', token!, { cartao: sheetCardName }),
+    enabled: !!token && !!sheetCardName,
+  });
+
+  // Compute used limits from real transaction data per card
   const cardUsedLimits = useMemo(() => {
+    // We only have transaction data for the selected card via the sheet query
+    // For now, return empty — this could be enhanced with a dedicated endpoint
     const limits: Record<string, number> = {};
-    cards.forEach(card => {
-      const used = transactions
-        .filter(tr => tr.cardId === card.id && tr.type === 'expense')
-        .reduce((sum, tr) => sum + tr.amount, 0);
-      limits[card.id] = used;
-    });
     return limits;
-  }, [cards, transactions]);
+  }, []);
 
-  const selectedCardData = selectedCard ? cards.find(c => c.id === selectedCard) : null;
+  const selectedCardData = sheetCardName ? cards.find(c => c.name === sheetCardName) : null;
 
-  const selectedCardTransactions = useMemo(() => {
-    if (!selectedCard) return [];
-    return transactions
-      .filter(tr => tr.cardId === selectedCard)
-      .filter(tr => txFilterAll || tr.date.startsWith(txFilterMonth))
-      .sort((a, b) => b.date.localeCompare(a.date));
-  }, [transactions, selectedCard, txFilterMonth, txFilterAll]);
+  const formatTxDate = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    } catch {
+      return dateStr;
+    }
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-in-up">
@@ -190,7 +195,7 @@ const CardsPage = () => {
           const usedLimit = cardUsedLimits[card.id] || 0;
           const usagePercent = card.limit > 0 ? Math.round((usedLimit / card.limit) * 100) : 0;
           return (
-            <Card key={card.id} className={`p-4 sm:p-5 card-hover ${selectedCard === card.id ? 'border-primary' : ''}`}>
+            <Card key={card.id} className="p-4 sm:p-5 card-hover">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: card.color + '20' }}>
@@ -242,7 +247,7 @@ const CardsPage = () => {
                 variant="outline"
                 size="sm"
                 className="mt-3 w-full gap-1.5 text-xs"
-                onClick={() => { setSelectedCard(selectedCard === card.id ? null : card.id); setTxFilterAll(true); }}
+                onClick={() => setSheetCardName(card.name)}
               >
                 <Eye className="h-3.5 w-3.5" /> Ver lançamentos
               </Button>
@@ -251,58 +256,57 @@ const CardsPage = () => {
         })}
       </div>
 
-      {/* Selected Card Transactions */}
-      {selectedCardData && (
-        <Card className="p-4 sm:p-5">
-          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-            <h3 className="text-sm font-semibold">Lançamentos — {selectedCardData.name}</h3>
-            <div className="flex items-center gap-2">
-              <Button
-                variant={txFilterAll ? 'default' : 'outline'}
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => setTxFilterAll(true)}
-              >
-                Todos
-              </Button>
-              <Button
-                variant={!txFilterAll ? 'default' : 'outline'}
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => setTxFilterAll(false)}
-              >
-                Por mês
-              </Button>
-              {!txFilterAll && (
-                <MonthYearPicker value={txFilterMonth} onChange={setTxFilterMonth} triggerClassName="h-7 w-24 text-xs" />
+      {/* Transactions Sheet */}
+      <Sheet open={!!sheetCardName} onOpenChange={(open) => { if (!open) setSheetCardName(null); }}>
+        <SheetContent side="right" className="w-full sm:max-w-lg p-0">
+          <SheetHeader className="px-6 pt-6 pb-4 border-b border-border">
+            <SheetTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-primary" />
+              Lançamentos — {sheetCardName}
+            </SheetTitle>
+          </SheetHeader>
+          <ScrollArea className="h-[calc(100vh-5rem)]">
+            <div className="px-6 py-4">
+              {loadingTx ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : transacoesCartao.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-12">
+                  Nenhum lançamento encontrado para este cartão.
+                </p>
+              ) : (
+                <div className="space-y-1">
+                  {transacoesCartao.map(tr => {
+                    const isIncome = tr.tipo === 'receita';
+                    const isPago = tr.status?.toUpperCase() === 'PAGO';
+                    return (
+                      <div key={tr.id} className="flex items-center justify-between py-3 border-b border-border last:border-0 gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{tr.descricao}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-xs text-muted-foreground">{formatTxDate(tr.data_transacao)}</span>
+                            {tr.categoria && <span className="text-xs text-muted-foreground">· {tr.categoria}</span>}
+                            <Badge
+                              variant={isPago ? 'default' : 'secondary'}
+                              className={`text-[10px] px-1.5 py-0 h-4 ${isPago ? 'bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/20 border-0' : 'bg-amber-500/15 text-amber-600 hover:bg-amber-500/20 border-0'}`}
+                            >
+                              {tr.status}
+                            </Badge>
+                          </div>
+                        </div>
+                        <span className={`text-sm font-semibold shrink-0 ${isIncome ? 'text-emerald-600' : 'text-destructive'}`}>
+                          {isIncome ? '+' : '-'}{formatCurrency(tr.valor)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedCard(null)}>
-                <X className="h-4 w-4" />
-              </Button>
             </div>
-          </div>
-          {selectedCardTransactions.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">Nenhum lançamento neste cartão</p>
-          ) : (
-            <div className="space-y-2">
-              {selectedCardTransactions.map(tr => {
-                const isRefund = tr.type === 'income';
-                return (
-                  <div key={tr.id} className="flex items-center justify-between text-xs py-1.5 border-b border-border last:border-0 gap-2">
-                    <div className="truncate">
-                      <span className="font-medium">{tr.description}</span>
-                      <span className="ml-2 text-muted-foreground">{formatDate(tr.date)}</span>
-                    </div>
-                    <span className={`font-medium shrink-0 ${isRefund ? 'text-success' : 'text-destructive'}`}>
-                      {isRefund ? '+' : '-'}{formatCurrency(tr.amount)}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </Card>
-      )}
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">

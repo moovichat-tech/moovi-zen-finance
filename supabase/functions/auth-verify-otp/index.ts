@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
         "Authorization": n8nKey,
       },
-      body: JSON.stringify({ telefone, codigo }),
+      body: JSON.stringify({ telefone, code: codigo }),
     });
 
     const body = await res.text();

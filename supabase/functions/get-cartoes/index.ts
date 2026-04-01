@@ -33,7 +33,13 @@ Deno.serve(async (req) => {
 
   try {
     const telefone = await getTelefoneFromToken(req);
-    const rows = await sql`SELECT id, nome, nome_conta, icone, limite_total, dia_fechamento, dia_vencimento, tipo_cartao, ultimos_digitos FROM cartoes WHERE telefone_usuario = ${telefone} ORDER BY nome`;
+    const rows = await sql`
+      SELECT c.id, c.nome, c.nome_conta, c.icone, c.limite_total, c.dia_fechamento, c.dia_vencimento, c.tipo_cartao, c.ultimos_digitos,
+        COALESCE((SELECT SUM(CASE WHEN t.tipo = 'despesa' THEN t.valor WHEN t.tipo = 'receita' THEN -t.valor ELSE 0 END) FROM transacoes t WHERE t.cartao = c.nome AND t.telefone_usuario = ${telefone}), 0) AS gasto_total
+      FROM cartoes c
+      WHERE c.telefone_usuario = ${telefone}
+      ORDER BY c.nome
+    `;
 
     return new Response(JSON.stringify(rows), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

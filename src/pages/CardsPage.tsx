@@ -28,6 +28,7 @@ interface Cartao {
   dia_vencimento: number | null;
   tipo_cartao: string | null;
   ultimos_digitos: string | null;
+  gasto_total: number | string | null;
 }
 
 interface Conta {
@@ -111,6 +112,7 @@ const CardsPage = () => {
     dueDay: c.dia_vencimento || 10,
     color: 'hsl(234, 62%, 52%)',
     nomeConta: c.nome_conta || null,
+    gastoTotal: Number(c.gasto_total) || 0,
   })), [cartoes]);
 
   const openAdd = () => {
@@ -159,13 +161,6 @@ const CardsPage = () => {
     enabled: !!token && !!sheetCardName,
   });
 
-  // Compute used limits from real transaction data per card
-  const cardUsedLimits = useMemo(() => {
-    // We only have transaction data for the selected card via the sheet query
-    // For now, return empty — this could be enhanced with a dedicated endpoint
-    const limits: Record<string, number> = {};
-    return limits;
-  }, []);
 
   const selectedCardData = sheetCardName ? cards.find(c => c.name === sheetCardName) : null;
 
@@ -192,7 +187,7 @@ const CardsPage = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {cards.map(card => {
-          const usedLimit = cardUsedLimits[card.id] || 0;
+          const usedLimit = card.gastoTotal;
           const usagePercent = card.limit > 0 ? Math.round((usedLimit / card.limit) * 100) : 0;
           return (
             <Card key={card.id} className="p-4 sm:p-5 card-hover">

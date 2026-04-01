@@ -26,7 +26,7 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+const ProtectedLayout = () => {
   const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) {
     return (
@@ -36,7 +36,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  return <>{children}</>;
+  return <AppLayout />;
 };
 
 const App = () => (
@@ -51,7 +51,7 @@ const App = () => (
               <BrowserRouter>
                 <Routes>
                   <Route path="/login" element={<LoginPage />} />
-                  <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+                  <Route element={<ProtectedLayout />}>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/income" element={<IncomePage />} />
                     <Route path="/expenses" element={<ExpensesPage />} />

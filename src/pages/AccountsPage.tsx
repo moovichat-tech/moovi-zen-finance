@@ -148,9 +148,31 @@ const AccountsPage = () => {
     setOpenAdd(true);
   };
 
+  const transferMutation = useMutation({
+    mutationFn: (data: Record<string, unknown>) => callApi('create-transferencia', token!, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contas'] });
+      queryClient.invalidateQueries({ queryKey: ['transacoes-conta'] });
+      toast.success('Transferência realizada com sucesso!');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const handleTransfer = () => {
-    if (!transfer.from || !transfer.to || !transfer.amount || transfer.from === transfer.to) return;
-    toast.info('Transferência entre contas será implementada em breve.');
+    if (!transfer.from || !transfer.to || !transfer.amount || transfer.from === transfer.to) {
+      if (transfer.from === transfer.to && transfer.from) {
+        toast.error('Conta de origem e destino devem ser diferentes.');
+      }
+      return;
+    }
+    const fromAcc = accounts.find(a => a.id === transfer.from);
+    const toAcc = accounts.find(a => a.id === transfer.to);
+    if (!fromAcc || !toAcc) return;
+    transferMutation.mutate({
+      conta_origem: fromAcc.name,
+      conta_destino: toAcc.name,
+      valor: parseFloat(transfer.amount),
+    });
     setOpenTransfer(false);
     setTransfer({ from: '', to: '', amount: '' });
   };

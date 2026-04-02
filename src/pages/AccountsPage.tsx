@@ -366,23 +366,31 @@ const AccountsPage = () => {
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label>Origem</Label>
-              <Select value={transfer.from} onValueChange={v => setTransfer({ ...transfer, from: v })}>
+              <Select value={transfer.from} onValueChange={v => {
+                const next = { ...transfer, from: v };
+                if (v === transfer.to) next.to = '';
+                setTransfer(next);
+              }}>
                 <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
-                <SelectContent>{accounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name} — {formatCurrency(a.balance)}</SelectItem>)}</SelectContent>
+                <SelectContent>{accounts.filter(a => a.id !== transfer.to).map(a => <SelectItem key={a.id} value={a.id}>{a.name} — {formatCurrency(a.balance)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Destino</Label>
-              <Select value={transfer.to} onValueChange={v => setTransfer({ ...transfer, to: v })}>
+              <Select value={transfer.to} onValueChange={v => {
+                const next = { ...transfer, to: v };
+                if (v === transfer.from) next.from = '';
+                setTransfer(next);
+              }}>
                 <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
-                <SelectContent>{accounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}</SelectContent>
+                <SelectContent>{accounts.filter(a => a.id !== transfer.from).map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5"><Label>{t.common.amount}</Label><Input type="number" value={transfer.amount} onChange={e => setTransfer({ ...transfer, amount: e.target.value })} /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenTransfer(false)}>{t.common.cancel}</Button>
-            <Button onClick={handleTransfer}>Transferir</Button>
+            <Button onClick={handleTransfer} disabled={!transfer.from || !transfer.to || !transfer.amount || transfer.from === transfer.to}>Transferir</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

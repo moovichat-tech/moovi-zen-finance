@@ -33,17 +33,14 @@ Deno.serve(async (req) => {
 
   try {
     const telefone = await getTelefoneFromToken(req);
+    const { conta } = await req.json();
+    if (!conta) throw new Error("Nome da conta é obrigatório");
+
     const rows = await sql`
-      SELECT 
-        c.id, c.nome, c.tipo, c.icone, c.saldo_inicial,
-        COALESCE(c.saldo_inicial, 0) + COALESCE((
-          SELECT SUM(CASE WHEN t.tipo = 'receita' THEN t.valor WHEN t.tipo = 'despesa' THEN -t.valor ELSE 0 END)
-          FROM transacoes t
-          WHERE t.conta = c.nome AND t.telefone_usuario = ${telefone}
-        ), 0) AS saldo_atual
-      FROM contas c
-      WHERE c.telefone_usuario = ${telefone}
-      ORDER BY c.nome
+      SELECT id, tipo, valor, descricao, categoria, cartao, data_transacao, conta, status
+      FROM transacoes
+      WHERE telefone_usuario = ${telefone} AND conta = ${conta}
+      ORDER BY data_transacao DESC
     `;
 
     return new Response(JSON.stringify(rows), {

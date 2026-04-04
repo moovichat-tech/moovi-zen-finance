@@ -38,7 +38,8 @@ const CommitmentsPage = () => {
   };
   const l = labels[locale] || labels.pt;
 
-  const today = new Date().toISOString().split('T')[0];
+  const todayLocal = new Date();
+  const today = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth() + 1).padStart(2, '0')}-${String(todayLocal.getDate()).padStart(2, '0')}`;
   const dfLocale = dateFnsLocales[locale];
 
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
@@ -64,10 +65,11 @@ const CommitmentsPage = () => {
   });
 
   const allItems = useMemo(() => {
-    return commitments.map(c => ({
-      ...c,
-      dateStr: c.data.split('T')[0],
-    }));
+    return commitments.map(c => {
+      const d = new Date(c.data);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      return { ...c, dateStr };
+    });
   }, [commitments]);
 
   const transactionDates = useMemo(() => {
@@ -76,7 +78,7 @@ const CommitmentsPage = () => {
     return dateMap;
   }, [allItems]);
 
-  const selectedDateStr = selectedDate ? selectedDate.toISOString().split('T')[0] : '';
+  const selectedDateStr = selectedDate ? `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}` : '';
   const selectedItems = useMemo(() => {
     if (!selectedDateStr) return [];
     return allItems.filter(item => item.dateStr === selectedDateStr);
@@ -86,17 +88,21 @@ const CommitmentsPage = () => {
     return allItems.filter(item => item.dateStr >= today).slice(0, 8);
   }, [allItems, today]);
 
-  const recentItems = useMemo(() => {
-    return allItems.filter(item => item.dateStr < today).sort((a, b) => b.dateStr.localeCompare(a.dateStr)).slice(0, 6);
-  }, [allItems, today]);
+  const getDaysDiff = (dateStr: string) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const target = new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
+    const now = new Date();
+    const local = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime();
+    return Math.round((target - local) / (1000 * 60 * 60 * 24));
+  };
 
   const daysWithItems = useMemo(() => {
-    return Object.keys(transactionDates).map(d => new Date(d + 'T12:00:00'));
+    return Object.keys(transactionDates).map(d => {
+      const [y, m, day] = d.split('-').map(Number);
+      return new Date(y, m - 1, day, 12, 0, 0);
+    });
   }, [transactionDates]);
 
-  const getDaysDiff = (dateStr: string) => {
-    return Math.ceil((new Date(dateStr + 'T00:00:00').getTime() - new Date(today + 'T00:00:00').getTime()) / (1000 * 60 * 60 * 24));
-  };
 
   const renderItemRow = (item: typeof allItems[0], variant: 'full' | 'compact' | 'muted' = 'full') => {
     const isMuted = variant === 'muted';
@@ -196,8 +202,7 @@ const CommitmentsPage = () => {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <Card className="p-5">
+          <Card className="p-5">
               <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
                 <Clock className="h-4 w-4 text-primary" />
                 {l.upcoming}
@@ -210,21 +215,6 @@ const CommitmentsPage = () => {
                 </div>
               )}
             </Card>
-
-            <Card className="p-5">
-              <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                {l.recent}
-              </h3>
-              {recentItems.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">{l.noItems}</p>
-              ) : (
-                <div className="space-y-1">
-                  {recentItems.map(item => renderItemRow(item, 'muted'))}
-                </div>
-              )}
-            </Card>
-          </div>
         </>
       )}
     </div>

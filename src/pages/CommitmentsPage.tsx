@@ -78,7 +78,7 @@ const CommitmentsPage = () => {
     return dateMap;
   }, [allItems]);
 
-  const selectedDateStr = selectedDate ? selectedDate.toISOString().split('T')[0] : '';
+  const selectedDateStr = selectedDate ? `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}` : '';
   const selectedItems = useMemo(() => {
     if (!selectedDateStr) return [];
     return allItems.filter(item => item.dateStr === selectedDateStr);

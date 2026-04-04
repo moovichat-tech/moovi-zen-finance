@@ -65,10 +65,11 @@ const CommitmentsPage = () => {
   });
 
   const allItems = useMemo(() => {
-    return commitments.map(c => ({
-      ...c,
-      dateStr: c.data.split('T')[0],
-    }));
+    return commitments.map(c => {
+      const d = new Date(c.data);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      return { ...c, dateStr };
+    });
   }, [commitments]);
 
   const transactionDates = useMemo(() => {

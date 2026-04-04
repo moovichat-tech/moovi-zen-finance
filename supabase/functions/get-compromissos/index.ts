@@ -37,7 +37,7 @@ function cleanTitle(raw: string): string {
   return raw
     .replace(/\*/g, "")
     .replace("⏰ Lembrete de Pagamento: ", "")
-    .replace(" Se já pagou, lembre-se de dar baixa no painel: 🔗 https://dash.moovi.chat", "")
+    .replace(" vence hoje!", "")
     .trim();
 }
 

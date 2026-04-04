@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
 
       return {
         id: String(r.id),
-        titulo: r.mensagem_aviso || "Lembrete recorrente",
+        titulo: cleanTitle(r.mensagem_aviso || "Lembrete recorrente"),
         data: dataObj.toISOString(),
         tipo: "recorrente" as const,
         valor: r.valor ? Number(r.valor) : 0,

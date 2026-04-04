@@ -201,8 +201,7 @@ const CommitmentsPage = () => {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <Card className="p-5">
+          <Card className="p-5">
               <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
                 <Clock className="h-4 w-4 text-primary" />
                 {l.upcoming}
@@ -215,21 +214,6 @@ const CommitmentsPage = () => {
                 </div>
               )}
             </Card>
-
-            <Card className="p-5">
-              <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                {l.recent}
-              </h3>
-              {recentItems.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">{l.noItems}</p>
-              ) : (
-                <div className="space-y-1">
-                  {recentItems.map(item => renderItemRow(item, 'muted'))}
-                </div>
-              )}
-            </Card>
-          </div>
         </>
       )}
     </div>

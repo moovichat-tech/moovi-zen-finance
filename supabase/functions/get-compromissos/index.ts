@@ -33,6 +33,14 @@ function parseRedisUrl(url: string) {
   };
 }
 
+function cleanTitle(raw: string): string {
+  return raw
+    .replace(/\*/g, "")
+    .replace("⏰ Lembrete de Pagamento: ", "")
+    .replace(" Se já pagou, lembre-se de dar baixa no painel: 🔗 https://dash.moovi.chat", "")
+    .trim();
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });

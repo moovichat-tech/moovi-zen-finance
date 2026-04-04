@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
 
             redisNormalized.push({
               id: key,
-              titulo: parsed.mensagemAviso || "Lembrete temporário",
+              titulo: cleanTitle(parsed.mensagemAviso || "Lembrete temporário"),
               data: dataISO,
               tipo: "temporario" as const,
               valor: 0,

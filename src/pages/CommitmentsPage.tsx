@@ -94,6 +94,7 @@ const CommitmentsPage = () => {
     const now = new Date();
     const local = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime();
     return Math.round((target - local) / (1000 * 60 * 60 * 24));
+  };
 
   const daysWithItems = useMemo(() => {
     return Object.keys(transactionDates).map(d => {

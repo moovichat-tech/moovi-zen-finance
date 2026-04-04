@@ -38,7 +38,8 @@ const CommitmentsPage = () => {
   };
   const l = labels[locale] || labels.pt;
 
-  const today = new Date().toISOString().split('T')[0];
+  const todayLocal = new Date();
+  const today = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth() + 1).padStart(2, '0')}-${String(todayLocal.getDate()).padStart(2, '0')}`;
   const dfLocale = dateFnsLocales[locale];
 
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;

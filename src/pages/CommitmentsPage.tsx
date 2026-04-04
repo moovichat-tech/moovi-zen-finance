@@ -88,16 +88,12 @@ const CommitmentsPage = () => {
     return allItems.filter(item => item.dateStr >= today).slice(0, 8);
   }, [allItems, today]);
 
-  const recentItems = useMemo(() => {
-    return allItems.filter(item => item.dateStr < today).sort((a, b) => b.dateStr.localeCompare(a.dateStr)).slice(0, 6);
-  }, [allItems, today]);
-
-  const daysWithItems = useMemo(() => {
-    return Object.keys(transactionDates).map(d => new Date(d + 'T12:00:00'));
-  }, [transactionDates]);
-
   const getDaysDiff = (dateStr: string) => {
-    return Math.ceil((new Date(dateStr + 'T00:00:00').getTime() - new Date(today + 'T00:00:00').getTime()) / (1000 * 60 * 60 * 24));
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const target = new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
+    const now = new Date();
+    const local = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime();
+    return Math.round((target - local) / (1000 * 60 * 60 * 24));
   };
 
   const renderItemRow = (item: typeof allItems[0], variant: 'full' | 'compact' | 'muted' = 'full') => {

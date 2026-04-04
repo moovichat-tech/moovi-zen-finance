@@ -33,6 +33,14 @@ function parseRedisUrl(url: string) {
   };
 }
 
+function cleanTitle(raw: string): string {
+  return raw
+    .replace(/\*/g, "")
+    .replace("⏰ Lembrete de Pagamento: ", "")
+    .replace(" Se já pagou, lembre-se de dar baixa no painel: 🔗 https://dash.moovi.chat", "")
+    .trim();
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -66,7 +74,7 @@ Deno.serve(async (req) => {
 
       return {
         id: String(r.id),
-        titulo: r.mensagem_aviso || "Lembrete recorrente",
+        titulo: cleanTitle(r.mensagem_aviso || "Lembrete recorrente"),
         data: dataObj.toISOString(),
         tipo: "recorrente" as const,
         valor: r.valor ? Number(r.valor) : 0,
@@ -106,7 +114,7 @@ Deno.serve(async (req) => {
 
             redisNormalized.push({
               id: key,
-              titulo: parsed.mensagemAviso || "Lembrete temporário",
+              titulo: cleanTitle(parsed.mensagemAviso || "Lembrete temporário"),
               data: dataISO,
               tipo: "temporario" as const,
               valor: 0,

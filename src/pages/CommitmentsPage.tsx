@@ -94,7 +94,14 @@ const CommitmentsPage = () => {
     const now = new Date();
     const local = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime();
     return Math.round((target - local) / (1000 * 60 * 60 * 24));
-  };
+
+  const daysWithItems = useMemo(() => {
+    return Object.keys(transactionDates).map(d => {
+      const [y, m, day] = d.split('-').map(Number);
+      return new Date(y, m - 1, day, 12, 0, 0);
+    });
+  }, [transactionDates]);
+
 
   const renderItemRow = (item: typeof allItems[0], variant: 'full' | 'compact' | 'muted' = 'full') => {
     const isMuted = variant === 'muted';

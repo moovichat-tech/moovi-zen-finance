@@ -61,7 +61,7 @@ const IncomePage = () => {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const { open, setOpen, editingId, initialData, openAdd } = useTransactionForm('income');
+  const { open, setOpen, openAdd } = useTransactionForm('income');
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc(!sortAsc);
@@ -354,7 +354,7 @@ const IncomePage = () => {
         )}
       </Card>
 
-      <TransactionFormDialog type="income" open={open} onOpenChange={setOpen} editingId={editingId} initialData={initialData} />
+      <TransactionFormDialog type="income" open={open} onOpenChange={setOpen} />
 
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>

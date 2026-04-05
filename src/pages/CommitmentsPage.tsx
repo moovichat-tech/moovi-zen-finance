@@ -1,22 +1,22 @@
 import { useState, useMemo } from 'react';
 import { useI18n } from '@/i18n/context';
 import { useAuth } from '@/hooks/useAuth';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { ArrowUpRight, ArrowDownRight, CalendarDays, Plus, Bell, Clock, Trash2, Loader2 } from 'lucide-react';
+import { ArrowDownRight, CalendarDays, Bell, Clock, Loader2, Circle, CheckCircle2, Receipt } from 'lucide-react';
 import { ptBR, enUS, es, fr, de } from 'date-fns/locale';
 import type { Locale as DateFnsLocale } from 'date-fns';
 import type { Locale } from '@/i18n/translations';
+import { toast } from 'sonner';
 
 const dateFnsLocales: Record<Locale, DateFnsLocale> = { pt: ptBR, en: enUS, es, fr, de };
 
 interface UnifiedCommitment {
   id: string;
   titulo: string;
-  data: string; // ISO string
+  data: string;
   tipo: 'recorrente' | 'temporario';
   valor?: number;
   status: string;
@@ -24,39 +24,45 @@ interface UnifiedCommitment {
   notas?: string | null;
 }
 
+interface PendingTransaction {
+  id: string;
+  tipo: string;
+  valor: number;
+  descricao: string;
+  categoria: string;
+  cartao: string | null;
+  data_transacao: string;
+  conta: string | null;
+  status: string;
+}
+
 const CommitmentsPage = () => {
   const { formatCurrency, formatDate, locale } = useI18n();
   const { token } = useAuth();
+  const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
   const labels: Record<string, Record<string, string>> = {
-    pt: { title: 'Compromissos', subtitle: 'Sua agenda financeira e pessoal', noItems: 'Nenhum compromisso nesta data', upcoming: 'Próximos compromissos', recent: 'Compromissos recentes', schedule: 'Agendar compromisso', today: 'Hoje', inDays: 'em {n} dia(s)', recorrente: 'Recorrente', temporario: 'Temporário', selectedDay: 'Compromissos do dia', loading: 'Carregando...', error: 'Erro ao carregar compromissos' },
-    en: { title: 'Commitments', subtitle: 'Your financial and personal agenda', noItems: 'No commitments on this date', upcoming: 'Upcoming commitments', recent: 'Recent commitments', schedule: 'Schedule commitment', today: 'Today', inDays: 'in {n} day(s)', recorrente: 'Recurring', temporario: 'Temporary', selectedDay: 'Day commitments', loading: 'Loading...', error: 'Error loading commitments' },
-    es: { title: 'Compromisos', subtitle: 'Tu agenda financiera y personal', noItems: 'Sin compromisos en esta fecha', upcoming: 'Próximos compromisos', recent: 'Compromisos recientes', schedule: 'Agendar compromiso', today: 'Hoy', inDays: 'en {n} día(s)', recorrente: 'Recurrente', temporario: 'Temporal', selectedDay: 'Compromisos del día', loading: 'Cargando...', error: 'Error al cargar' },
-    fr: { title: 'Engagements', subtitle: 'Votre agenda financier et personnel', noItems: "Aucun engagement à cette date", upcoming: 'Prochains engagements', recent: 'Engagements récents', schedule: 'Planifier un engagement', today: "Aujourd'hui", inDays: 'dans {n} jour(s)', recorrente: 'Récurrent', temporario: 'Temporaire', selectedDay: 'Engagements du jour', loading: 'Chargement...', error: 'Erreur de chargement' },
-    de: { title: 'Verpflichtungen', subtitle: 'Ihre finanzielle und persönliche Agenda', noItems: 'Keine Verpflichtungen', upcoming: 'Kommende Verpflichtungen', recent: 'Letzte Verpflichtungen', schedule: 'Verpflichtung planen', today: 'Heute', inDays: 'in {n} Tag(en)', recorrente: 'Wiederkehrend', temporario: 'Temporär', selectedDay: 'Tagesverpflichtungen', loading: 'Laden...', error: 'Fehler beim Laden' },
+    pt: { title: 'Compromissos', subtitle: 'Sua agenda financeira e pessoal', noItems: 'Nenhum compromisso nesta data', upcoming: 'Próximos compromissos', schedule: 'Agendar compromisso', today: 'Hoje', inDays: 'em {n} dia(s)', recorrente: 'Recorrente', temporario: 'Temporário', selectedDay: 'Compromissos do dia', loading: 'Carregando...', error: 'Erro ao carregar compromissos', pending: 'Contas Pendentes', noPending: 'Ufa! Nenhuma conta pendente.', markPaid: 'Marcar como pago', paid: 'Pago!' },
+    en: { title: 'Commitments', subtitle: 'Your financial and personal agenda', noItems: 'No commitments on this date', upcoming: 'Upcoming commitments', schedule: 'Schedule commitment', today: 'Today', inDays: 'in {n} day(s)', recorrente: 'Recurring', temporario: 'Temporary', selectedDay: 'Day commitments', loading: 'Loading...', error: 'Error loading commitments', pending: 'Pending Bills', noPending: 'Phew! No pending bills.', markPaid: 'Mark as paid', paid: 'Paid!' },
+    es: { title: 'Compromisos', subtitle: 'Tu agenda financiera y personal', noItems: 'Sin compromisos en esta fecha', upcoming: 'Próximos compromisos', schedule: 'Agendar compromiso', today: 'Hoy', inDays: 'en {n} día(s)', recorrente: 'Recurrente', temporario: 'Temporal', selectedDay: 'Compromisos del día', loading: 'Cargando...', error: 'Error al cargar', pending: 'Cuentas Pendientes', noPending: '¡Uf! Sin cuentas pendientes.', markPaid: 'Marcar como pagado', paid: '¡Pagado!' },
+    fr: { title: 'Engagements', subtitle: 'Votre agenda financier et personnel', noItems: "Aucun engagement à cette date", upcoming: 'Prochains engagements', schedule: 'Planifier un engagement', today: "Aujourd'hui", inDays: 'dans {n} jour(s)', recorrente: 'Récurrent', temporario: 'Temporaire', selectedDay: 'Engagements du jour', loading: 'Chargement...', error: 'Erreur de chargement', pending: 'Factures en attente', noPending: 'Ouf ! Aucune facture en attente.', markPaid: 'Marquer comme payé', paid: 'Payé !' },
+    de: { title: 'Verpflichtungen', subtitle: 'Ihre finanzielle und persönliche Agenda', noItems: 'Keine Verpflichtungen', upcoming: 'Kommende Verpflichtungen', schedule: 'Verpflichtung planen', today: 'Heute', inDays: 'in {n} Tag(en)', recorrente: 'Wiederkehrend', temporario: 'Temporär', selectedDay: 'Tagesverpflichtungen', loading: 'Laden...', error: 'Fehler beim Laden', pending: 'Offene Rechnungen', noPending: 'Puh! Keine offenen Rechnungen.', markPaid: 'Als bezahlt markieren', paid: 'Bezahlt!' },
   };
   const l = labels[locale] || labels.pt;
 
   const todayLocal = new Date();
   const today = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth() + 1).padStart(2, '0')}-${String(todayLocal.getDate()).padStart(2, '0')}`;
   const dfLocale = dateFnsLocales[locale];
-
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
 
+  // === Commitments query ===
   const { data: commitments = [], isLoading, isError } = useQuery<UnifiedCommitment[]>({
     queryKey: ['compromissos'],
     queryFn: async () => {
       const res = await fetch(
         `https://${projectId}.supabase.co/functions/v1/get-compromissos`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({}),
-        }
+        { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({}) }
       );
       if (!res.ok) throw new Error('Fetch failed');
       return res.json();
@@ -64,6 +70,39 @@ const CommitmentsPage = () => {
     enabled: !!token,
   });
 
+  // === Pending transactions query ===
+  const { data: pendingItems = [], isLoading: pendingLoading } = useQuery<PendingTransaction[]>({
+    queryKey: ['pendentes'],
+    queryFn: async () => {
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/get-pendentes`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({}) }
+      );
+      if (!res.ok) throw new Error('Fetch failed');
+      return res.json();
+    },
+    enabled: !!token,
+  });
+
+  // === Mark as paid mutation ===
+  const markPaidMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/marcar-pago`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ id }) }
+      );
+      if (!res.ok) throw new Error('Failed');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pendentes'] });
+      queryClient.invalidateQueries({ queryKey: ['contas'] });
+      queryClient.invalidateQueries({ queryKey: ['cartoes'] });
+      toast.success(l.paid);
+    },
+  });
+
+  // === Commitments logic ===
   const allItems = useMemo(() => {
     return commitments.map(c => {
       const d = new Date(c.data);
@@ -103,22 +142,18 @@ const CommitmentsPage = () => {
     });
   }, [transactionDates]);
 
-
-  const renderItemRow = (item: typeof allItems[0], variant: 'full' | 'compact' | 'muted' = 'full') => {
-    const isMuted = variant === 'muted';
+  const renderItemRow = (item: typeof allItems[0], variant: 'full' | 'compact' = 'full') => {
     const isRecorrente = item.tipo === 'recorrente';
     return (
-      <div key={item.id} className={`flex items-center justify-between py-2.5 px-3 rounded-lg ${variant === 'full' ? 'bg-secondary/50' : ''} ${variant !== 'full' ? 'border-b border-border last:border-0' : ''}`}>
+      <div key={item.id} className={`flex items-center justify-between py-2.5 px-3 rounded-lg ${variant === 'full' ? 'bg-secondary/50' : 'border-b border-border last:border-0'}`}>
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
           {item.valor ? (
-            <ArrowDownRight className={`h-4 w-4 shrink-0 ${isMuted ? 'text-muted-foreground' : 'text-destructive'}`} />
+            <ArrowDownRight className={`h-4 w-4 shrink-0 text-destructive`} />
           ) : (
-            <Bell className={`h-4 w-4 shrink-0 ${isMuted ? 'text-muted-foreground' : 'text-primary'}`} />
+            <Bell className={`h-4 w-4 shrink-0 text-primary`} />
           )}
           <div className="min-w-0 flex-1">
-            <p className={`text-sm font-medium truncate ${isMuted ? 'text-muted-foreground' : ''}`}>
-              {item.titulo}
-            </p>
+            <p className="text-sm font-medium truncate">{item.titulo}</p>
             {variant === 'compact' && (
               <p className="text-[11px] text-muted-foreground">
                 {formatDate(item.dateStr)}
@@ -129,9 +164,6 @@ const CommitmentsPage = () => {
                 })()}
               </p>
             )}
-            {variant === 'muted' && (
-              <p className="text-[11px] text-muted-foreground">{formatDate(item.dateStr)}</p>
-            )}
             {item.notas && <p className="text-[11px] text-muted-foreground truncate">{item.notas}</p>}
           </div>
         </div>
@@ -140,9 +172,7 @@ const CommitmentsPage = () => {
             {isRecorrente ? l.recorrente : l.temporario}
           </Badge>
           {item.valor != null && item.valor > 0 && (
-            <span className="text-sm font-semibold text-destructive">
-              -{formatCurrency(item.valor)}
-            </span>
+            <span className="text-sm font-semibold text-destructive">-{formatCurrency(item.valor)}</span>
           )}
         </div>
       </div>
@@ -171,6 +201,7 @@ const CommitmentsPage = () => {
 
       {!isLoading && !isError && (
         <>
+          {/* Top row: Calendar + Day details */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
             <Card className="p-5 lg:col-span-5 flex flex-col items-center">
               <Calendar
@@ -202,7 +233,9 @@ const CommitmentsPage = () => {
             </Card>
           </div>
 
-          <Card className="p-5">
+          {/* Bottom row: Upcoming + Pending */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <Card className="p-5">
               <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
                 <Clock className="h-4 w-4 text-primary" />
                 {l.upcoming}
@@ -215,6 +248,51 @@ const CommitmentsPage = () => {
                 </div>
               )}
             </Card>
+
+            <Card className="p-5">
+              <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                <Receipt className="h-4 w-4 text-primary" />
+                {l.pending}
+              </h3>
+              {pendingLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                </div>
+              ) : pendingItems.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-6 text-center">
+                  <CheckCircle2 className="h-8 w-8 text-primary/40 mb-2" />
+                  <p className="text-sm text-muted-foreground">{l.noPending}</p>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {pendingItems.map(tx => {
+                    const d = new Date(tx.data_transacao);
+                    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    return (
+                      <div key={tx.id} className="flex items-center gap-3 py-2.5 px-3 border-b border-border last:border-0 group">
+                        <button
+                          onClick={() => markPaidMutation.mutate(tx.id)}
+                          disabled={markPaidMutation.isPending}
+                          className="shrink-0 text-muted-foreground hover:text-primary transition-colors"
+                          title={l.markPaid}
+                        >
+                          <Circle className="h-5 w-5 group-hover:hidden" />
+                          <CheckCircle2 className="h-5 w-5 hidden group-hover:block text-primary" />
+                        </button>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{tx.descricao}</p>
+                          <p className="text-[11px] text-muted-foreground">{formatDate(dateStr)}</p>
+                        </div>
+                        <span className="text-sm font-semibold text-destructive shrink-0">
+                          -{formatCurrency(tx.valor)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          </div>
         </>
       )}
     </div>

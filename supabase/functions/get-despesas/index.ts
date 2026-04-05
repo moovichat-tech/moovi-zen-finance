@@ -44,7 +44,9 @@ Deno.serve(async (req) => {
     }
 
     const rows = await sql`
-      SELECT id, tipo, valor, descricao, categoria, cartao, data_transacao, conta, status
+      SELECT id, tipo, valor, descricao, categoria, cartao,
+             TO_CHAR(data_transacao, 'YYYY-MM-DD') as data_transacao,
+             conta, status
       FROM transacoes
       WHERE ${whereClause}
       ORDER BY data_transacao DESC
@@ -53,7 +55,6 @@ Deno.serve(async (req) => {
     const result = rows.map((r: any) => ({
       ...r,
       valor: parseFloat(r.valor),
-      data_transacao: r.data_transacao ? String(r.data_transacao).substring(0, 10) : null,
     }));
 
     return new Response(JSON.stringify(result), {

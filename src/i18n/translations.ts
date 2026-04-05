@@ -105,7 +105,7 @@ const translations = {
       export: 'Exportar',
       language: 'Idioma',
       currency: 'Moeda',
-      planned: 'Previsto',
+      planned: 'Pendente',
       paid: 'Pago',
       received: 'Recebido',
     },

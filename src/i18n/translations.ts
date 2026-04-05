@@ -389,7 +389,7 @@ const translations = {
       export: 'Exportieren',
       language: 'Sprache',
       currency: 'Währung',
-      planned: 'Geplant',
+      planned: 'Ausstehend',
       paid: 'Bezahlt',
       received: 'Erhalten',
     },

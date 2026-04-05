@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
-import { Plus, Trash2, Pencil, Search, ArrowDownRight, ArrowUpDown, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Pencil, Search, ArrowDownRight, ArrowUpDown, Loader2, CheckCircle } from 'lucide-react';
 import { TransactionFormDialog, useTransactionForm } from '@/components/TransactionFormDialog';
 import { MonthYearPicker } from '@/components/MonthYearPicker';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -115,6 +115,21 @@ const ExpensesPage = () => {
     queryClient.invalidateQueries({ queryKey: ['pendentes-payables'] });
     queryClient.invalidateQueries({ queryKey: ['contas'] });
   };
+
+  const markPaidMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/marcar-pago`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) throw new Error('Erro ao marcar como pago');
+    },
+    onSuccess: () => {
+      invalidateAll();
+      toast.success(locale === 'pt' ? 'Despesa marcada como paga' : 'Expense marked as paid');
+    },
+  });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -327,9 +342,23 @@ const ExpensesPage = () => {
                     {exp.data_transacao ? formatDate(exp.data_transacao) : '—'}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={exp.status === 'PAGO' ? 'default' : 'secondary'} className="text-[10px]">
-                      {statusLabel(exp.status)}
-                    </Badge>
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant={exp.status === 'PAGO' ? 'default' : 'secondary'} className="text-[10px]">
+                        {statusLabel(exp.status)}
+                      </Badge>
+                      {exp.status === 'PENDENTE' && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => markPaidMutation.mutate(exp.id)}
+                          disabled={markPaidMutation.isPending}
+                          title={locale === 'pt' ? 'Marcar como pago' : 'Mark as paid'}
+                        >
+                          <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right font-medium text-destructive whitespace-nowrap">-{formatCurrency(exp.valor)}</TableCell>
                   <TableCell>

@@ -7,10 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Label } from '@/components/ui/label';
 import { Plus, Trash2, Pencil, Search, ArrowDownRight, ArrowUpDown, Loader2 } from 'lucide-react';
 import { TransactionFormDialog, useTransactionForm } from '@/components/TransactionFormDialog';
 import { MonthYearPicker } from '@/components/MonthYearPicker';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -26,11 +30,18 @@ interface Despesa {
   status: string;
 }
 
+interface Categoria {
+  id: string;
+  nome: string;
+  tipo: string;
+}
+
 type SortKey = 'descricao' | 'categoria' | 'data' | 'valor' | 'status';
 
 const ExpensesPage = () => {
   const { t, formatCurrency, formatDate, locale } = useI18n();
   const { token } = useAuth();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [period, setPeriod] = useState('month');
   const [filterMonth, setFilterMonth] = useState(() => {
@@ -41,7 +52,16 @@ const ExpensesPage = () => {
   const [sortKey, setSortKey] = useState<SortKey>('data');
   const [sortAsc, setSortAsc] = useState(false);
 
-  const { open, setOpen, editingId, initialData, openAdd, openEdit } = useTransactionForm('expense');
+  // Edit state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editItem, setEditItem] = useState<Despesa | null>(null);
+  const [editForm, setEditForm] = useState({ descricao: '', categoria: '', status: '', valor: '' });
+
+  // Delete state
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const { open, setOpen, editingId, initialData, openAdd } = useTransactionForm('expense');
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc(!sortAsc);
@@ -74,6 +94,88 @@ const ExpensesPage = () => {
     enabled: !!token,
   });
 
+  const { data: categorias = [] } = useQuery<Categoria[]>({
+    queryKey: ['categorias'],
+    queryFn: async () => {
+      if (!token) return [];
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/get-categorias`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!token,
+  });
+
+  const categoriaDespesa = useMemo(() => categorias.filter(c => c.tipo === 'despesa'), [categorias]);
+
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ['despesas'] });
+    queryClient.invalidateQueries({ queryKey: ['pendentes-payables'] });
+    queryClient.invalidateQueries({ queryKey: ['contas'] });
+  };
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/delete-transacao`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) throw new Error('Erro ao excluir');
+    },
+    onSuccess: () => {
+      invalidateAll();
+      toast.success(locale === 'pt' ? 'Despesa excluída' : 'Expense deleted');
+      setDeleteOpen(false);
+      setDeleteId(null);
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: { id: string; descricao: string; categoria: string; status: string; valor: number }) => {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/update-transacao`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('Erro ao atualizar');
+    },
+    onSuccess: () => {
+      invalidateAll();
+      toast.success(locale === 'pt' ? 'Despesa atualizada' : 'Expense updated');
+      setEditOpen(false);
+      setEditItem(null);
+    },
+  });
+
+  const handleEditOpen = (exp: Despesa) => {
+    setEditItem(exp);
+    setEditForm({
+      descricao: exp.descricao,
+      categoria: exp.categoria,
+      status: exp.status,
+      valor: String(exp.valor),
+    });
+    setEditOpen(true);
+  };
+
+  const handleEditSave = () => {
+    if (!editItem) return;
+    updateMutation.mutate({
+      id: editItem.id,
+      descricao: editForm.descricao,
+      categoria: editForm.categoria,
+      status: editForm.status,
+      valor: Number(editForm.valor),
+    });
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deleteId) deleteMutation.mutate(deleteId);
+  };
+
   const filtered = useMemo(() => {
     let list = despesas;
     if (search) {
@@ -93,7 +195,7 @@ const ExpensesPage = () => {
   }, [despesas, search, sortKey, sortAsc]);
 
   const totalPaid = despesas.filter(e => e.status === 'PAGO').reduce((s, e) => s + e.valor, 0);
-  const totalPlanned = despesas.filter(e => e.status === 'PENDENTE').reduce((s, e) => s + e.valor, 0);
+  const totalPending = despesas.filter(e => e.status === 'PENDENTE').reduce((s, e) => s + e.valor, 0);
 
   const years = useMemo(() => {
     const cur = new Date().getFullYear();
@@ -155,11 +257,11 @@ const ExpensesPage = () => {
         </Card>
         <Card className="p-3 sm:p-4">
           <span className="text-xs font-medium text-muted-foreground">{t.common.planned}</span>
-          <div className="mt-1 text-lg sm:text-xl font-semibold text-muted-foreground">{formatCurrency(totalPlanned)}</div>
+          <div className="mt-1 text-lg sm:text-xl font-semibold text-muted-foreground">{formatCurrency(totalPending)}</div>
         </Card>
         <Card className="p-3 sm:p-4">
           <span className="text-xs font-medium text-muted-foreground">Total</span>
-          <div className="mt-1 text-lg sm:text-xl font-semibold">{formatCurrency(totalPaid + totalPlanned)}</div>
+          <div className="mt-1 text-lg sm:text-xl font-semibold">{formatCurrency(totalPaid + totalPending)}</div>
         </Card>
       </div>
 
@@ -208,6 +310,7 @@ const ExpensesPage = () => {
                     <ArrowUpDown className={`h-3 w-3 ${sortKey === 'valor' ? 'text-primary' : 'text-muted-foreground/40'}`} />
                   </div>
                 </TableHead>
+                <TableHead className="w-[80px]" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -229,10 +332,20 @@ const ExpensesPage = () => {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right font-medium text-destructive whitespace-nowrap">-{formatCurrency(exp.valor)}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditOpen(exp)}>
+                        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setDeleteId(exp.id); setDeleteOpen(true); }}>
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
               {filtered.length === 0 && (
-                <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">
+                <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">
                   {locale === 'pt' ? 'Nenhuma despesa encontrada' : 'No expenses found'}
                 </TableCell></TableRow>
               )}
@@ -242,6 +355,73 @@ const ExpensesPage = () => {
       </Card>
 
       <TransactionFormDialog type="expense" open={open} onOpenChange={setOpen} editingId={editingId} initialData={initialData} />
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{locale === 'pt' ? 'Editar Despesa' : 'Edit Expense'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>{t.common.description}</Label>
+              <Input value={editForm.descricao} onChange={e => setEditForm(f => ({ ...f, descricao: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>{t.common.category}</Label>
+              <Select value={editForm.categoria} onValueChange={v => setEditForm(f => ({ ...f, categoria: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {categoriaDespesa.length > 0
+                    ? categoriaDespesa.map(c => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)
+                    : <SelectItem value={editForm.categoria}>{editForm.categoria}</SelectItem>
+                  }
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{t.common.status}</Label>
+              <Select value={editForm.status} onValueChange={v => setEditForm(f => ({ ...f, status: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PAGO">{t.common.paid}</SelectItem>
+                  <SelectItem value="PENDENTE">{t.common.planned}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{t.common.amount}</Label>
+              <Input type="number" step="0.01" min="0" value={editForm.valor} onChange={e => setEditForm(f => ({ ...f, valor: e.target.value }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>
+              {locale === 'pt' ? 'Cancelar' : 'Cancel'}
+            </Button>
+            <Button onClick={handleEditSave} disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (locale === 'pt' ? 'Salvar' : 'Save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{locale === 'pt' ? 'Excluir despesa?' : 'Delete expense?'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {locale === 'pt' ? 'Esta ação não pode ser desfeita.' : 'This action cannot be undone.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{locale === 'pt' ? 'Cancelar' : 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} disabled={deleteMutation.isPending}>
+              {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (locale === 'pt' ? 'Excluir' : 'Delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

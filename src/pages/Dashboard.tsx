@@ -52,7 +52,7 @@ const Dashboard = () => {
 
   const d = data || {
     saldoTotal: 0, receitaMes: 0, despesaMes: 0, resultadoLiquido: 0,
-    evolucaoMensal: [], gastosCategoria: [], comparacaoMensal: [], saldoContas: [],
+    evolucaoMensal: [], gastosCategoria: [], comparacaoMensal: [], saldoContas: [], alertasOrcamento: [],
   };
 
   const availableMonths = useMemo(() => {

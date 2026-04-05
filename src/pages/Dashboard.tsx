@@ -65,6 +65,7 @@ const Dashboard = () => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
+  const [hoveredTick, setHoveredTick] = useState<string | null>(null);
 
   const [ano, mes] = selectedMonth.split('-');
 

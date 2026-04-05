@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useI18n } from '@/i18n/context';
 import { useAuth } from '@/hooks/useAuth';
-import { ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, Loader2, AlertTriangle } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, Loader2, AlertTriangle, Info } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { MonthYearPicker } from '@/components/MonthYearPicker';
 import { useQuery } from '@tanstack/react-query';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, BarChart, Bar,
@@ -14,11 +16,19 @@ import {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const COLORS = ['hsl(145, 63%, 32%)', 'hsl(152, 60%, 42%)', 'hsl(38, 92%, 50%)', 'hsl(170, 50%, 40%)', 'hsl(200, 70%, 50%)', 'hsl(120, 40%, 55%)'];
 
+interface TransacaoDetalhe {
+  descricao: string;
+  valor: number;
+  categoria: string;
+}
+
 interface DashboardData {
   saldoTotal: number;
   receitaMes: number;
   despesaMes: number;
   resultadoLiquido: number;
+  receitasDetalhadas: TransacaoDetalhe[];
+  despesasDetalhadas: TransacaoDetalhe[];
   evolucaoMensal: { month: string; income: number; expense: number }[];
   gastosCategoria: { name: string; value: number }[];
   comparacaoMensal: { category: string; current: number; previous: number }[];
@@ -55,6 +65,8 @@ const Dashboard = () => {
     receitaMes: data?.receitaMes ?? 0,
     despesaMes: data?.despesaMes ?? 0,
     resultadoLiquido: data?.resultadoLiquido ?? 0,
+    receitasDetalhadas: data?.receitasDetalhadas ?? [],
+    despesasDetalhadas: data?.despesasDetalhadas ?? [],
     evolucaoMensal: data?.evolucaoMensal ?? [],
     gastosCategoria: data?.gastosCategoria ?? [],
     comparacaoMensal: data?.comparacaoMensal ?? [],
@@ -79,11 +91,79 @@ const Dashboard = () => {
     { label: t.dashboard.netResult, value: d.resultadoLiquido, icon: TrendingUp, positive: d.resultadoLiquido >= 0 },
   ];
 
+  const getTooltipContent = (index: number) => {
+    switch (index) {
+      case 0: // Saldo Total
+        return d.saldoContas.length > 0 ? (
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold text-foreground mb-2">Composição do saldo:</p>
+            {d.saldoContas.map((acc, i) => (
+              <div key={i} className="flex items-center justify-between text-xs gap-4">
+                <span className="text-muted-foreground truncate">{acc.icon} {acc.name}</span>
+                <span className="font-medium text-foreground whitespace-nowrap">{formatCurrency(acc.balance)}</span>
+              </div>
+            ))}
+          </div>
+        ) : <p className="text-xs text-muted-foreground">Nenhuma conta cadastrada</p>;
+
+      case 1: // Receitas
+        return d.receitasDetalhadas.length > 0 ? (
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold text-foreground mb-2">Receitas do mês (excl. transferências):</p>
+            {d.receitasDetalhadas.map((r, i) => (
+              <div key={i} className="flex items-center justify-between text-xs gap-4">
+                <span className="text-muted-foreground truncate">{r.descricao}</span>
+                <span className="font-medium text-success whitespace-nowrap">{formatCurrency(r.valor)}</span>
+              </div>
+            ))}
+          </div>
+        ) : <p className="text-xs text-muted-foreground">Nenhuma receita neste mês</p>;
+
+      case 2: // Despesas
+        return d.despesasDetalhadas.length > 0 ? (
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold text-foreground mb-2">Despesas do mês (excl. transferências):</p>
+            {d.despesasDetalhadas.map((r, i) => (
+              <div key={i} className="flex items-center justify-between text-xs gap-4">
+                <span className="text-muted-foreground truncate">{r.descricao}</span>
+                <span className="font-medium text-destructive whitespace-nowrap">{formatCurrency(r.valor)}</span>
+              </div>
+            ))}
+          </div>
+        ) : <p className="text-xs text-muted-foreground">Nenhuma despesa neste mês</p>;
+
+      case 3: // Resultado Líquido
+        return (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-foreground">Cálculo:</p>
+            <div className="text-xs space-y-1">
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Receitas</span>
+                <span className="font-medium text-success">{formatCurrency(d.receitaMes)}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">− Despesas</span>
+                <span className="font-medium text-destructive">{formatCurrency(d.despesaMes)}</span>
+              </div>
+              <div className="border-t border-border pt-1 flex justify-between gap-4">
+                <span className="font-semibold text-foreground">= Resultado</span>
+                <span className={`font-semibold ${d.resultadoLiquido >= 0 ? 'text-success' : 'text-destructive'}`}>
+                  {formatCurrency(d.resultadoLiquido)}
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   const accountColors = ['hsl(145, 63%, 32%)', 'hsl(200, 70%, 50%)', 'hsl(38, 92%, 50%)', 'hsl(280, 60%, 50%)', 'hsl(0, 72%, 51%)', 'hsl(170, 50%, 40%)'];
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-in-up">
-      {/* Period Filter */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg sm:text-xl font-semibold">{t.nav.dashboard}</h2>
@@ -98,13 +178,26 @@ const Dashboard = () => {
         </div>
       ) : (
         <>
-          {/* Stat Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {statCards.map((stat, i) => (
-              <Card key={i} className="p-3 sm:p-5 card-hover" style={{ animationDelay: `${i * 60}ms` }}>
+              <Card key={i} className="p-3 sm:p-5 card-hover relative" style={{ animationDelay: `${i * 60}ms` }}>
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] sm:text-xs font-medium text-muted-foreground">{stat.label}</span>
-                  <stat.icon className={`h-4 w-4 ${i === 0 ? 'text-primary' : i === 1 ? 'text-success' : i === 2 ? 'text-destructive' : (stat.positive ? 'text-success' : 'text-destructive')}`} />
+                  <div className="flex items-center gap-1.5">
+                    <HoverCard openDelay={200} closeDelay={100}>
+                      <HoverCardTrigger asChild>
+                        <button className="text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+                          <Info className="h-3.5 w-3.5" />
+                        </button>
+                      </HoverCardTrigger>
+                      <HoverCardContent className="w-72 p-3" side="bottom" align="end">
+                        <ScrollArea className="max-h-48">
+                          {getTooltipContent(i)}
+                        </ScrollArea>
+                      </HoverCardContent>
+                    </HoverCard>
+                    <stat.icon className={`h-4 w-4 ${i === 0 ? 'text-primary' : i === 1 ? 'text-success' : i === 2 ? 'text-destructive' : (stat.positive ? 'text-success' : 'text-destructive')}`} />
+                  </div>
                 </div>
                 <div className="mt-1 sm:mt-2 text-lg sm:text-2xl font-semibold tracking-tight">
                   {formatCurrency(stat.value)}
@@ -138,7 +231,7 @@ const Dashboard = () => {
             </ResponsiveContainer>
           </Card>
 
-          {/* Second Row: Pie + Comparison + Budget + Accounts */}
+          {/* Second Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Card className="p-3 sm:p-5 card-hover">
               <h3 className="mb-4 text-sm font-semibold">{t.dashboard.spendingByCategory}</h3>

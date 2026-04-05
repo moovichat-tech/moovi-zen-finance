@@ -34,7 +34,6 @@ Deno.serve(async (req) => {
     const telefone = await getTelefoneFromToken(req);
     const body = await req.json().catch(() => ({}));
     const { mes, ano } = body;
-
     const mesNum = Number(mes);
     const anoNum = Number(ano);
 
@@ -50,26 +49,31 @@ Deno.serve(async (req) => {
     `;
     const saldoTotal = parseFloat(saldoRows[0]?.total || '0');
 
-    // 2. Receita e Despesa do mês selecionado (PAGO)
-    const receitaRows = await sql`
-      SELECT COALESCE(SUM(valor), 0) as total
+    // 2. Receitas detalhadas do mês (excluindo transferências)
+    const receitasDetalhadas = await sql`
+      SELECT descricao, valor, categoria, data_transacao
       FROM transacoes
       WHERE telefone_usuario = ${telefone} AND tipo = 'receita' AND status = 'PAGO'
+        AND COALESCE(categoria, '') != 'Transferência'
         AND EXTRACT(YEAR FROM data_transacao) = ${anoNum}
         AND EXTRACT(MONTH FROM data_transacao) = ${mesNum}
+      ORDER BY data_transacao DESC
     `;
-    const receitaMes = parseFloat(receitaRows[0]?.total || '0');
+    const receitaMes = receitasDetalhadas.reduce((sum: number, r: any) => sum + parseFloat(r.valor || '0'), 0);
 
-    const despesaRows = await sql`
-      SELECT COALESCE(SUM(valor), 0) as total
+    // 3. Despesas detalhadas do mês (excluindo transferências)
+    const despesasDetalhadas = await sql`
+      SELECT descricao, valor, categoria, data_transacao
       FROM transacoes
       WHERE telefone_usuario = ${telefone} AND tipo = 'despesa' AND status = 'PAGO'
+        AND COALESCE(categoria, '') != 'Transferência'
         AND EXTRACT(YEAR FROM data_transacao) = ${anoNum}
         AND EXTRACT(MONTH FROM data_transacao) = ${mesNum}
+      ORDER BY data_transacao DESC
     `;
-    const despesaMes = parseFloat(despesaRows[0]?.total || '0');
+    const despesaMes = despesasDetalhadas.reduce((sum: number, r: any) => sum + parseFloat(r.valor || '0'), 0);
 
-    // 3. Evolução mensal (últimos 6 meses)
+    // 4. Evolução mensal (últimos 6 meses, excluindo transferências)
     const evolucaoRows = await sql`
       SELECT
         TO_CHAR(data_transacao, 'YYYY-MM') as mes,
@@ -78,6 +82,7 @@ Deno.serve(async (req) => {
       FROM transacoes
       WHERE telefone_usuario = ${telefone}
         AND status = 'PAGO'
+        AND COALESCE(categoria, '') != 'Transferência'
         AND data_transacao >= (DATE_TRUNC('month', MAKE_DATE(${anoNum}, ${mesNum}, 1)) - INTERVAL '5 months')
         AND data_transacao < (DATE_TRUNC('month', MAKE_DATE(${anoNum}, ${mesNum}, 1)) + INTERVAL '1 month')
       GROUP BY mes, tipo
@@ -99,11 +104,12 @@ Deno.serve(async (req) => {
         return { month: monthNames[m], ...data };
       });
 
-    // 4. Gastos por categoria (mês selecionado)
+    // 5. Gastos por categoria (excluindo transferências)
     const categRows = await sql`
       SELECT categoria as name, COALESCE(SUM(valor), 0) as value
       FROM transacoes
       WHERE telefone_usuario = ${telefone} AND tipo = 'despesa' AND status = 'PAGO'
+        AND COALESCE(categoria, '') != 'Transferência'
         AND EXTRACT(YEAR FROM data_transacao) = ${anoNum}
         AND EXTRACT(MONTH FROM data_transacao) = ${mesNum}
       GROUP BY categoria
@@ -111,7 +117,7 @@ Deno.serve(async (req) => {
     `;
     const gastosCategoria = categRows.map((r: any) => ({ name: r.name, value: parseFloat(r.value) }));
 
-    // 5. Comparação mensal (mês atual vs anterior)
+    // 6. Comparação mensal (excluindo transferências)
     const prevDate = mesNum === 1 ? `${anoNum - 1}-12` : `${anoNum}-${String(mesNum - 1).padStart(2, '0')}`;
     const curDate = `${anoNum}-${String(mesNum).padStart(2, '0')}`;
 
@@ -122,6 +128,7 @@ Deno.serve(async (req) => {
         SUM(CASE WHEN TO_CHAR(data_transacao, 'YYYY-MM') = ${prevDate} THEN valor ELSE 0 END) as previous
       FROM transacoes
       WHERE telefone_usuario = ${telefone} AND tipo = 'despesa' AND status = 'PAGO'
+        AND COALESCE(categoria, '') != 'Transferência'
         AND (TO_CHAR(data_transacao, 'YYYY-MM') = ${curDate} OR TO_CHAR(data_transacao, 'YYYY-MM') = ${prevDate})
       GROUP BY categoria
       ORDER BY current DESC
@@ -132,7 +139,7 @@ Deno.serve(async (req) => {
       previous: parseFloat(r.previous),
     }));
 
-    // 6. Saldo por conta
+    // 7. Saldo por conta
     const contasRows = await sql`
       SELECT nome, icone,
         COALESCE(saldo_inicial, 0)
@@ -149,7 +156,7 @@ Deno.serve(async (req) => {
       balance: parseFloat(r.saldo),
     }));
 
-    // 7. Alertas de orçamento (>= 50%)
+    // 8. Alertas de orçamento (>= 50%, excluindo transferências)
     const orcRows = await sql`
       SELECT
         c.nome as category,
@@ -161,6 +168,7 @@ Deno.serve(async (req) => {
           WHERE t.telefone_usuario = ${telefone}
             AND t.categoria = c.nome
             AND t.tipo = 'despesa'
+            AND COALESCE(t.categoria, '') != 'Transferência'
             AND EXTRACT(MONTH FROM t.data_transacao) = ${mesNum}
             AND EXTRACT(YEAR FROM t.data_transacao) = ${anoNum}
         ), 0) AS spent
@@ -186,6 +194,16 @@ Deno.serve(async (req) => {
       receitaMes: receitaMes || 0,
       despesaMes: despesaMes || 0,
       resultadoLiquido: (receitaMes || 0) - (despesaMes || 0),
+      receitasDetalhadas: (receitasDetalhadas || []).map((r: any) => ({
+        descricao: r.descricao,
+        valor: parseFloat(r.valor || '0'),
+        categoria: r.categoria,
+      })),
+      despesasDetalhadas: (despesasDetalhadas || []).map((r: any) => ({
+        descricao: r.descricao,
+        valor: parseFloat(r.valor || '0'),
+        categoria: r.categoria,
+      })),
       evolucaoMensal: evolucaoMensal || [],
       gastosCategoria: gastosCategoria || [],
       comparacaoMensal: comparacaoMensal || [],

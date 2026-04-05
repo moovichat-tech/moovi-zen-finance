@@ -342,9 +342,23 @@ const ExpensesPage = () => {
                     {exp.data_transacao ? formatDate(exp.data_transacao) : '—'}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={exp.status === 'PAGO' ? 'default' : 'secondary'} className="text-[10px]">
-                      {statusLabel(exp.status)}
-                    </Badge>
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant={exp.status === 'PAGO' ? 'default' : 'secondary'} className="text-[10px]">
+                        {statusLabel(exp.status)}
+                      </Badge>
+                      {exp.status === 'PENDENTE' && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => markPaidMutation.mutate(exp.id)}
+                          disabled={markPaidMutation.isPending}
+                          title={locale === 'pt' ? 'Marcar como pago' : 'Mark as paid'}
+                        >
+                          <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right font-medium text-destructive whitespace-nowrap">-{formatCurrency(exp.valor)}</TableCell>
                   <TableCell>

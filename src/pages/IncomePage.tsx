@@ -342,9 +342,23 @@ const IncomePage = () => {
                     {rec.data_transacao ? formatDate(rec.data_transacao) : '—'}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={rec.status === 'PAGO' ? 'default' : 'secondary'} className="text-[10px]">
-                      {statusLabel(rec.status)}
-                    </Badge>
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant={rec.status === 'PAGO' ? 'default' : 'secondary'} className="text-[10px]">
+                        {statusLabel(rec.status)}
+                      </Badge>
+                      {rec.status === 'PENDENTE' && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => markPaidMutation.mutate(rec.id)}
+                          disabled={markPaidMutation.isPending}
+                          title={locale === 'pt' ? 'Marcar como recebido' : 'Mark as received'}
+                        >
+                          <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right font-medium text-success whitespace-nowrap">{formatCurrency(rec.valor)}</TableCell>
                   <TableCell>

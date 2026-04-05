@@ -176,7 +176,7 @@ const translations = {
       export: 'Export',
       language: 'Language',
       currency: 'Currency',
-      planned: 'Planned',
+      planned: 'Pending',
       paid: 'Paid',
       received: 'Received',
     },

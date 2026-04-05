@@ -354,7 +354,7 @@ const IncomePage = () => {
         )}
       </Card>
 
-      <TransactionFormDialog type="income" open={open} onOpenChange={setOpen} editingId={editingId} initialData={initialData} />
+      <TransactionFormDialog type="income" open={open} onOpenChange={setOpen} />
 
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>

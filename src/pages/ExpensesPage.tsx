@@ -354,7 +354,7 @@ const ExpensesPage = () => {
         )}
       </Card>
 
-      <TransactionFormDialog type="expense" open={open} onOpenChange={setOpen} editingId={editingId} initialData={initialData} />
+      <TransactionFormDialog type="expense" open={open} onOpenChange={setOpen} />
 
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>

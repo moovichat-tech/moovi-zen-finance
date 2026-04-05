@@ -1,22 +1,47 @@
 import { useState, useMemo } from 'react';
 import { useI18n } from '@/i18n/context';
-import { useData } from '@/store/DataContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, Pencil, Search, ArrowUpRight, ArrowUpDown } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Label } from '@/components/ui/label';
+import { Plus, Trash2, Pencil, Search, ArrowUpRight, ArrowUpDown, Loader2 } from 'lucide-react';
 import { TransactionFormDialog, useTransactionForm } from '@/components/TransactionFormDialog';
-import { DatePicker } from '@/components/DatePicker';
 import { MonthYearPicker } from '@/components/MonthYearPicker';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
-type SortKey = 'description' | 'category' | 'date' | 'amount' | 'status';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+
+interface Receita {
+  id: string;
+  tipo: string;
+  valor: number;
+  descricao: string;
+  categoria: string;
+  cartao: string | null;
+  data_transacao: string | null;
+  conta: string | null;
+  status: string;
+}
+
+interface Categoria {
+  id: string;
+  nome: string;
+  tipo: string;
+}
+
+type SortKey = 'descricao' | 'categoria' | 'data' | 'valor' | 'status';
 
 const IncomePage = () => {
-  const { t, formatCurrency, formatDate, translateRecurrence, translatePeriod } = useI18n();
-  const { transactions, deleteTransaction } = useData();
+  const { t, formatCurrency, formatDate, locale } = useI18n();
+  const { token } = useAuth();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [period, setPeriod] = useState('month');
   const [filterMonth, setFilterMonth] = useState(() => {
@@ -24,54 +49,185 @@ const IncomePage = () => {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
   const [filterYear, setFilterYear] = useState(() => String(new Date().getFullYear()));
-  const [customStart, setCustomStart] = useState('');
-  const [customEnd, setCustomEnd] = useState('');
-  const [sortKey, setSortKey] = useState<SortKey>('date');
+  const [sortKey, setSortKey] = useState<SortKey>('data');
   const [sortAsc, setSortAsc] = useState(false);
 
-  const { open, setOpen, editingId, initialData, openAdd, openEdit } = useTransactionForm('income');
+  // Edit state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editItem, setEditItem] = useState<Receita | null>(null);
+  const [editForm, setEditForm] = useState({ descricao: '', categoria: '', status: '', valor: '' });
+
+  // Delete state
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const { open, setOpen, editingId, initialData, openAdd } = useTransactionForm('income');
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc(!sortAsc);
     else { setSortKey(key); setSortAsc(false); }
   };
 
-  const incomes = useMemo(() => {
-    let filtered = transactions
-      .filter(tr => tr.type === 'income')
-      .filter(tr => tr.description.toLowerCase().includes(search.toLowerCase()));
+  const queryPayload = useMemo(() => {
+    if (period === 'month') {
+      const [ano, mes] = filterMonth.split('-');
+      return { mes: Number(mes), ano: Number(ano), tipoPeriodo: 'month' };
+    }
+    if (period === 'year') {
+      return { ano: Number(filterYear), tipoPeriodo: 'year' };
+    }
+    return { tipoPeriodo: 'all' };
+  }, [period, filterMonth, filterYear]);
 
-    if (period === 'month') filtered = filtered.filter(tr => tr.date.startsWith(filterMonth));
-    else if (period === 'year') filtered = filtered.filter(tr => tr.date.startsWith(filterYear));
-    else if (period === 'custom' && customStart && customEnd) filtered = filtered.filter(tr => tr.date >= customStart && tr.date <= customEnd);
+  const { data: receitas = [], isLoading } = useQuery<Receita[]>({
+    queryKey: ['receitas', queryPayload],
+    queryFn: async () => {
+      if (!token) return [];
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/get-receitas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(queryPayload),
+      });
+      if (!res.ok) throw new Error('Erro ao buscar receitas');
+      return res.json();
+    },
+    enabled: !!token,
+  });
 
-    filtered.sort((a, b) => {
+  const { data: categorias = [] } = useQuery<Categoria[]>({
+    queryKey: ['categorias'],
+    queryFn: async () => {
+      if (!token) return [];
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/get-categorias`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!token,
+  });
+
+  const categoriaReceita = useMemo(() => categorias.filter(c => c.tipo === 'receita'), [categorias]);
+
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ['receitas'] });
+    queryClient.invalidateQueries({ queryKey: ['pendentes-payables'] });
+    queryClient.invalidateQueries({ queryKey: ['contas'] });
+  };
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/delete-transacao`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) throw new Error('Erro ao excluir');
+    },
+    onSuccess: () => {
+      invalidateAll();
+      toast.success(locale === 'pt' ? 'Receita excluída' : 'Income deleted');
+      setDeleteOpen(false);
+      setDeleteId(null);
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: { id: string; descricao: string; categoria: string; status: string; valor: number }) => {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/update-transacao`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('Erro ao atualizar');
+    },
+    onSuccess: () => {
+      invalidateAll();
+      toast.success(locale === 'pt' ? 'Receita atualizada' : 'Income updated');
+      setEditOpen(false);
+      setEditItem(null);
+    },
+  });
+
+  const handleEditOpen = (rec: Receita) => {
+    setEditItem(rec);
+    setEditForm({
+      descricao: rec.descricao,
+      categoria: rec.categoria,
+      status: rec.status,
+      valor: String(rec.valor),
+    });
+    setEditOpen(true);
+  };
+
+  const handleEditSave = () => {
+    if (!editItem) return;
+    updateMutation.mutate({
+      id: editItem.id,
+      descricao: editForm.descricao,
+      categoria: editForm.categoria,
+      status: editForm.status,
+      valor: Number(editForm.valor),
+    });
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deleteId) deleteMutation.mutate(deleteId);
+  };
+
+  const filtered = useMemo(() => {
+    let list = receitas;
+    if (search) {
+      const s = search.toLowerCase();
+      list = list.filter(d => d.descricao.toLowerCase().includes(s));
+    }
+    list = [...list].sort((a, b) => {
       let cmp = 0;
-      if (sortKey === 'description') cmp = a.description.localeCompare(b.description);
-      else if (sortKey === 'category') cmp = a.category.localeCompare(b.category);
-      else if (sortKey === 'date') cmp = a.date.localeCompare(b.date);
-      else if (sortKey === 'amount') cmp = a.amount - b.amount;
+      if (sortKey === 'descricao') cmp = a.descricao.localeCompare(b.descricao);
+      else if (sortKey === 'categoria') cmp = (a.categoria || '').localeCompare(b.categoria || '');
+      else if (sortKey === 'data') cmp = (a.data_transacao || '').localeCompare(b.data_transacao || '');
+      else if (sortKey === 'valor') cmp = a.valor - b.valor;
       else if (sortKey === 'status') cmp = a.status.localeCompare(b.status);
       return sortAsc ? cmp : -cmp;
     });
+    return list;
+  }, [receitas, search, sortKey, sortAsc]);
 
-    return filtered;
-  }, [transactions, search, period, filterMonth, filterYear, customStart, customEnd, sortKey, sortAsc]);
+  const totalReceived = receitas.filter(r => r.status === 'PAGO').reduce((s, r) => s + r.valor, 0);
+  const totalPending = receitas.filter(r => r.status === 'PENDENTE').reduce((s, r) => s + r.valor, 0);
 
-  const totalReceived = incomes.filter(i => i.status === 'received').reduce((s, i) => s + i.amount, 0);
-  const totalPlanned = incomes.filter(i => i.status === 'planned').reduce((s, i) => s + i.amount, 0);
+  const years = useMemo(() => {
+    const cur = new Date().getFullYear();
+    return Array.from({ length: 5 }, (_, i) => String(cur - i));
+  }, []);
 
-  const availableMonths = useMemo(() => {
-    const set = new Set<string>();
-    transactions.filter(tr => tr.type === 'income').forEach(tr => set.add(tr.date.substring(0, 7)));
-    return Array.from(set).sort().reverse();
-  }, [transactions]);
+  const months = useMemo(() => {
+    const cur = new Date();
+    const list: string[] = [];
+    for (let i = 0; i < 24; i++) {
+      const d = new Date(cur.getFullYear(), cur.getMonth() - i, 1);
+      list.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+    }
+    return list;
+  }, []);
 
-  const availableYears = useMemo(() => {
-    const set = new Set<string>();
-    transactions.filter(tr => tr.type === 'income').forEach(tr => set.add(tr.date.substring(0, 4)));
-    return Array.from(set).sort().reverse();
-  }, [transactions]);
+  const translatePeriodLabel = (p: string) => {
+    const map: Record<string, Record<string, string>> = {
+      pt: { all: 'Tudo', month: 'Mensal', year: 'Anual' },
+      en: { all: 'All', month: 'Monthly', year: 'Yearly' },
+      es: { all: 'Todo', month: 'Mensual', year: 'Anual' },
+      fr: { all: 'Tout', month: 'Mensuel', year: 'Annuel' },
+      de: { all: 'Alle', month: 'Monatlich', year: 'Jährlich' },
+    };
+    return map[locale]?.[p] || p;
+  };
+
+  const statusLabel = (s: string) => {
+    if (s === 'PAGO') return t.common.received;
+    if (s === 'PENDENTE') return t.common.planned;
+    return s;
+  };
 
   const SortableHead = ({ label, field }: { label: string; field: SortKey }) => (
     <TableHead className="cursor-pointer select-none whitespace-nowrap" onClick={() => toggleSort(field)}>
@@ -101,11 +257,11 @@ const IncomePage = () => {
         </Card>
         <Card className="p-3 sm:p-4">
           <span className="text-xs font-medium text-muted-foreground">{t.common.planned}</span>
-          <div className="mt-1 text-lg sm:text-xl font-semibold text-muted-foreground">{formatCurrency(totalPlanned)}</div>
+          <div className="mt-1 text-lg sm:text-xl font-semibold text-muted-foreground">{formatCurrency(totalPending)}</div>
         </Card>
         <Card className="p-3 sm:p-4">
           <span className="text-xs font-medium text-muted-foreground">Total</span>
-          <div className="mt-1 text-lg sm:text-xl font-semibold">{formatCurrency(totalReceived + totalPlanned)}</div>
+          <div className="mt-1 text-lg sm:text-xl font-semibold">{formatCurrency(totalReceived + totalPending)}</div>
         </Card>
       </div>
 
@@ -117,87 +273,155 @@ const IncomePage = () => {
         <Select value={period} onValueChange={setPeriod}>
           <SelectTrigger className="w-28 sm:w-32"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{translatePeriod('all')}</SelectItem>
-            <SelectItem value="month">{translatePeriod('month')}</SelectItem>
-            <SelectItem value="year">{translatePeriod('year')}</SelectItem>
-            <SelectItem value="custom">{translatePeriod('custom')}</SelectItem>
+            <SelectItem value="all">{translatePeriodLabel('all')}</SelectItem>
+            <SelectItem value="month">{translatePeriodLabel('month')}</SelectItem>
+            <SelectItem value="year">{translatePeriodLabel('year')}</SelectItem>
           </SelectContent>
         </Select>
         {period === 'month' && (
-          <MonthYearPicker value={filterMonth} onChange={setFilterMonth} availableMonths={availableMonths} />
+          <MonthYearPicker value={filterMonth} onChange={setFilterMonth} availableMonths={months} />
         )}
         {period === 'year' && (
           <Select value={filterYear} onValueChange={setFilterYear}>
             <SelectTrigger className="w-20 sm:w-24"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {availableYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+              {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
             </SelectContent>
           </Select>
-        )}
-        {period === 'custom' && (
-          <>
-            <DatePicker value={customStart} onChange={setCustomStart} placeholder="Data início" className="w-36 sm:w-44" />
-            <DatePicker value={customEnd} onChange={setCustomEnd} placeholder="Data fim" className="w-36 sm:w-44" />
-          </>
         )}
       </div>
 
       <Card className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <SortableHead label={t.common.description} field="description" />
-              <SortableHead label={t.common.category} field="category" />
-              <SortableHead label={t.common.date} field="date" />
-              <SortableHead label={t.common.status} field="status" />
-              <TableHead className="text-right cursor-pointer select-none whitespace-nowrap" onClick={() => toggleSort('amount')}>
-                <div className="flex items-center justify-end gap-1">
-                  {t.common.amount}
-                  <ArrowUpDown className={`h-3 w-3 ${sortKey === 'amount' ? 'text-primary' : 'text-muted-foreground/40'}`} />
-                </div>
-              </TableHead>
-              <TableHead className="w-20" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {incomes.map(inc => (
-              <TableRow key={inc.id}>
-                <TableCell className="font-medium">
-                  <div className="flex items-center gap-2">
-                    <ArrowUpRight className="h-3.5 w-3.5 text-success shrink-0" />
-                    <span className="truncate max-w-[120px] sm:max-w-none">{inc.description}</span>
-                    {inc.installments && <Badge variant="outline" className="text-[10px] shrink-0">{inc.currentInstallment}/{inc.installments}</Badge>}
-                    {inc.recurrence !== 'once' && !inc.installments && <Badge variant="secondary" className="text-[10px] shrink-0 hidden sm:inline-flex">{translateRecurrence(inc.recurrence)}</Badge>}
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <SortableHead label={t.common.description} field="descricao" />
+                <SortableHead label={t.common.category} field="categoria" />
+                <SortableHead label={t.common.date} field="data" />
+                <SortableHead label={t.common.status} field="status" />
+                <TableHead className="text-right cursor-pointer select-none whitespace-nowrap" onClick={() => toggleSort('valor')}>
+                  <div className="flex items-center justify-end gap-1">
+                    {t.common.amount}
+                    <ArrowUpDown className={`h-3 w-3 ${sortKey === 'valor' ? 'text-primary' : 'text-muted-foreground/40'}`} />
                   </div>
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{inc.category}</TableCell>
-                <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{formatDate(inc.date)}</TableCell>
-                <TableCell>
-                  <Badge variant={inc.status === 'received' ? 'default' : 'secondary'} className="text-[10px]">
-                    {inc.status === 'received' ? t.common.received : t.common.planned}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right font-medium text-success whitespace-nowrap">{formatCurrency(inc.amount)}</TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(inc)}>
-                      <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteTransaction(inc.id)}>
-                      <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                    </Button>
-                  </div>
-                </TableCell>
+                </TableHead>
+                <TableHead className="w-[80px]" />
               </TableRow>
-            ))}
-            {incomes.length === 0 && (
-              <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">Nenhuma receita encontrada</TableCell></TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filtered.map(rec => (
+                <TableRow key={rec.id}>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <ArrowUpRight className="h-3.5 w-3.5 text-success shrink-0" />
+                      <span className="truncate max-w-[120px] sm:max-w-none">{rec.descricao}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{rec.categoria}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                    {rec.data_transacao ? formatDate(rec.data_transacao) : '—'}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={rec.status === 'PAGO' ? 'default' : 'secondary'} className="text-[10px]">
+                      {statusLabel(rec.status)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right font-medium text-success whitespace-nowrap">{formatCurrency(rec.valor)}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditOpen(rec)}>
+                        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setDeleteId(rec.id); setDeleteOpen(true); }}>
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filtered.length === 0 && (
+                <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">
+                  {locale === 'pt' ? 'Nenhuma receita encontrada' : 'No income found'}
+                </TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        )}
       </Card>
 
       <TransactionFormDialog type="income" open={open} onOpenChange={setOpen} editingId={editingId} initialData={initialData} />
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{locale === 'pt' ? 'Editar Receita' : 'Edit Income'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>{t.common.description}</Label>
+              <Input value={editForm.descricao} onChange={e => setEditForm(f => ({ ...f, descricao: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>{t.common.category}</Label>
+              <Select value={editForm.categoria} onValueChange={v => setEditForm(f => ({ ...f, categoria: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {categoriaReceita.length > 0
+                    ? categoriaReceita.map(c => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)
+                    : <SelectItem value={editForm.categoria}>{editForm.categoria}</SelectItem>
+                  }
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{t.common.status}</Label>
+              <Select value={editForm.status} onValueChange={v => setEditForm(f => ({ ...f, status: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PAGO">{t.common.received}</SelectItem>
+                  <SelectItem value="PENDENTE">{t.common.planned}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{t.common.amount}</Label>
+              <Input type="number" step="0.01" min="0" value={editForm.valor} onChange={e => setEditForm(f => ({ ...f, valor: e.target.value }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>
+              {locale === 'pt' ? 'Cancelar' : 'Cancel'}
+            </Button>
+            <Button onClick={handleEditSave} disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (locale === 'pt' ? 'Salvar' : 'Save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{locale === 'pt' ? 'Excluir receita?' : 'Delete income?'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {locale === 'pt' ? 'Esta ação não pode ser desfeita.' : 'This action cannot be undone.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{locale === 'pt' ? 'Cancelar' : 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} disabled={deleteMutation.isPending}>
+              {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (locale === 'pt' ? 'Excluir' : 'Delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

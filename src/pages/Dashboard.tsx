@@ -50,9 +50,16 @@ const Dashboard = () => {
     enabled: !!token,
   });
 
-  const d = data || {
-    saldoTotal: 0, receitaMes: 0, despesaMes: 0, resultadoLiquido: 0,
-    evolucaoMensal: [], gastosCategoria: [], comparacaoMensal: [], saldoContas: [], alertasOrcamento: [],
+  const d = {
+    saldoTotal: data?.saldoTotal ?? 0,
+    receitaMes: data?.receitaMes ?? 0,
+    despesaMes: data?.despesaMes ?? 0,
+    resultadoLiquido: data?.resultadoLiquido ?? 0,
+    evolucaoMensal: data?.evolucaoMensal ?? [],
+    gastosCategoria: data?.gastosCategoria ?? [],
+    comparacaoMensal: data?.comparacaoMensal ?? [],
+    saldoContas: data?.saldoContas ?? [],
+    alertasOrcamento: data?.alertasOrcamento ?? [],
   };
 
   const availableMonths = useMemo(() => {

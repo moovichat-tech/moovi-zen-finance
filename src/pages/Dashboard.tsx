@@ -36,6 +36,28 @@ interface DashboardData {
   alertasOrcamento: { category: string; icon: string; spent: number; limit: number; percent: number }[];
 }
 
+const CustomXAxisTick = ({ x, y, payload, hoveredTick, setHoveredTick }: any) => {
+  const isHovered = hoveredTick === payload.value;
+  const isOtherHovered = hoveredTick !== null && hoveredTick !== payload.value;
+
+  return (
+    <text
+      x={x}
+      y={y + 15}
+      textAnchor="middle"
+      fontSize={isHovered ? 14 : isOtherHovered ? 10 : 11}
+      fontWeight={isHovered ? 'bold' : 'normal'}
+      fill={isHovered ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))'}
+      opacity={isOtherHovered ? 0.4 : 1}
+      style={{ transition: 'all 0.2s ease', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
+      onMouseEnter={() => setHoveredTick(payload.value)}
+      onMouseLeave={() => setHoveredTick(null)}
+    >
+      {payload.value}
+    </text>
+  );
+};
+
 const Dashboard = () => {
   const { t, formatCurrency } = useI18n();
   const { token } = useAuth();
@@ -43,6 +65,7 @@ const Dashboard = () => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
+  const [hoveredTick, setHoveredTick] = useState<string | null>(null);
 
   const [ano, mes] = selectedMonth.split('-');
 
@@ -267,9 +290,9 @@ const Dashboard = () => {
               {d.comparacaoMensal.length > 0 ? (
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={d.comparacaoMensal} barGap={4} margin={{ top: 20, right: 10, left: -10, bottom: 30 }}>
+                    <BarChart data={d.comparacaoMensal} barGap={4} margin={{ top: 10, right: 10, left: -10, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border/30" strokeOpacity={0.3} />
-                      <XAxis dataKey="category" tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))', fontFamily: 'var(--font-sans)' }} tickMargin={10} tickLine={false} axisLine={false} interval={0} angle={-45} textAnchor="end" />
+                      <XAxis dataKey="category" tick={<CustomXAxisTick hoveredTick={hoveredTick} setHoveredTick={setHoveredTick} />} tickLine={false} axisLine={false} interval={0} />
                       <YAxis tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))', fontFamily: 'var(--font-sans)' }} tickMargin={10} tickLine={false} axisLine={false} width={60} />
                       <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--foreground))', fontSize: '12px', fontFamily: 'var(--font-sans)' }} itemStyle={{ color: 'hsl(var(--foreground))' }} labelStyle={{ color: 'hsl(var(--foreground))' }} formatter={(value: number) => formatCurrency(value)} />
                       <Bar dataKey="previous" fill="hsl(var(--muted-foreground) / 0.3)" radius={[4, 4, 0, 0]} barSize={20} name={t.dashboard.comparison + ' (anterior)'} />

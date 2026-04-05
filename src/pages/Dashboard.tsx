@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useI18n } from '@/i18n/context';
 import { useAuth } from '@/hooks/useAuth';
-import { ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, Loader2 } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, Loader2, AlertTriangle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { MonthYearPicker } from '@/components/MonthYearPicker';

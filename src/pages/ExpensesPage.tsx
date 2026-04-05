@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
-import { Plus, Trash2, Pencil, Search, ArrowDownRight, ArrowUpDown, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Pencil, Search, ArrowDownRight, ArrowUpDown, Loader2, CheckCircle } from 'lucide-react';
 import { TransactionFormDialog, useTransactionForm } from '@/components/TransactionFormDialog';
 import { MonthYearPicker } from '@/components/MonthYearPicker';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';

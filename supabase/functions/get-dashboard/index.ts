@@ -149,6 +149,38 @@ Deno.serve(async (req) => {
       balance: parseFloat(r.saldo),
     }));
 
+    // 7. Alertas de orçamento (>= 50%)
+    const orcRows = await sql`
+      SELECT
+        c.nome as category,
+        c.icone as icon,
+        c.orcamento_mensal as limit_amount,
+        COALESCE((
+          SELECT SUM(t.valor)
+          FROM transacoes t
+          WHERE t.telefone_usuario = ${telefone}
+            AND t.categoria = c.nome
+            AND t.tipo = 'despesa'
+            AND EXTRACT(MONTH FROM t.data_transacao) = ${mesNum}
+            AND EXTRACT(YEAR FROM t.data_transacao) = ${anoNum}
+        ), 0) AS spent
+      FROM categorias c
+      WHERE c.telefone_usuario = ${telefone}
+        AND c.tipo = 'despesa'
+        AND c.orcamento_mensal IS NOT NULL
+        AND c.orcamento_mensal > 0
+      ORDER BY c.nome
+    `;
+    const alertasOrcamento = orcRows
+      .map((r: any) => {
+        const limit = parseFloat(r.limit_amount);
+        const spent = parseFloat(r.spent);
+        const percent = limit > 0 ? Math.min(Math.round((spent / limit) * 100), 100) : 0;
+        return { category: r.category, icon: r.icon, spent, limit, percent };
+      })
+      .filter((a: any) => a.percent >= 50)
+      .sort((a: any, b: any) => b.percent - a.percent);
+
     const result = {
       saldoTotal,
       receitaMes,
@@ -158,6 +190,7 @@ Deno.serve(async (req) => {
       gastosCategoria,
       comparacaoMensal,
       saldoContas,
+      alertasOrcamento,
     };
 
     return new Response(JSON.stringify(result), {

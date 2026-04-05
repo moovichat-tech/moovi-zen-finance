@@ -23,6 +23,7 @@ interface DashboardData {
   gastosCategoria: { name: string; value: number }[];
   comparacaoMensal: { category: string; current: number; previous: number }[];
   saldoContas: { name: string; icon: string; balance: number }[];
+  alertasOrcamento: { category: string; icon: string; spent: number; limit: number; percent: number }[];
 }
 
 const Dashboard = () => {

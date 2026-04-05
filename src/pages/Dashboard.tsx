@@ -36,6 +36,28 @@ interface DashboardData {
   alertasOrcamento: { category: string; icon: string; spent: number; limit: number; percent: number }[];
 }
 
+const CustomXAxisTick = ({ x, y, payload, hoveredTick, setHoveredTick }: any) => {
+  const isHovered = hoveredTick === payload.value;
+  const isOtherHovered = hoveredTick !== null && hoveredTick !== payload.value;
+
+  return (
+    <text
+      x={x}
+      y={y + 15}
+      textAnchor="middle"
+      fontSize={isHovered ? 14 : isOtherHovered ? 10 : 11}
+      fontWeight={isHovered ? 'bold' : 'normal'}
+      fill={isHovered ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))'}
+      opacity={isOtherHovered ? 0.4 : 1}
+      style={{ transition: 'all 0.2s ease', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
+      onMouseEnter={() => setHoveredTick(payload.value)}
+      onMouseLeave={() => setHoveredTick(null)}
+    >
+      {payload.value}
+    </text>
+  );
+};
+
 const Dashboard = () => {
   const { t, formatCurrency } = useI18n();
   const { token } = useAuth();

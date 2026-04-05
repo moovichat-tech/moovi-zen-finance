@@ -61,7 +61,7 @@ const ExpensesPage = () => {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const { open, setOpen, editingId, initialData, openAdd } = useTransactionForm('expense');
+  const { open, setOpen, openAdd } = useTransactionForm('expense');
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc(!sortAsc);

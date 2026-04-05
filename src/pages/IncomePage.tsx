@@ -116,6 +116,21 @@ const IncomePage = () => {
     queryClient.invalidateQueries({ queryKey: ['contas'] });
   };
 
+  const markPaidMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/marcar-pago`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) throw new Error('Erro ao marcar como recebido');
+    },
+    onSuccess: () => {
+      invalidateAll();
+      toast.success(locale === 'pt' ? 'Receita marcada como recebida' : 'Income marked as received');
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await fetch(`${SUPABASE_URL}/functions/v1/delete-transacao`, {

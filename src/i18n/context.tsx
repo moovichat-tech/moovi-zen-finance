@@ -56,7 +56,9 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [currency, convertValue]);
 
   const formatDate = useCallback((dateStr: string) => {
-    const date = new Date(dateStr + 'T00:00:00');
+    if (!dateStr) return '—';
+    const date = new Date(dateStr.length === 10 ? dateStr + 'T00:00:00' : dateStr);
+    if (isNaN(date.getTime())) return '—';
     return new Intl.DateTimeFormat(dateLocales[locale], {
       day: '2-digit',
       month: '2-digit',

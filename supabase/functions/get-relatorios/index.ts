@@ -100,12 +100,36 @@ Deno.serve(async (req) => {
 
     const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
-    const visaoGeral = Object.entries(monthMap)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, v]) => {
-        const [, m] = key.split("-");
-        return { month: monthNames[parseInt(m) - 1], income: v.receitas, expense: v.despesas };
-      });
+    // Daily grouping for monthly view
+    const dayMap: Record<string, { receitas: number; despesas: number }> = {};
+    if (tipoPeriodo !== "Anual") {
+      for (const r of rows) {
+        if (!r.data_transacao) continue;
+        const d = new Date(r.data_transacao);
+        const dayKey = String(d.getDate()).padStart(2, "0");
+        if (!dayMap[dayKey]) dayMap[dayKey] = { receitas: 0, despesas: 0 };
+        const val = parseFloat(r.valor) || 0;
+        const tipo = (r.tipo || "").toLowerCase();
+        const isReceita = tipo === "receita" || tipo === "income";
+        if (isReceita) dayMap[dayKey].receitas += val;
+        else dayMap[dayKey].despesas += val;
+      }
+    }
+
+    const visaoGeral = tipoPeriodo === "Anual"
+      ? Object.entries(monthMap)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([key, v]) => {
+            const [, m] = key.split("-");
+            return { month: monthNames[parseInt(m) - 1], income: v.receitas, expense: v.despesas };
+          })
+      : Object.entries(dayMap)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([day, v]) => ({
+            month: day,
+            income: v.receitas,
+            expense: v.despesas,
+          }));
 
     const porCategoria = Object.entries(catMap)
       .map(([name, value]) => ({ name, value }))

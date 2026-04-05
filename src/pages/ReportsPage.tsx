@@ -9,7 +9,7 @@ import { DatePicker } from '@/components/DatePicker';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { FileText, FileSpreadsheet, Download, ArrowUpDown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -321,14 +321,29 @@ const ReportsPage = () => {
                   <h3 className="mb-4 text-sm font-semibold">Receitas vs Despesas</h3>
                   {visaoGeral.length > 0 ? (
                     <ResponsiveContainer width="100%" height={280}>
-                      <BarChart data={visaoGeral} barGap={4}>
+                      <AreaChart data={visaoGeral} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="colorReceita" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                          </linearGradient>
+                          <linearGradient id="colorDespesa" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
+                            <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                        <YAxis tick={{ fontSize: 11 }} />
-                        <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--foreground))', fontSize: '12px' }} formatter={(value: number) => formatCurrency(value)} />
-                        <Bar dataKey="income" fill="hsl(152, 60%, 42%)" radius={[4, 4, 0, 0]} barSize={20} name="Receitas" />
-                        <Bar dataKey="expense" fill="hsl(0, 72%, 51%)" radius={[4, 4, 0, 0]} barSize={20} name="Despesas" />
-                      </BarChart>
+                        <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} />
+                        <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} />
+                        <Tooltip
+                          contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--foreground))', fontSize: '12px' }}
+                          itemStyle={{ color: 'hsl(var(--foreground))' }}
+                          labelStyle={{ color: 'hsl(var(--foreground))' }}
+                          formatter={(value: number) => formatCurrency(value)}
+                        />
+                        <Area type="monotone" dataKey="income" stroke="#10b981" fillOpacity={1} fill="url(#colorReceita)" name="Receitas" strokeWidth={2} />
+                        <Area type="monotone" dataKey="expense" stroke="#ef4444" fillOpacity={1} fill="url(#colorDespesa)" name="Despesas" strokeWidth={2} />
+                      </AreaChart>
                     </ResponsiveContainer>
                   ) : (
                     <p className="text-sm text-muted-foreground text-center py-12">Sem dados para o período</p>

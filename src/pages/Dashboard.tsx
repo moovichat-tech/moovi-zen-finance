@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useI18n } from '@/i18n/context';
 import { useAuth } from '@/hooks/useAuth';
-import { ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, Loader2 } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, Loader2, AlertTriangle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { MonthYearPicker } from '@/components/MonthYearPicker';
@@ -23,6 +23,7 @@ interface DashboardData {
   gastosCategoria: { name: string; value: number }[];
   comparacaoMensal: { category: string; current: number; previous: number }[];
   saldoContas: { name: string; icon: string; balance: number }[];
+  alertasOrcamento: { category: string; icon: string; spent: number; limit: number; percent: number }[];
 }
 
 const Dashboard = () => {
@@ -51,7 +52,7 @@ const Dashboard = () => {
 
   const d = data || {
     saldoTotal: 0, receitaMes: 0, despesaMes: 0, resultadoLiquido: 0,
-    evolucaoMensal: [], gastosCategoria: [], comparacaoMensal: [], saldoContas: [],
+    evolucaoMensal: [], gastosCategoria: [], comparacaoMensal: [], saldoContas: [], alertasOrcamento: [],
   };
 
   const availableMonths = useMemo(() => {
@@ -182,7 +183,30 @@ const Dashboard = () => {
             <div className="space-y-4">
               <Card className="p-3 sm:p-5 card-hover">
                 <h3 className="mb-4 text-sm font-semibold">{t.dashboard.budgetAlerts}</h3>
-                <p className="text-xs text-muted-foreground text-center py-2">Nenhum alerta</p>
+                {d.alertasOrcamento.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-2">Nenhum alerta</p>
+                ) : (
+                  <div className="space-y-3">
+                    {d.alertasOrcamento.map((alert, i) => (
+                      <div key={i} className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <AlertTriangle className={`h-3.5 w-3.5 shrink-0 ${alert.percent >= 90 ? 'text-destructive' : 'text-amber-500'}`} />
+                          <div className="flex items-center justify-between flex-1 min-w-0">
+                            <span className="text-xs font-medium truncate">{alert.category}</span>
+                            <span className={`text-[11px] font-semibold ml-2 ${alert.percent >= 90 ? 'text-destructive' : 'text-amber-500'}`}>
+                              {alert.percent}%
+                            </span>
+                          </div>
+                        </div>
+                        <Progress value={alert.percent} className="h-1.5" />
+                        <div className="flex justify-between text-[11px] text-muted-foreground">
+                          <span>{formatCurrency(alert.spent)}</span>
+                          <span>{formatCurrency(alert.limit)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </Card>
 
               <Card className="p-3 sm:p-5 card-hover">

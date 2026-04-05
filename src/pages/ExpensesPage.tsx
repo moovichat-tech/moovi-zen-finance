@@ -116,6 +116,21 @@ const ExpensesPage = () => {
     queryClient.invalidateQueries({ queryKey: ['contas'] });
   };
 
+  const markPaidMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/marcar-pago`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) throw new Error('Erro ao marcar como pago');
+    },
+    onSuccess: () => {
+      invalidateAll();
+      toast.success(locale === 'pt' ? 'Despesa marcada como paga' : 'Expense marked as paid');
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await fetch(`${SUPABASE_URL}/functions/v1/delete-transacao`, {

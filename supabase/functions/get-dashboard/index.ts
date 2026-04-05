@@ -182,15 +182,15 @@ Deno.serve(async (req) => {
       .sort((a: any, b: any) => b.percent - a.percent);
 
     const result = {
-      saldoTotal,
-      receitaMes,
-      despesaMes,
-      resultadoLiquido: receitaMes - despesaMes,
-      evolucaoMensal,
-      gastosCategoria,
-      comparacaoMensal,
-      saldoContas,
-      alertasOrcamento,
+      saldoTotal: saldoTotal || 0,
+      receitaMes: receitaMes || 0,
+      despesaMes: despesaMes || 0,
+      resultadoLiquido: (receitaMes || 0) - (despesaMes || 0),
+      evolucaoMensal: evolucaoMensal || [],
+      gastosCategoria: gastosCategoria || [],
+      comparacaoMensal: comparacaoMensal || [],
+      saldoContas: saldoContas || [],
+      alertasOrcamento: alertasOrcamento || [],
     };
 
     return new Response(JSON.stringify(result), {

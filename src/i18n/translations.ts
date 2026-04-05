@@ -318,7 +318,7 @@ const translations = {
       export: 'Exporter',
       language: 'Langue',
       currency: 'Devise',
-      planned: 'Prévu',
+      planned: 'En attente',
       paid: 'Payé',
       received: 'Reçu',
     },

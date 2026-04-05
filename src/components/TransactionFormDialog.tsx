@@ -1,142 +1,148 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useI18n } from '@/i18n/context';
-import { useData, type Transaction } from '@/store/DataContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { DatePicker } from '@/components/DatePicker';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+
+interface Conta {
+  id: string;
+  nome: string;
+  tipo: string;
+}
+
+interface Categoria {
+  id: string;
+  nome: string;
+  tipo: string;
+}
 
 export interface TransactionFormData {
   description: string;
   amount: string;
   category: string;
   date: string;
-  status: 'paid' | 'received' | 'planned';
-  recurrence: Transaction['recurrence'];
-  customRecurrenceDays?: string;
-  customRecurrenceDayOfMonth?: string;
-  accountId: string;
-  cardId: string;
-  installments: string;
-  fixed: boolean;
-  tags: string;
+  status: 'PAGO' | 'PENDENTE';
+  conta: string;
 }
 
-const emptyForm = (type: 'income' | 'expense', defaultCategory: string): TransactionFormData => ({
+const emptyForm = (type: 'income' | 'expense'): TransactionFormData => ({
   description: '',
   amount: '',
-  category: defaultCategory,
+  category: '',
   date: new Date().toISOString().split('T')[0],
-  status: type === 'income' ? 'received' : 'paid',
-  recurrence: 'once',
-  accountId: '',
-  cardId: '',
-  installments: '',
-  fixed: false,
-  tags: '',
+  status: type === 'income' ? 'PAGO' : 'PAGO',
+  conta: '',
 });
 
 interface TransactionFormDialogProps {
   type: 'income' | 'expense';
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editingId: string | null;
-  initialData?: TransactionFormData;
 }
 
-export function TransactionFormDialog({ type, open, onOpenChange, editingId, initialData }: TransactionFormDialogProps) {
-  const { t, locale, translateRecurrence, formatCurrency } = useI18n();
-  const { accounts, cards, categories, addTransaction, updateTransaction } = useData();
+export function TransactionFormDialog({ type, open, onOpenChange }: TransactionFormDialogProps) {
+  const { t, locale } = useI18n();
+  const { token } = useAuth();
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState<TransactionFormData>(emptyForm(type));
 
-  const defaultCategory = type === 'income' ? categories.income[0] || '' : categories.expense[0] || '';
-  const [form, setForm] = useState<TransactionFormData>(initialData || emptyForm(type, defaultCategory));
+  useEffect(() => {
+    if (open) setForm(emptyForm(type));
+  }, [open, type]);
 
-  const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen && initialData) setForm(initialData);
-    else if (isOpen) setForm(emptyForm(type, defaultCategory));
-    onOpenChange(isOpen);
+  const { data: contas = [] } = useQuery<Conta[]>({
+    queryKey: ['contas-list'],
+    queryFn: async () => {
+      if (!token) return [];
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/get-contas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!token && open,
+  });
+
+  const { data: categorias = [] } = useQuery<Categoria[]>({
+    queryKey: ['categorias'],
+    queryFn: async () => {
+      if (!token) return [];
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/get-categorias`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!token && open,
+  });
+
+  const filteredCategorias = categorias.filter(c =>
+    c.tipo === (type === 'income' ? 'receita' : 'despesa')
+  );
+
+  const createMutation = useMutation({
+    mutationFn: async (data: TransactionFormData) => {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/create-transacao`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          tipo: type === 'income' ? 'receita' : 'despesa',
+          descricao: data.description,
+          valor: Number(data.amount),
+          categoria: data.category,
+          data_transacao: data.date,
+          status: data.status,
+          conta: data.conta,
+        }),
+      });
+      if (!res.ok) throw new Error('Erro ao criar transação');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: type === 'income' ? ['receitas'] : ['despesas'] });
+      queryClient.invalidateQueries({ queryKey: ['contas'] });
+      queryClient.invalidateQueries({ queryKey: ['pendentes-payables'] });
+      const msg = type === 'income'
+        ? (locale === 'pt' ? 'Receita criada' : 'Income created')
+        : (locale === 'pt' ? 'Despesa criada' : 'Expense created');
+      toast.success(msg);
+      onOpenChange(false);
+    },
+    onError: () => {
+      toast.error(locale === 'pt' ? 'Erro ao salvar' : 'Error saving');
+    },
+  });
+
+  const handleSubmit = () => {
+    if (!form.description || !form.amount || !form.conta || !form.category) return;
+    createMutation.mutate(form);
   };
 
   const labels = {
-    pt: { account: 'Conta', card: 'Cartão (opcional)', installments: 'Parcelas', fixedExpense: 'Despesa fixa', tags: 'Tags', tagsPlaceholder: 'ex: tech, assinatura', recurrence: 'Recorrência', noCard: 'Nenhum', selectAccount: 'Selecionar', custom: 'Personalizado', everyXDays: 'A cada X dias', dayOfMonth: 'Dia do mês' },
-    en: { account: 'Account', card: 'Card (optional)', installments: 'Installments', fixedExpense: 'Fixed expense', tags: 'Tags', tagsPlaceholder: 'e.g.: tech, subscription', recurrence: 'Recurrence', noCard: 'None', selectAccount: 'Select', custom: 'Custom', everyXDays: 'Every X days', dayOfMonth: 'Day of month' },
-    es: { account: 'Cuenta', card: 'Tarjeta (opcional)', installments: 'Cuotas', fixedExpense: 'Gasto fijo', tags: 'Tags', tagsPlaceholder: 'ej: tech, suscripción', recurrence: 'Recurrencia', noCard: 'Ninguna', selectAccount: 'Seleccionar', custom: 'Personalizado', everyXDays: 'Cada X días', dayOfMonth: 'Día del mes' },
-    fr: { account: 'Compte', card: 'Carte (optionnel)', installments: 'Versements', fixedExpense: 'Dépense fixe', tags: 'Tags', tagsPlaceholder: 'ex: tech, abonnement', recurrence: 'Récurrence', noCard: 'Aucune', selectAccount: 'Sélectionner', custom: 'Personnalisé', everyXDays: 'Tous les X jours', dayOfMonth: 'Jour du mois' },
-    de: { account: 'Konto', card: 'Karte (optional)', installments: 'Raten', fixedExpense: 'Fixe Ausgabe', tags: 'Tags', tagsPlaceholder: 'z.B.: Tech, Abo', recurrence: 'Wiederholung', noCard: 'Keine', selectAccount: 'Auswählen', custom: 'Benutzerdefiniert', everyXDays: 'Alle X Tage', dayOfMonth: 'Tag des Monats' },
+    pt: { account: 'Conta', selectAccount: 'Selecionar conta', totalAmount: 'Valor Total' },
+    en: { account: 'Account', selectAccount: 'Select account', totalAmount: 'Total Amount' },
+    es: { account: 'Cuenta', selectAccount: 'Seleccionar cuenta', totalAmount: 'Valor Total' },
+    fr: { account: 'Compte', selectAccount: 'Sélectionner un compte', totalAmount: 'Montant Total' },
+    de: { account: 'Konto', selectAccount: 'Konto auswählen', totalAmount: 'Gesamtbetrag' },
   };
-  const l = labels[locale];
+  const l = labels[locale] || labels.en;
 
-  const handleSubmit = () => {
-    if (!form.description || !form.amount || !form.accountId) return;
-
-    if (editingId) {
-      updateTransaction(editingId, {
-        type,
-        description: form.description,
-        amount: parseFloat(form.amount),
-        category: form.category,
-        date: form.date,
-        status: form.status,
-        recurrence: form.recurrence,
-        accountId: form.accountId,
-        cardId: form.cardId || undefined,
-        tags: form.tags ? form.tags.split(',').map(t => t.trim()) : [],
-        fixed: form.fixed,
-      });
-    } else {
-      const inst = form.installments ? parseInt(form.installments) : undefined;
-      if (inst && inst > 1) {
-        const amount = Math.round((parseFloat(form.amount) / inst) * 100) / 100;
-        for (let i = 0; i < inst; i++) {
-          const date = new Date(form.date);
-          date.setMonth(date.getMonth() + i);
-          addTransaction({
-            type,
-            description: form.description,
-            amount,
-            category: form.category,
-            date: date.toISOString().split('T')[0],
-            status: i === 0 ? (type === 'income' ? 'received' : 'paid') : 'planned',
-            recurrence: 'once',
-            accountId: form.accountId,
-            cardId: form.cardId || undefined,
-            installments: inst,
-            currentInstallment: i + 1,
-            tags: form.tags ? form.tags.split(',').map(t => t.trim()) : [],
-            fixed: form.fixed,
-          });
-        }
-      } else {
-        addTransaction({
-          type,
-          description: form.description,
-          amount: parseFloat(form.amount),
-          category: form.category,
-          date: form.date,
-          status: form.status,
-          recurrence: form.recurrence,
-          accountId: form.accountId,
-          cardId: form.cardId || undefined,
-          tags: form.tags ? form.tags.split(',').map(t => t.trim()) : [],
-          fixed: form.fixed,
-        });
-      }
-    }
-    onOpenChange(false);
-  };
-
-  // Use ALL categories from the categories context
-  const categoryList = type === 'income' ? categories.income : categories.expense;
-  const statusCompleted = type === 'income' ? 'received' : 'paid';
-  const statusCompletedLabel = type === 'income' ? t.common.received : t.common.paid;
-  const title = `${editingId ? t.common.edit : t.common.add} ${type === 'income' ? t.common.income : t.common.expense}`;
+  const title = `${t.common.add} ${type === 'income' ? t.common.income : t.common.expense}`;
+  const statusPaidLabel = type === 'income' ? t.common.received : t.common.paid;
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
         <div className="space-y-4">
           {/* Description */}
@@ -148,7 +154,7 @@ export function TransactionFormDialog({ type, open, onOpenChange, editingId, ini
           {/* Amount + Date */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>{locale === 'pt' ? 'Valor Total' : locale === 'en' ? 'Total Amount' : locale === 'es' ? 'Valor Total' : locale === 'fr' ? 'Montant Total' : 'Gesamtbetrag'}</Label>
+              <Label>{l.totalAmount}</Label>
               <Input type="number" min="0" step="0.01" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
             </div>
             <div className="space-y-1.5">
@@ -164,7 +170,7 @@ export function TransactionFormDialog({ type, open, onOpenChange, editingId, ini
               <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {categoryList.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  {filteredCategorias.map(c => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -173,93 +179,29 @@ export function TransactionFormDialog({ type, open, onOpenChange, editingId, ini
               <Select value={form.status} onValueChange={v => setForm({ ...form, status: v as any })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={statusCompleted}>{statusCompletedLabel}</SelectItem>
-                  <SelectItem value="planned">{t.common.planned}</SelectItem>
+                  <SelectItem value="PAGO">{statusPaidLabel}</SelectItem>
+                  <SelectItem value="PENDENTE">{t.common.planned}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          {/* Recurrence + Account */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>{l.recurrence}</Label>
-              <Select value={form.recurrence} onValueChange={v => setForm({ ...form, recurrence: v as any })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="once">{translateRecurrence('once')}</SelectItem>
-                  <SelectItem value="monthly">{translateRecurrence('monthly')}</SelectItem>
-                  <SelectItem value="weekly">{translateRecurrence('weekly')}</SelectItem>
-                  <SelectItem value="yearly">{translateRecurrence('yearly')}</SelectItem>
-                  <SelectItem value="biweekly">{translateRecurrence('biweekly')}</SelectItem>
-                  <SelectItem value="custom">{l.custom}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>{l.account}</Label>
-              <Select value={form.accountId} onValueChange={v => setForm({ ...form, accountId: v })}>
-                <SelectTrigger><SelectValue placeholder={l.selectAccount} /></SelectTrigger>
-                <SelectContent>
-                  {accounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Custom recurrence fields */}
-          {form.recurrence === 'custom' && (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>{l.everyXDays}</Label>
-                <Input type="number" min="1" placeholder="15" value={form.customRecurrenceDays || ''} onChange={e => setForm({ ...form, customRecurrenceDays: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{l.dayOfMonth}</Label>
-                <Input type="number" min="1" max="31" placeholder="1" value={form.customRecurrenceDayOfMonth || ''} onChange={e => setForm({ ...form, customRecurrenceDayOfMonth: e.target.value })} />
-              </div>
-            </div>
-          )}
-
-          {/* Card + Installments (expense only for card) */}
-          <div className="grid grid-cols-2 gap-3">
-            {type === 'expense' && (
-              <div className="space-y-1.5">
-                <Label>{l.card}</Label>
-                <Select value={form.cardId || 'none'} onValueChange={v => setForm({ ...form, cardId: v === 'none' ? '' : v })}>
-                  <SelectTrigger><SelectValue placeholder={l.noCard} /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">{l.noCard}</SelectItem>
-                    {cards.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            {!editingId && (
-              <div className="space-y-1.5">
-                <Label>{l.installments}</Label>
-                <Input type="number" min="1" placeholder="1" value={form.installments} onChange={e => setForm({ ...form, installments: e.target.value })} />
-              </div>
-            )}
-          </div>
-
-          {/* Fixed toggle (expense only) */}
-          {type === 'expense' && (
-            <div className="flex items-center gap-3">
-              <Switch checked={form.fixed} onCheckedChange={v => setForm({ ...form, fixed: v })} />
-              <Label>{l.fixedExpense}</Label>
-            </div>
-          )}
-
-          {/* Tags */}
+          {/* Account */}
           <div className="space-y-1.5">
-            <Label>{l.tags}</Label>
-            <Input value={form.tags} onChange={e => setForm({ ...form, tags: e.target.value })} placeholder={l.tagsPlaceholder} />
+            <Label>{l.account}</Label>
+            <Select value={form.conta} onValueChange={v => setForm({ ...form, conta: v })}>
+              <SelectTrigger><SelectValue placeholder={l.selectAccount} /></SelectTrigger>
+              <SelectContent>
+                {contas.map(c => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>{t.common.cancel}</Button>
-          <Button onClick={handleSubmit}>{t.common.save}</Button>
+          <Button onClick={handleSubmit} disabled={createMutation.isPending}>
+            {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t.common.save}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -267,36 +209,9 @@ export function TransactionFormDialog({ type, open, onOpenChange, editingId, ini
 }
 
 export function useTransactionForm(type: 'income' | 'expense') {
-  const { categories } = useData();
   const [open, setOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [initialData, setInitialData] = useState<TransactionFormData | undefined>();
 
-  const defaultCategory = type === 'income' ? categories.income[0] || '' : categories.expense[0] || '';
+  const openAdd = () => setOpen(true);
 
-  const openAdd = () => {
-    setEditingId(null);
-    setInitialData(emptyForm(type, defaultCategory));
-    setOpen(true);
-  };
-
-  const openEdit = (tr: Transaction) => {
-    setEditingId(tr.id);
-    setInitialData({
-      description: tr.description,
-      amount: String(tr.amount),
-      category: tr.category,
-      date: tr.date,
-      status: tr.status as any,
-      recurrence: tr.recurrence,
-      accountId: tr.accountId,
-      cardId: tr.cardId || '',
-      installments: '',
-      fixed: tr.fixed || false,
-      tags: tr.tags?.join(', ') || '',
-    });
-    setOpen(true);
-  };
-
-  return { open, setOpen, editingId, initialData, openAdd, openEdit };
+  return { open, setOpen, openAdd };
 }

@@ -294,6 +294,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          nome: string | null
           senha_hash: string | null
           telefone: string
           ultimo_login: string | null
@@ -302,6 +303,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          nome?: string | null
           senha_hash?: string | null
           telefone: string
           ultimo_login?: string | null
@@ -310,6 +312,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          nome?: string | null
           senha_hash?: string | null
           telefone?: string
           ultimo_login?: string | null

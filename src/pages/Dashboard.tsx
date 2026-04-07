@@ -1,16 +1,21 @@
 import { useMemo, useState } from 'react';
 import { useI18n } from '@/i18n/context';
 import { useAuth } from '@/hooks/useAuth';
-import { ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, Loader2, AlertTriangle, Info } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, Loader2, AlertTriangle, Info, CalendarDays } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { MonthYearPicker } from '@/components/MonthYearPicker';
 import { useQuery } from '@tanstack/react-query';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Button } from '@/components/ui/button';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, BarChart, Bar,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell,
 } from 'recharts';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -29,11 +34,35 @@ interface DashboardData {
   resultadoLiquido: number;
   receitasDetalhadas: TransacaoDetalhe[];
   despesasDetalhadas: TransacaoDetalhe[];
-  evolucaoMensal: { month: string; income: number; expense: number }[];
+  evolucaoTempo: { label: string; receitas: number; despesas: number }[];
   gastosCategoria: { name: string; value: number }[];
   comparacaoMensal: { category: string; current: number; previous: number }[];
   saldoContas: { name: string; icon: string; balance: number }[];
   alertasOrcamento: { category: string; icon: string; spent: number; limit: number; percent: number }[];
+}
+
+type DatePreset = 'thisMonth' | 'lastMonth' | 'thisYear' | 'custom';
+
+function getPresetRange(preset: DatePreset): { dataInicio: string; dataFim: string } {
+  const now = new Date();
+  if (preset === 'thisMonth') {
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return { dataInicio: fmt(start), dataFim: fmt(end) };
+  }
+  if (preset === 'lastMonth') {
+    const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const end = new Date(now.getFullYear(), now.getMonth(), 0);
+    return { dataInicio: fmt(start), dataFim: fmt(end) };
+  }
+  // thisYear
+  const start = new Date(now.getFullYear(), 0, 1);
+  const end = new Date(now.getFullYear(), 11, 31);
+  return { dataInicio: fmt(start), dataFim: fmt(end) };
+}
+
+function fmt(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 const CustomXAxisTick = ({ x, y, payload, hoveredTick, setHoveredTick }: any) => {
@@ -61,26 +90,31 @@ const CustomXAxisTick = ({ x, y, payload, hoveredTick, setHoveredTick }: any) =>
 const Dashboard = () => {
   const { t, formatCurrency } = useI18n();
   const { token } = useAuth();
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
+  const [preset, setPreset] = useState<DatePreset>('thisMonth');
+  const [customFrom, setCustomFrom] = useState<Date | undefined>();
+  const [customTo, setCustomTo] = useState<Date | undefined>();
   const [hoveredTick, setHoveredTick] = useState<string | null>(null);
 
-  const [ano, mes] = selectedMonth.split('-');
+  const dateRange = useMemo(() => {
+    if (preset === 'custom' && customFrom && customTo) {
+      return { dataInicio: fmt(customFrom), dataFim: fmt(customTo) };
+    }
+    if (preset === 'custom') return null;
+    return getPresetRange(preset);
+  }, [preset, customFrom, customTo]);
 
   const { data, isLoading } = useQuery<DashboardData>({
-    queryKey: ['dashboard', selectedMonth],
+    queryKey: ['dashboard', dateRange],
     queryFn: async () => {
       const res = await fetch(`${SUPABASE_URL}/functions/v1/get-dashboard`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ mes: Number(mes), ano: Number(ano) }),
+        body: JSON.stringify(dateRange),
       });
       if (!res.ok) throw new Error('Erro ao buscar dashboard');
       return res.json();
     },
-    enabled: !!token,
+    enabled: !!token && !!dateRange,
   });
 
   const d = {
@@ -90,22 +124,19 @@ const Dashboard = () => {
     resultadoLiquido: data?.resultadoLiquido ?? 0,
     receitasDetalhadas: data?.receitasDetalhadas ?? [],
     despesasDetalhadas: data?.despesasDetalhadas ?? [],
-    evolucaoMensal: data?.evolucaoMensal ?? [],
+    evolucaoTempo: data?.evolucaoTempo ?? [],
     gastosCategoria: data?.gastosCategoria ?? [],
     comparacaoMensal: data?.comparacaoMensal ?? [],
     saldoContas: data?.saldoContas ?? [],
     alertasOrcamento: data?.alertasOrcamento ?? [],
   };
 
-  const availableMonths = useMemo(() => {
-    const cur = new Date();
-    const list: string[] = [];
-    for (let i = 0; i < 24; i++) {
-      const dt = new Date(cur.getFullYear(), cur.getMonth() - i, 1);
-      list.push(`${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`);
-    }
-    return list;
-  }, []);
+  const presetLabels: Record<string, string> = {
+    thisMonth: t.dashboard.thisMonth,
+    lastMonth: t.dashboard.lastMonth2,
+    thisYear: t.dashboard.thisYear,
+    custom: t.dashboard.custom,
+  };
 
   const statCards = [
     { label: t.dashboard.totalBalance, value: d.saldoTotal, icon: Wallet, positive: true },
@@ -116,7 +147,7 @@ const Dashboard = () => {
 
   const getTooltipContent = (index: number) => {
     switch (index) {
-      case 0: // Saldo Total
+      case 0:
         return d.saldoContas.length > 0 ? (
           <div className="space-y-1.5">
             <p className="text-xs font-semibold text-foreground mb-2">Composição do saldo:</p>
@@ -128,11 +159,10 @@ const Dashboard = () => {
             ))}
           </div>
         ) : <p className="text-xs text-muted-foreground">Nenhuma conta cadastrada</p>;
-
-      case 1: // Receitas
+      case 1:
         return d.receitasDetalhadas.length > 0 ? (
           <div className="space-y-1.5">
-            <p className="text-xs font-semibold text-foreground mb-2">Receitas do mês (excl. transferências):</p>
+            <p className="text-xs font-semibold text-foreground mb-2">Receitas do período (excl. transferências):</p>
             {d.receitasDetalhadas.map((r, i) => (
               <div key={i} className="flex items-center justify-between text-xs gap-4">
                 <span className="text-muted-foreground truncate">{r.descricao}</span>
@@ -140,12 +170,11 @@ const Dashboard = () => {
               </div>
             ))}
           </div>
-        ) : <p className="text-xs text-muted-foreground">Nenhuma receita neste mês</p>;
-
-      case 2: // Despesas
+        ) : <p className="text-xs text-muted-foreground">Nenhuma receita neste período</p>;
+      case 2:
         return d.despesasDetalhadas.length > 0 ? (
           <div className="space-y-1.5">
-            <p className="text-xs font-semibold text-foreground mb-2">Despesas do mês (excl. transferências):</p>
+            <p className="text-xs font-semibold text-foreground mb-2">Despesas do período (excl. transferências):</p>
             {d.despesasDetalhadas.map((r, i) => (
               <div key={i} className="flex items-center justify-between text-xs gap-4">
                 <span className="text-muted-foreground truncate">{r.descricao}</span>
@@ -153,9 +182,8 @@ const Dashboard = () => {
               </div>
             ))}
           </div>
-        ) : <p className="text-xs text-muted-foreground">Nenhuma despesa neste mês</p>;
-
-      case 3: // Resultado Líquido
+        ) : <p className="text-xs text-muted-foreground">Nenhuma despesa neste período</p>;
+      case 3:
         return (
           <div className="space-y-2">
             <p className="text-xs font-semibold text-foreground">Cálculo:</p>
@@ -177,7 +205,6 @@ const Dashboard = () => {
             </div>
           </div>
         );
-
       default:
         return null;
     }
@@ -187,12 +214,52 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-in-up">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-lg sm:text-xl font-semibold">{t.nav.dashboard}</h2>
           <p className="text-sm text-muted-foreground">{t.dashboard.totalBalance}</p>
         </div>
-        <MonthYearPicker value={selectedMonth} onChange={setSelectedMonth} availableMonths={availableMonths} />
+        <div className="flex items-center gap-2 flex-wrap">
+          <Select value={preset} onValueChange={(v) => setPreset(v as DatePreset)}>
+            <SelectTrigger className="w-[160px] h-9 text-sm">
+              <CalendarDays className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="thisMonth">{presetLabels.thisMonth}</SelectItem>
+              <SelectItem value="lastMonth">{presetLabels.lastMonth}</SelectItem>
+              <SelectItem value="thisYear">{presetLabels.thisYear}</SelectItem>
+              <SelectItem value="custom">{presetLabels.custom}</SelectItem>
+            </SelectContent>
+          </Select>
+          {preset === 'custom' && (
+            <div className="flex items-center gap-1.5">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9 text-xs gap-1.5">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    {customFrom ? format(customFrom, 'dd/MM/yy') : 'Início'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={customFrom} onSelect={setCustomFrom} locale={ptBR} initialFocus className="p-3 pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+              <span className="text-xs text-muted-foreground">→</span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9 text-xs gap-1.5">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    {customTo ? format(customTo, 'dd/MM/yy') : 'Fim'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar mode="single" selected={customTo} onSelect={setCustomTo} locale={ptBR} initialFocus className="p-3 pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
+        </div>
       </div>
 
       {isLoading ? (
@@ -229,28 +296,18 @@ const Dashboard = () => {
             ))}
           </div>
 
-          {/* Full-width Evolution Chart */}
+          {/* Full-width Evolution Chart - BarChart */}
           <Card className="p-3 sm:p-5 card-hover">
             <h3 className="mb-3 sm:mb-4 text-sm font-semibold">{t.dashboard.monthlyEvolution}</h3>
             <ResponsiveContainer width="100%" height={250}>
-              <AreaChart data={d.evolucaoMensal}>
-                <defs>
-                  <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(152, 60%, 42%)" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="hsl(152, 60%, 42%)" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(0, 72%, 51%)" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="hsl(0, 72%, 51%)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
+              <BarChart data={d.evolucaoTempo} barGap={2}>
                 <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border/30" strokeOpacity={0.3} />
-                <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: 'var(--font-sans)' }} stroke="currentColor" className="text-muted-foreground" />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fontFamily: 'var(--font-sans)' }} stroke="currentColor" className="text-muted-foreground" />
                 <YAxis tick={{ fontSize: 11, fontFamily: 'var(--font-sans)' }} stroke="currentColor" className="text-muted-foreground" width={60} />
                 <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--foreground))', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '12px', fontFamily: 'var(--font-sans)' }} itemStyle={{ color: 'hsl(var(--foreground))' }} labelStyle={{ color: 'hsl(var(--foreground))' }} formatter={(value: number) => formatCurrency(value)} />
-                <Area type="monotone" dataKey="income" stroke="hsl(152, 60%, 42%)" fill="url(#incomeGrad)" strokeWidth={2} name={t.dashboard.monthIncome} />
-                <Area type="monotone" dataKey="expense" stroke="hsl(0, 72%, 51%)" fill="url(#expenseGrad)" strokeWidth={2} name={t.dashboard.monthExpense} />
-              </AreaChart>
+                <Bar dataKey="receitas" fill="#10b981" radius={[4, 4, 0, 0]} name={t.dashboard.monthIncome} />
+                <Bar dataKey="despesas" fill="#ef4444" radius={[4, 4, 0, 0]} name={t.dashboard.monthExpense} />
+              </BarChart>
             </ResponsiveContainer>
           </Card>
 
@@ -281,7 +338,7 @@ const Dashboard = () => {
                   </div>
                 </>
               ) : (
-                <p className="text-xs text-muted-foreground text-center py-8">Nenhum gasto neste mês</p>
+                <p className="text-xs text-muted-foreground text-center py-8">Nenhum gasto neste período</p>
               )}
             </Card>
 

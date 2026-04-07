@@ -15,6 +15,7 @@ import CardsPage from "@/pages/CardsPage";
 import AccountsPage from "@/pages/AccountsPage";
 import BudgetPage from "@/pages/BudgetPage";
 import ReportsPage from "@/pages/ReportsPage";
+import MetasPage from "@/pages/MetasPage";
 import SettingsPage from "@/pages/SettingsPage";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import CategoriesPage from "@/pages/CategoriesPage";

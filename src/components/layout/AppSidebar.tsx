@@ -16,6 +16,7 @@ const navItems = [
   { key: 'categories', path: '/categories', icon: Tag },
   { key: 'commitments', path: '/commitments', icon: CalendarDays },
   { key: 'reports', path: '/reports', icon: BarChart3 },
+  { key: 'metas', path: '/metas', icon: Target },
   { key: 'openfinance', path: '/open-finance', icon: Building2 },
   { key: 'investments', path: '/investments', icon: LineChart, external: 'https://stoots.com.br' },
 ] as const;
@@ -35,6 +36,7 @@ export const AppSidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose, isD
     categories: locale === 'pt' ? 'Categorias' : locale === 'en' ? 'Categories' : locale === 'es' ? 'Categorías' : locale === 'fr' ? 'Catégories' : 'Kategorien',
     commitments: locale === 'pt' ? 'Compromissos' : locale === 'en' ? 'Commitments' : locale === 'es' ? 'Compromisos' : locale === 'fr' ? 'Engagements' : 'Verpflichtungen',
     reports: t.nav.reports,
+    metas: locale === 'pt' ? 'Metas' : locale === 'en' ? 'Goals' : locale === 'es' ? 'Metas' : locale === 'fr' ? 'Objectifs' : 'Ziele',
     openfinance: 'Open Finance',
     investments: locale === 'pt' ? 'Investimentos' : locale === 'en' ? 'Investments' : locale === 'es' ? 'Inversiones' : locale === 'fr' ? 'Investissements' : 'Investitionen',
   };

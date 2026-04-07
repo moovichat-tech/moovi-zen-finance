@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell,
+  PieChart, Pie, Cell, Rectangle,
 } from 'recharts';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -94,6 +94,7 @@ const Dashboard = () => {
   const [customFrom, setCustomFrom] = useState<Date | undefined>();
   const [customTo, setCustomTo] = useState<Date | undefined>();
   const [hoveredTick, setHoveredTick] = useState<string | null>(null);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   const dateRange = useMemo(() => {
     if (preset === 'custom' && customFrom && customTo) {
@@ -300,13 +301,26 @@ const Dashboard = () => {
           <Card className="p-3 sm:p-5 card-hover">
             <h3 className="mb-3 sm:mb-4 text-sm font-semibold">{t.dashboard.monthlyEvolution}</h3>
             <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={d.evolucaoTempo} barGap={2}>
+              <BarChart
+                data={d.evolucaoTempo}
+                barGap={2}
+                onMouseMove={(state: any) => { if (state?.activeTooltipIndex !== undefined) setActiveIndex(state.activeTooltipIndex); }}
+                onMouseLeave={() => setActiveIndex(null)}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border/30" strokeOpacity={0.3} />
                 <XAxis dataKey="label" tick={{ fontSize: 11, fontFamily: 'var(--font-sans)' }} stroke="currentColor" className="text-muted-foreground" />
                 <YAxis tick={{ fontSize: 11, fontFamily: 'var(--font-sans)' }} stroke="currentColor" className="text-muted-foreground" width={60} />
                 <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--foreground))', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '12px', fontFamily: 'var(--font-sans)' }} itemStyle={{ color: 'hsl(var(--foreground))' }} labelStyle={{ color: 'hsl(var(--foreground))' }} formatter={(value: number) => formatCurrency(value)} />
-                <Bar dataKey="receitas" fill="#10b981" radius={[4, 4, 0, 0]} name={t.dashboard.monthIncome} />
-                <Bar dataKey="despesas" fill="#ef4444" radius={[4, 4, 0, 0]} name={t.dashboard.monthExpense} />
+                <Bar dataKey="receitas" fill="#10b981" radius={[4, 4, 0, 0]} name={t.dashboard.monthIncome} activeBar={<Rectangle stroke="hsl(var(--foreground))" strokeWidth={2} strokeOpacity={0.8} />}>
+                  {d.evolucaoTempo.map((_, index) => (
+                    <Cell key={`cell-rec-${index}`} fill="#10b981" fillOpacity={activeIndex === null || activeIndex === index ? 1 : 0.3} style={{ transition: 'all 0.3s ease', cursor: 'pointer' }} />
+                  ))}
+                </Bar>
+                <Bar dataKey="despesas" fill="#ef4444" radius={[4, 4, 0, 0]} name={t.dashboard.monthExpense} activeBar={<Rectangle stroke="hsl(var(--foreground))" strokeWidth={2} strokeOpacity={0.8} />}>
+                  {d.evolucaoTempo.map((_, index) => (
+                    <Cell key={`cell-desp-${index}`} fill="#ef4444" fillOpacity={activeIndex === null || activeIndex === index ? 1 : 0.3} style={{ transition: 'all 0.3s ease', cursor: 'pointer' }} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </Card>

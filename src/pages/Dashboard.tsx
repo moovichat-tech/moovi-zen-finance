@@ -94,6 +94,7 @@ const Dashboard = () => {
   const [customFrom, setCustomFrom] = useState<Date | undefined>();
   const [customTo, setCustomTo] = useState<Date | undefined>();
   const [hoveredTick, setHoveredTick] = useState<string | null>(null);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   const dateRange = useMemo(() => {
     if (preset === 'custom' && customFrom && customTo) {

@@ -100,14 +100,16 @@ Deno.serve(async (req) => {
         GROUP BY label, dt, tipo
         ORDER BY dt
       `;
-      const dayMap: Record<string, { label: string; receitas: number; despesas: number; dt: string }> = {};
+      const dayMap: Record<string, { label: string; receitas: number; despesas: number; rawDate: string }> = {};
       for (const row of evoRows) {
-        const key = row.dt;
-        if (!dayMap[key]) dayMap[key] = { label: row.label, receitas: 0, despesas: 0, dt: key };
-        if (row.tipo === 'receita') dayMap[key].receitas = parseFloat(row.total);
-        else if (row.tipo === 'despesa') dayMap[key].despesas = parseFloat(row.total);
+        const rawDate = row.dt instanceof Date ? row.dt.toISOString().slice(0, 10) : String(row.dt || '');
+        if (!dayMap[rawDate]) dayMap[rawDate] = { label: row.label, receitas: 0, despesas: 0, rawDate };
+        if (row.tipo === 'receita') dayMap[rawDate].receitas = parseFloat(row.total);
+        else if (row.tipo === 'despesa') dayMap[rawDate].despesas = parseFloat(row.total);
       }
-      evolucaoTempo = Object.values(dayMap).sort((a, b) => a.dt.localeCompare(b.dt)).map(({ label, receitas, despesas }) => ({ label, receitas, despesas }));
+      evolucaoTempo = Object.values(dayMap)
+        .sort((a, b) => new Date(a.rawDate || 0).getTime() - new Date(b.rawDate || 0).getTime())
+        .map(({ label, receitas, despesas }) => ({ label, receitas, despesas }));
     } else {
       const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
       const evoRows = await sql`

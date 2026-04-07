@@ -33,11 +33,19 @@ Deno.serve(async (req) => {
   try {
     const telefone = await getTelefoneFromToken(req);
     const body = await req.json().catch(() => ({}));
-    const { mes, ano } = body;
-    const mesNum = Number(mes);
-    const anoNum = Number(ano);
+    const { dataInicio, dataFim } = body;
 
-    // 1. Saldo total das contas
+    if (!dataInicio || !dataFim) {
+      throw new Error("dataInicio e dataFim são obrigatórios");
+    }
+
+    // Calculate diff in days for grouping logic
+    const startDate = new Date(dataInicio);
+    const endDate = new Date(dataFim);
+    const diffDays = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const groupByDay = diffDays <= 31;
+
+    // 1. Saldo total das contas (always full)
     const saldoRows = await sql`
       SELECT COALESCE(SUM(
         COALESCE(saldo_inicial, 0)
@@ -49,87 +57,117 @@ Deno.serve(async (req) => {
     `;
     const saldoTotal = parseFloat(saldoRows[0]?.total || '0');
 
-    // 2. Receitas detalhadas do mês (excluindo transferências)
+    // 2. Receitas detalhadas do período
     const receitasDetalhadas = await sql`
       SELECT descricao, valor, categoria, data_transacao
       FROM transacoes
       WHERE telefone_usuario = ${telefone} AND tipo = 'receita' AND status = 'PAGO'
         AND COALESCE(categoria, '') != 'Transferência'
-        AND EXTRACT(YEAR FROM data_transacao) = ${anoNum}
-        AND EXTRACT(MONTH FROM data_transacao) = ${mesNum}
+        AND data_transacao >= ${dataInicio}::date
+        AND data_transacao <= ${dataFim}::date
       ORDER BY data_transacao DESC
     `;
     const receitaMes = receitasDetalhadas.reduce((sum: number, r: any) => sum + parseFloat(r.valor || '0'), 0);
 
-    // 3. Despesas detalhadas do mês (excluindo transferências)
+    // 3. Despesas detalhadas do período
     const despesasDetalhadas = await sql`
       SELECT descricao, valor, categoria, data_transacao
       FROM transacoes
       WHERE telefone_usuario = ${telefone} AND tipo = 'despesa' AND status = 'PAGO'
         AND COALESCE(categoria, '') != 'Transferência'
-        AND EXTRACT(YEAR FROM data_transacao) = ${anoNum}
-        AND EXTRACT(MONTH FROM data_transacao) = ${mesNum}
+        AND data_transacao >= ${dataInicio}::date
+        AND data_transacao <= ${dataFim}::date
       ORDER BY data_transacao DESC
     `;
     const despesaMes = despesasDetalhadas.reduce((sum: number, r: any) => sum + parseFloat(r.valor || '0'), 0);
 
-    // 4. Evolução mensal (últimos 6 meses, excluindo transferências)
-    const evolucaoRows = await sql`
-      SELECT
-        TO_CHAR(data_transacao, 'YYYY-MM') as mes,
-        tipo,
-        COALESCE(SUM(valor), 0) as total
-      FROM transacoes
-      WHERE telefone_usuario = ${telefone}
-        AND status = 'PAGO'
-        AND COALESCE(categoria, '') != 'Transferência'
-        AND data_transacao >= (DATE_TRUNC('month', MAKE_DATE(${anoNum}, ${mesNum}, 1)) - INTERVAL '5 months')
-        AND data_transacao < (DATE_TRUNC('month', MAKE_DATE(${anoNum}, ${mesNum}, 1)) + INTERVAL '1 month')
-      GROUP BY mes, tipo
-      ORDER BY mes
-    `;
+    // 4. Evolução dinâmica (por dia ou por mês)
+    let evolucaoTempo: { label: string; receitas: number; despesas: number }[] = [];
 
-    const evolucaoMap: Record<string, { income: number; expense: number }> = {};
-    for (const row of evolucaoRows) {
-      if (!evolucaoMap[row.mes]) evolucaoMap[row.mes] = { income: 0, expense: 0 };
-      if (row.tipo === 'receita') evolucaoMap[row.mes].income = parseFloat(row.total);
-      else if (row.tipo === 'despesa') evolucaoMap[row.mes].expense = parseFloat(row.total);
+    if (groupByDay) {
+      const evoRows = await sql`
+        SELECT
+          TO_CHAR(data_transacao, 'DD/MM') as label,
+          data_transacao::date as dt,
+          tipo,
+          COALESCE(SUM(valor), 0) as total
+        FROM transacoes
+        WHERE telefone_usuario = ${telefone}
+          AND status = 'PAGO'
+          AND COALESCE(categoria, '') != 'Transferência'
+          AND data_transacao >= ${dataInicio}::date
+          AND data_transacao <= ${dataFim}::date
+        GROUP BY label, dt, tipo
+        ORDER BY dt
+      `;
+      const dayMap: Record<string, { label: string; receitas: number; despesas: number; dt: string }> = {};
+      for (const row of evoRows) {
+        const key = row.dt;
+        if (!dayMap[key]) dayMap[key] = { label: row.label, receitas: 0, despesas: 0, dt: key };
+        if (row.tipo === 'receita') dayMap[key].receitas = parseFloat(row.total);
+        else if (row.tipo === 'despesa') dayMap[key].despesas = parseFloat(row.total);
+      }
+      evolucaoTempo = Object.values(dayMap).sort((a, b) => a.dt.localeCompare(b.dt)).map(({ label, receitas, despesas }) => ({ label, receitas, despesas }));
+    } else {
+      const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+      const evoRows = await sql`
+        SELECT
+          TO_CHAR(data_transacao, 'YYYY-MM') as mes,
+          tipo,
+          COALESCE(SUM(valor), 0) as total
+        FROM transacoes
+        WHERE telefone_usuario = ${telefone}
+          AND status = 'PAGO'
+          AND COALESCE(categoria, '') != 'Transferência'
+          AND data_transacao >= ${dataInicio}::date
+          AND data_transacao <= ${dataFim}::date
+        GROUP BY mes, tipo
+        ORDER BY mes
+      `;
+      const monthMap: Record<string, { receitas: number; despesas: number }> = {};
+      for (const row of evoRows) {
+        if (!monthMap[row.mes]) monthMap[row.mes] = { receitas: 0, despesas: 0 };
+        if (row.tipo === 'receita') monthMap[row.mes].receitas = parseFloat(row.total);
+        else if (row.tipo === 'despesa') monthMap[row.mes].despesas = parseFloat(row.total);
+      }
+      evolucaoTempo = Object.entries(monthMap)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([mes, data]) => {
+          const m = parseInt(mes.split('-')[1]) - 1;
+          return { label: monthNames[m], ...data };
+        });
     }
 
-    const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-    const evolucaoMensal = Object.entries(evolucaoMap)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([mes, data]) => {
-        const m = parseInt(mes.split('-')[1]) - 1;
-        return { month: monthNames[m], ...data };
-      });
-
-    // 5. Gastos por categoria (excluindo transferências)
+    // 5. Gastos por categoria
     const categRows = await sql`
       SELECT categoria as name, COALESCE(SUM(valor), 0) as value
       FROM transacoes
       WHERE telefone_usuario = ${telefone} AND tipo = 'despesa' AND status = 'PAGO'
         AND COALESCE(categoria, '') != 'Transferência'
-        AND EXTRACT(YEAR FROM data_transacao) = ${anoNum}
-        AND EXTRACT(MONTH FROM data_transacao) = ${mesNum}
+        AND data_transacao >= ${dataInicio}::date
+        AND data_transacao <= ${dataFim}::date
       GROUP BY categoria
       ORDER BY value DESC
     `;
     const gastosCategoria = categRows.map((r: any) => ({ name: r.name, value: parseFloat(r.value) }));
 
-    // 6. Comparação mensal (excluindo transferências)
-    const prevDate = mesNum === 1 ? `${anoNum - 1}-12` : `${anoNum}-${String(mesNum - 1).padStart(2, '0')}`;
-    const curDate = `${anoNum}-${String(mesNum).padStart(2, '0')}`;
+    // 6. Comparação (período atual vs período anterior de mesma duração)
+    const diffMs = endDate.getTime() - startDate.getTime();
+    const prevEnd = new Date(startDate.getTime() - 1000 * 60 * 60 * 24);
+    const prevStart = new Date(prevEnd.getTime() - diffMs);
+    const prevStartStr = `${prevStart.getFullYear()}-${String(prevStart.getMonth() + 1).padStart(2, '0')}-${String(prevStart.getDate()).padStart(2, '0')}`;
+    const prevEndStr = `${prevEnd.getFullYear()}-${String(prevEnd.getMonth() + 1).padStart(2, '0')}-${String(prevEnd.getDate()).padStart(2, '0')}`;
 
     const compRows = await sql`
       SELECT
         categoria as category,
-        SUM(CASE WHEN TO_CHAR(data_transacao, 'YYYY-MM') = ${curDate} THEN valor ELSE 0 END) as current,
-        SUM(CASE WHEN TO_CHAR(data_transacao, 'YYYY-MM') = ${prevDate} THEN valor ELSE 0 END) as previous
+        SUM(CASE WHEN data_transacao >= ${dataInicio}::date AND data_transacao <= ${dataFim}::date THEN valor ELSE 0 END) as current,
+        SUM(CASE WHEN data_transacao >= ${prevStartStr}::date AND data_transacao <= ${prevEndStr}::date THEN valor ELSE 0 END) as previous
       FROM transacoes
       WHERE telefone_usuario = ${telefone} AND tipo = 'despesa' AND status = 'PAGO'
         AND COALESCE(categoria, '') != 'Transferência'
-        AND (TO_CHAR(data_transacao, 'YYYY-MM') = ${curDate} OR TO_CHAR(data_transacao, 'YYYY-MM') = ${prevDate})
+        AND data_transacao >= ${prevStartStr}::date
+        AND data_transacao <= ${dataFim}::date
       GROUP BY categoria
       ORDER BY current DESC
     `;
@@ -156,7 +194,9 @@ Deno.serve(async (req) => {
       balance: parseFloat(r.saldo),
     }));
 
-    // 8. Alertas de orçamento (>= 50%, excluindo transferências)
+    // 8. Alertas de orçamento (based on current month from dataFim)
+    const mesNum = endDate.getMonth() + 1;
+    const anoNum = endDate.getFullYear();
     const orcRows = await sql`
       SELECT
         c.nome as category,
@@ -204,7 +244,7 @@ Deno.serve(async (req) => {
         valor: parseFloat(r.valor || '0'),
         categoria: r.categoria,
       })),
-      evolucaoMensal: evolucaoMensal || [],
+      evolucaoTempo,
       gastosCategoria: gastosCategoria || [],
       comparacaoMensal: comparacaoMensal || [],
       saldoContas: saldoContas || [],

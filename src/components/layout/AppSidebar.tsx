@@ -16,6 +16,7 @@ const navItems = [
   { key: 'categories', path: '/categories', icon: Tag },
   { key: 'commitments', path: '/commitments', icon: CalendarDays },
   { key: 'reports', path: '/reports', icon: BarChart3 },
+  { key: 'metas', path: '/metas', icon: Target },
   { key: 'openfinance', path: '/open-finance', icon: Building2 },
   { key: 'investments', path: '/investments', icon: LineChart, external: 'https://stoots.com.br' },
 ] as const;

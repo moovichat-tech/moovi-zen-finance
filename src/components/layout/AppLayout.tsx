@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { AppSidebar } from './AppSidebar';
 import { TopBar } from './TopBar';
+import { MobileHeader } from './MobileHeader';
+import { MobileBottomNav } from './MobileBottomNav';
 import { useI18n } from '@/i18n/context';
 import { useLocation } from 'react-router-dom';
 
@@ -51,13 +53,25 @@ export const AppLayout = () => {
     });
   };
 
+  if (!isDesktop) {
+    return (
+      <div className="min-h-screen bg-background">
+        <MobileHeader />
+        <main className="pt-14 pb-20 px-3 sm:px-4">
+          <Outlet />
+        </main>
+        <MobileBottomNav />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {mobileOpen && (
         <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setMobileOpen(false)} />
       )}
       <AppSidebar collapsed={collapsed} onToggle={toggleCollapsed} mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} isDesktop={isDesktop} />
-      <div className="transition-all duration-300" style={{ paddingLeft: isDesktop ? (collapsed ? 60 : 208) : 0 }}>
+      <div className="transition-all duration-300" style={{ paddingLeft: collapsed ? 60 : 208 }}>
         <TopBar title={title} onMenuClick={() => setMobileOpen(true)} />
         <main className="p-3 sm:p-4 md:p-6"><Outlet /></main>
       </div>

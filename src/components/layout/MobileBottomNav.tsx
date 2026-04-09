@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useI18n } from '@/i18n/context';
 import { useAuth } from '@/hooks/useAuth';
-import { Home, Receipt, CreditCard, MoreHorizontal, TrendingUp, TrendingDown, Landmark, Target, BarChart3, Settings, LogOut, Crown, Tag, CalendarDays, Building2, ClipboardList, LineChart } from 'lucide-react';
+import { Home, Receipt, CreditCard, MoreHorizontal, TrendingUp, TrendingDown, Landmark, Target, BarChart3, Settings, LogOut, Crown, Tag, CalendarDays, Building2, ClipboardList, LineChart, HelpCircle } from 'lucide-react';
 import {
   Drawer,
   DrawerContent,
@@ -30,6 +30,7 @@ const menuItems = [
   { key: 'investments', path: '/investments', icon: LineChart, external: 'https://stoots.com.br' },
   { key: 'subscription', path: '/subscription', icon: Crown },
   { key: 'settings', path: '/settings', icon: Settings },
+  { key: 'faq', path: '/help', icon: HelpCircle },
 ] as const;
 
 export const MobileBottomNav = () => {
@@ -57,6 +58,7 @@ export const MobileBottomNav = () => {
     investments: locale === 'pt' ? 'Investimentos' : locale === 'en' ? 'Investments' : locale === 'es' ? 'Inversiones' : locale === 'fr' ? 'Investissements' : 'Investitionen',
     subscription: t.nav.subscription,
     settings: t.nav.settings,
+    faq: 'FAQ',
   };
 
   const handleNav = (path: string, external?: string) => {

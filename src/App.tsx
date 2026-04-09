@@ -23,6 +23,7 @@ import PayablesReceivablesPage from "@/pages/PayablesReceivablesPage";
 import CommitmentsPage from "@/pages/CommitmentsPage";
 import OpenFinancePage from "@/pages/OpenFinancePage";
 import LoginPage from "@/pages/LoginPage";
+import HelpPage from "@/pages/HelpPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -67,6 +68,7 @@ const App = () => (
                     <Route path="/payables" element={<PayablesReceivablesPage />} />
                     <Route path="/commitments" element={<CommitmentsPage />} />
                     <Route path="/open-finance" element={<OpenFinancePage />} />
+                    <Route path="/help" element={<HelpPage />} />
                   </Route>
                   <Route path="*" element={<NotFound />} />
                 </Routes>

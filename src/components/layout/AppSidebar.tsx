@@ -1,7 +1,7 @@
 import { useI18n } from '@/i18n/context';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { LayoutDashboard, TrendingUp, TrendingDown, CreditCard, Landmark, Target, BarChart3, Settings, LogOut, Crown, Tag, PanelLeftClose, PanelLeft, ClipboardList, X, CalendarDays, Building2, LineChart } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, TrendingDown, CreditCard, Landmark, Target, BarChart3, Settings, LogOut, Crown, Tag, PanelLeftClose, PanelLeft, ClipboardList, X, CalendarDays, Building2, LineChart, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import mooviLogo from '@/assets/moovi-logo.jpeg';
 
@@ -87,6 +87,7 @@ export const AppSidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose, isD
       <div className={`space-y-0.5 border-t border-sidebar-border py-3 ${!showLabels ? 'px-1.5' : 'px-2.5'}`}>
         <NavButton keyName="subscription" path="/subscription" Icon={Crown} label={t.nav.subscription} />
         <NavButton keyName="settings" path="/settings" Icon={Settings} label={t.nav.settings} />
+        <NavButton keyName="faq" path="/help" Icon={HelpCircle} label="FAQ" />
         <button onClick={() => { logout(); navigate('/login'); }} className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-destructive transition-colors hover:bg-destructive/10 ${!showLabels ? 'justify-center px-2' : ''}`}>
           <LogOut className="h-4 w-4 shrink-0" />
           {showLabels && <span className="truncate">{t.nav.logout}</span>}

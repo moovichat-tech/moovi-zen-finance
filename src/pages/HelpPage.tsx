@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import PageShell from "./PageShell";
 
 const items = [
   {
@@ -50,7 +49,7 @@ const items = [
 ];
 
 const HelpPage = () => (
-  <PageShell>
+  <div className="w-full max-w-3xl mx-auto py-6 px-2 sm:px-4 animate-in-up">
     <div className="w-full max-w-3xl mx-auto">
       <Card className="shadow-md">
         <CardHeader className="space-y-3">
@@ -82,7 +81,7 @@ const HelpPage = () => (
         </CardContent>
       </Card>
     </div>
-  </PageShell>
+  </div>
 );
 
 export default HelpPage;

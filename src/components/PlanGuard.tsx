@@ -16,9 +16,10 @@ interface PlanGuardProps {
   children: ReactNode;
   requiredPlan: PlanTier;
   featureName: string;
+  variant?: 'default' | 'compact';
 }
 
-const PlanGuard = ({ children, requiredPlan, featureName }: PlanGuardProps) => {
+const PlanGuard = ({ children, requiredPlan, featureName, variant = 'default' }: PlanGuardProps) => {
   const { plano } = useAuth();
   const navigate = useNavigate();
 
@@ -30,17 +31,37 @@ const PlanGuard = ({ children, requiredPlan, featureName }: PlanGuardProps) => {
     return <>{children}</>;
   }
 
+  if (variant === 'compact') {
+    return (
+      <div className="relative inline-block w-fit h-fit">
+        <div className="pointer-events-none select-none" aria-hidden="true">
+          <div className="filter blur-[3px] opacity-50">
+            {children}
+          </div>
+        </div>
+        <div className="absolute inset-0 z-10 flex items-center justify-center">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs shadow-sm"
+            onClick={() => navigate('/subscription')}
+          >
+            <Lock className="h-3 w-3" />
+            Upgrade {requiredPlan.toUpperCase()}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative">
-      {/* Blurred content behind */}
       <div className="pointer-events-none select-none" aria-hidden="true">
         <div className="filter blur-[6px] opacity-60">
           {children}
         </div>
       </div>
-
-      {/* Overlay */}
-      <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/40 backdrop-blur-sm rounded-lg">
+      <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/30 backdrop-blur-sm rounded-lg">
         <div className="flex flex-col items-center gap-4 text-center px-6 max-w-sm">
           <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
             <Lock className="h-7 w-7 text-primary" />

@@ -234,7 +234,7 @@ const SubscriptionPage = () => {
               }
 
               return (
-                <Card key={plan.name} className={`relative p-5 card-hover ${plan.popular ? "border-primary" : ""}`}>
+                <Card key={plan.name} className={`relative p-5 card-hover flex flex-col h-full ${plan.popular ? "border-primary" : ""}`}>
                   {plan.popular && <Badge className="absolute -top-2.5 right-4 text-[10px]">Mais recomendado</Badge>}
                   {plan.label && !plan.popular && (
                     <Badge variant="secondary" className="absolute -top-2.5 right-4 text-[10px]">
@@ -249,7 +249,7 @@ const SubscriptionPage = () => {
                   {plan.priceTotal && (
                     <p className="text-xs text-muted-foreground">{formatCurrency(plan.priceTotal)}</p>
                   )}
-                  <ul className="mt-4 space-y-2">
+                  <ul className="mt-4 space-y-2 flex-1">
                     {plan.features.map((feat, i) => {
                       const isHeader = feat.startsWith("Tudo do plano");
                       return (

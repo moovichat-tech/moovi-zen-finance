@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useI18n } from '@/i18n/context';
+import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -127,8 +129,11 @@ const resolutionCards: Record<string, { title: string; description: string; offe
   },
 };
 
+const planWeights: Record<string, number> = { basico: 1, pro: 2, premium: 3 };
+
 const SubscriptionPage = () => {
   const { formatCurrency } = useI18n();
+  const { plano } = useAuth();
   const [cancelStep, setCancelStep] = useState(0);
   const [cancelReason, setCancelReason] = useState('');
 
@@ -170,48 +175,71 @@ const SubscriptionPage = () => {
             <Crown className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold">Plano Mensal</h3>
-            <p className="text-xs text-muted-foreground">Renovação em 04/04/2026</p>
+            <h3 className="text-sm font-semibold">Plano {plano.charAt(0).toUpperCase() + plano.slice(1)}</h3>
+            <p className="text-xs text-muted-foreground">Seu plano atual</p>
           </div>
         </div>
         <Badge className="text-xs">Ativo</Badge>
       </Card>
 
-      {/* Plans */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {plans.map(plan => (
-          <Card key={plan.name} className={`relative p-5 card-hover ${plan.popular ? 'border-primary' : ''}`}>
-            {plan.popular && <Badge className="absolute -top-2.5 right-4 text-[10px]">Mais recomendado</Badge>}
-            {plan.label && !plan.popular && <Badge variant="secondary" className="absolute -top-2.5 right-4 text-[10px]">{plan.label}</Badge>}
-            <h3 className="text-lg font-semibold">{plan.name}</h3>
-            <div className="mt-2">
-              <span className="text-2xl font-bold">{formatCurrency(plan.priceMonth)}</span>
-              <span className="text-xs text-muted-foreground">/mês</span>
-            </div>
-            {plan.priceTotal && (
-              <p className="mt-1 text-xs text-muted-foreground">Cobrado {formatCurrency(plan.priceTotal)} {plan.name === 'Anual' ? 'anualmente' : 'bianualmente'}</p>
-            )}
-            <ul className="mt-4 space-y-2">
-              {allFeatures.map((feat, i) => {
-                const isIncluded = plan.included.includes(feat);
-                return (
-                  <li key={i} className={`flex items-center gap-2 text-xs ${isIncluded ? 'text-foreground' : 'text-muted-foreground/50'}`}>
-                    {isIncluded ? (
-                      <Check className="h-3.5 w-3.5 text-success shrink-0" />
-                    ) : (
-                      <X className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
-                    )}
-                    <span className={!isIncluded ? 'line-through' : ''}>{feat}</span>
-                  </li>
-                );
-              })}
-            </ul>
-            <Button className="mt-5 w-full" variant={plan.current ? 'outline' : plan.popular ? 'default' : 'secondary'} size="sm">
-              {plan.current ? 'Plano Atual' : `Assinar ${plan.name.replace('Plano ', '')}`}
-            </Button>
-          </Card>
-        ))}
-      </div>
+      {/* Plans - Upgrade Path */}
+      {(() => {
+        const currentWeight = planWeights[plano] || 1;
+        const upgradePlans = plans.filter(p => {
+          const w = p.name.toLowerCase().includes('2 anos') ? 3 : p.name.toLowerCase().includes('anual') ? 2 : 1;
+          return w > currentWeight;
+        });
+
+        if (currentWeight >= 3) {
+          return (
+            <Alert className="border-primary/30 bg-primary/5">
+              <Crown className="h-5 w-5 text-primary" />
+              <AlertDescription className="text-sm ml-2">
+                🎉 <strong>Você está no topo!</strong> Você já possui o plano mais completo da Moovi e tem acesso a todos os recursos ilimitados.
+              </AlertDescription>
+            </Alert>
+          );
+        }
+
+        const cols = upgradePlans.length === 1 ? 'max-w-md mx-auto' : 'grid grid-cols-1 sm:grid-cols-2 gap-4';
+
+        return (
+          <div className={cols}>
+            {upgradePlans.map(plan => (
+              <Card key={plan.name} className={`relative p-5 card-hover ${plan.popular ? 'border-primary' : ''}`}>
+                {plan.popular && <Badge className="absolute -top-2.5 right-4 text-[10px]">Mais recomendado</Badge>}
+                {plan.label && !plan.popular && <Badge variant="secondary" className="absolute -top-2.5 right-4 text-[10px]">{plan.label}</Badge>}
+                <h3 className="text-lg font-semibold">{plan.name}</h3>
+                <div className="mt-2">
+                  <span className="text-2xl font-bold">{formatCurrency(plan.priceMonth)}</span>
+                  <span className="text-xs text-muted-foreground">/mês</span>
+                </div>
+                {plan.priceTotal && (
+                  <p className="mt-1 text-xs text-muted-foreground">Cobrado {formatCurrency(plan.priceTotal)} {plan.name === 'Anual' ? 'anualmente' : 'bianualmente'}</p>
+                )}
+                <ul className="mt-4 space-y-2">
+                  {allFeatures.map((feat, i) => {
+                    const isIncluded = plan.included.includes(feat);
+                    return (
+                      <li key={i} className={`flex items-center gap-2 text-xs ${isIncluded ? 'text-foreground' : 'text-muted-foreground/50'}`}>
+                        {isIncluded ? (
+                          <Check className="h-3.5 w-3.5 text-success shrink-0" />
+                        ) : (
+                          <X className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+                        )}
+                        <span className={!isIncluded ? 'line-through' : ''}>{feat}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <Button className="mt-5 w-full" variant={plan.popular ? 'default' : 'secondary'} size="sm">
+                  Assinar {plan.name.replace('Plano ', '')}
+                </Button>
+              </Card>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Features */}
       <div>
@@ -234,12 +262,14 @@ const SubscriptionPage = () => {
 
       {/* Cancel subscription */}
       <div className="pt-6 border-t border-border">
-        <button
+        <Button
+          variant="destructive"
+          size="sm"
+          className="text-xs"
           onClick={handleStartCancel}
-          className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors"
         >
           Cancelar assinatura
-        </button>
+        </Button>
       </div>
 
       {/* Cancellation Flow Dialog */}

@@ -176,6 +176,8 @@ const CommitmentsPage = () => {
   const rowProps = {
     today, labels: l, formatCurrency, formatDate, getDaysDiff,
     onDelete: handleDelete, onEdit: handleEdit,
+    isDeleting: deleteMutation.isPending,
+    isEditing: editMutation.isPending,
   };
 
   return (

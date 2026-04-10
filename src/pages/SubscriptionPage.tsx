@@ -175,8 +175,8 @@ const SubscriptionPage = () => {
             <Crown className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold">Plano Mensal</h3>
-            <p className="text-xs text-muted-foreground">Renovação em 04/04/2026</p>
+            <h3 className="text-sm font-semibold">Plano {plano.charAt(0).toUpperCase() + plano.slice(1)}</h3>
+            <p className="text-xs text-muted-foreground">Seu plano atual</p>
           </div>
         </div>
         <Badge className="text-xs">Ativo</Badge>

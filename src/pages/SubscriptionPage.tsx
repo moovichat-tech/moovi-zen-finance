@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useI18n } from '@/i18n/context';
+import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';

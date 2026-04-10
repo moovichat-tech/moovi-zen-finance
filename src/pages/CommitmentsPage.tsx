@@ -106,12 +106,18 @@ const CommitmentsPage = () => {
         `https://${projectId}.supabase.co/functions/v1/delete-compromisso`,
         { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ id }) }
       );
-      if (!res.ok) throw new Error('Failed');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Falha ao excluir');
+      }
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['compromissos'] });
       toast.success(l.deleted);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 
@@ -122,12 +128,18 @@ const CommitmentsPage = () => {
         `https://${projectId}.supabase.co/functions/v1/update-compromisso`,
         { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ id, ...data }) }
       );
-      if (!res.ok) throw new Error('Failed');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Falha ao atualizar');
+      }
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['compromissos'] });
       toast.success(l.updated);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 

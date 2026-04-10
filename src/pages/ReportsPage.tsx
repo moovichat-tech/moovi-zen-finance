@@ -274,19 +274,21 @@ const ReportsPage = () => {
       </div>
 
       {/* Export buttons */}
-      <PlanGuard requiredPlan="pro" featureName="Exportação de Relatórios">
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportCSV}>
-            <FileSpreadsheet className="h-3.5 w-3.5" /> CSV
-          </Button>
-          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportExcel}>
-            <Download className="h-3.5 w-3.5" /> Excel
-          </Button>
-          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportPDF}>
-            <FileText className="h-3.5 w-3.5" /> PDF
-          </Button>
-        </div>
-      </PlanGuard>
+      <div className="flex gap-2">
+        <PlanGuard requiredPlan="pro" featureName="Exportação" variant="compact">
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportCSV}>
+              <FileSpreadsheet className="h-3.5 w-3.5" /> CSV
+            </Button>
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportExcel}>
+              <Download className="h-3.5 w-3.5" /> Excel
+            </Button>
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportPDF}>
+              <FileText className="h-3.5 w-3.5" /> PDF
+            </Button>
+          </div>
+        </PlanGuard>
+      </div>
 
       {/* Summary */}
       {isLoading ? (

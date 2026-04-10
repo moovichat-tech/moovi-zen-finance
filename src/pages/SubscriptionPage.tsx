@@ -29,7 +29,6 @@ const plans = [
   {
     name: "Plano Básico",
     priceMonth: 14.9,
-    priceTotal: 178.8,
     priceTotal: null,
     label: "Mais flexível",
     features: [

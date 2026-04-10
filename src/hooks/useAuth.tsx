@@ -54,6 +54,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  const lastFetchRef = useCallback(() => ({ ts: 0 }), []);
+  const lastFetch = useState(() => ({ ts: 0 }))[0];
+
+  // Revalidate plan on tab focus (30s throttle)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        const now = Date.now();
+        if (now - lastFetch.ts < 30_000) return;
+        const currentToken = localStorage.getItem('moovi-auth');
+        if (currentToken) {
+          try {
+            const parsed = JSON.parse(currentToken);
+            const payload = JSON.parse(atob(parsed.token.split('.')[1]));
+            if (payload.exp * 1000 > Date.now()) {
+              lastFetch.ts = now;
+              fetchPlano(parsed.token);
+            }
+          } catch {}
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [fetchPlano, lastFetch]);
+
   useEffect(() => {
     const saved = localStorage.getItem('moovi-auth');
     if (saved) {

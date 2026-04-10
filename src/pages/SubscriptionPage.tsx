@@ -476,6 +476,27 @@ const SubscriptionPage = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Downgrade Confirmation */}
+      <AlertDialog open={!!downgradeTarget} onOpenChange={(open) => { if (!open) setDowngradeTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Downgrade?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Seu plano atual será mantido até o final do período já pago. Após essa data, sua conta passará para o plano inferior e algumas funcionalidades serão desativadas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              toast.info(`Downgrade para ${downgradeTarget} confirmado. Seu plano atual será mantido até o final do período.`);
+              setDowngradeTarget(null);
+            }}>
+              Confirmar Downgrade
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

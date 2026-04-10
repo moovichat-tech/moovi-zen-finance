@@ -73,7 +73,8 @@ const CommitmentItemRow = ({
 
   return (
     <>
-      <div className={`flex items-center justify-between py-2.5 px-3 rounded-lg group/row ${variant === 'full' ? 'bg-secondary/50' : 'border-b border-border last:border-0'}`}>
+      <div className={`flex items-center py-2.5 px-3 rounded-lg group/row ${variant === 'full' ? 'bg-secondary/50' : 'border-b border-border last:border-0'}`}>
+        {/* Left: Icon + Texts (flex-1) */}
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
           {item.valor ? (
             <ArrowDownRight className="h-4 w-4 shrink-0 text-destructive" />
@@ -95,10 +96,16 @@ const CommitmentItemRow = ({
             {item.notas && <p className="text-[11px] text-muted-foreground truncate">{item.notas}</p>}
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0 ml-2">
-          <Badge variant={isRecorrente ? 'default' : 'outline'} className="text-[10px]">
+
+        {/* Center: Tag column (fixed width for vertical alignment) */}
+        <div className="w-[100px] flex justify-center shrink-0 mx-2">
+          <Badge variant={isRecorrente ? 'default' : 'outline'} className="text-[10px] whitespace-nowrap">
             {isRecorrente ? l.recorrente : l.temporario}
           </Badge>
+        </div>
+
+        {/* Right: Value + Action buttons */}
+        <div className="flex items-center gap-2 shrink-0">
           {isRecorrente && (
             <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
               <button
@@ -118,7 +125,7 @@ const CommitmentItemRow = ({
             </div>
           )}
           {item.valor != null && item.valor > 0 && (
-            <span className="text-sm font-semibold text-destructive">-{formatCurrency(item.valor)}</span>
+            <span className="text-sm font-semibold text-destructive whitespace-nowrap">-{formatCurrency(item.valor)}</span>
           )}
         </div>
       </div>

@@ -228,7 +228,7 @@ const SubscriptionPage = () => {
                 <h3 className="text-lg font-semibold">{plan.name}</h3>
                 <div className="mt-2">
                   <span className="text-2xl font-bold">{formatCurrency(plan.priceMonth)}</span>
-                  <span className="text-xs text-muted-foreground">/mês</span>
+                  <span className="text-xs text-muted-foreground"> x12</span>
                 </div>
                 {plan.priceTotal && (
                   <p className="text-xs text-muted-foreground">{formatCurrency(plan.priceTotal)}</p>

@@ -231,7 +231,7 @@ const SubscriptionPage = () => {
                   <span className="text-xs text-muted-foreground">/mês</span>
                 </div>
                 {plan.priceTotal && (
-                  
+                  <p className="text-xs text-muted-foreground">{formatCurrency(plan.priceTotal)}/ano</p>
                 )}
                 <ul className="mt-4 space-y-2">
                   {plan.features.map((feat, i) => {

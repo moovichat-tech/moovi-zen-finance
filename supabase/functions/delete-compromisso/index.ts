@@ -41,16 +41,22 @@ Deno.serve(async (req) => {
       });
     }
 
-    // DELETE FROM lembretes_recorrentes WHERE id = ${id} AND telefone_usuario = ${telefone}
-    const result = await sql`
-      DELETE FROM lembretes_recorrentes
-      WHERE id = ${Number(id)} AND telefone_usuario = ${telefone}
+    const rows = await sql`
+      DELETE FROM lembretes_recorrentes WHERE id = ${Number(id)} AND telefone_usuario = ${telefone} RETURNING id
     `;
+
+    if (rows.length === 0) {
+      return new Response(JSON.stringify({ error: "Lembrete não encontrado" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
+    console.error("delete-compromisso error:", e);
     const status = e.message.includes("Token") ? 401 : 500;
     return new Response(JSON.stringify({ error: e.message }), {
       status,

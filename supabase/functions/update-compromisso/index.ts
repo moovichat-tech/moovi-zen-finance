@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
 
   try {
     const telefone = await getTelefoneFromToken(req);
-    const { id, mensagem, valor, dia_vencimento, hora_alerta, categoria } = await req.json();
+    const { id, mensagem, valor, dia_vencimento, hora_alerta } = await req.json();
 
     if (!id) {
       return new Response(JSON.stringify({ error: "ID é obrigatório" }), {
@@ -41,22 +41,30 @@ Deno.serve(async (req) => {
       });
     }
 
-    // UPDATE lembretes_recorrentes SET ... WHERE id = ${id} AND telefone_usuario = ${telefone}
-    await sql`
+    // Columns in lembretes_recorrentes: id, telefone_usuario, mensagem_aviso, dia_vencimento, hora_alerta, valor, status
+    const rows = await sql`
       UPDATE lembretes_recorrentes
       SET
         mensagem_aviso = COALESCE(${mensagem ?? null}, mensagem_aviso),
         valor = COALESCE(${valor != null ? Number(valor) : null}, valor),
         dia_vencimento = COALESCE(${dia_vencimento != null ? Number(dia_vencimento) : null}, dia_vencimento),
-        hora_alerta = COALESCE(${hora_alerta ?? null}, hora_alerta),
-        categoria = COALESCE(${categoria ?? null}, categoria)
+        hora_alerta = COALESCE(${hora_alerta ?? null}, hora_alerta)
       WHERE id = ${Number(id)} AND telefone_usuario = ${telefone}
+      RETURNING id
     `;
+
+    if (rows.length === 0) {
+      return new Response(JSON.stringify({ error: "Lembrete não encontrado" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
+    console.error("update-compromisso error:", e);
     const status = e.message.includes("Token") ? 401 : 500;
     return new Response(JSON.stringify({ error: e.message }), {
       status,

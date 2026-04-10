@@ -154,6 +154,7 @@ const SubscriptionPage = () => {
   const { plano } = useAuth();
   const [cancelStep, setCancelStep] = useState(0);
   const [cancelReason, setCancelReason] = useState("");
+  const [downgradeTarget, setDowngradeTarget] = useState<string | null>(null);
 
   const handleStartCancel = () => setCancelStep(1);
   const handleCancelClose = () => {

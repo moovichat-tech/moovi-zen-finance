@@ -105,22 +105,32 @@ const CommitmentItemRow = ({
         {/* Right side: Action buttons + Value + Tag (fixed column) */}
         <div className="flex items-center shrink-0">
           {isRecorrente && (
-            <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity mr-2">
+            isBasico ? (
               <button
-                onClick={handleEditOpen}
-                className="p-1 rounded text-muted-foreground hover:text-primary transition-colors"
-                title="Editar"
+                onClick={() => navigate('/subscription')}
+                className="p-1 rounded text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover/row:opacity-100 mr-2"
+                title="Desbloquear Lembretes Recorrentes"
               >
-                <Pencil className="h-4 w-4" />
+                <Lock className="h-4 w-4" />
               </button>
-              <button
-                onClick={() => setDeleteOpen(true)}
-                className="p-1 rounded text-muted-foreground hover:text-destructive transition-colors"
-                title="Excluir"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
+            ) : (
+              <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity mr-2">
+                <button
+                  onClick={handleEditOpen}
+                  className="p-1 rounded text-muted-foreground hover:text-primary transition-colors"
+                  title="Editar"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setDeleteOpen(true)}
+                  className="p-1 rounded text-muted-foreground hover:text-destructive transition-colors"
+                  title="Excluir"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            )
           )}
           {item.valor != null && item.valor > 0 && (
             <span className="text-sm font-semibold text-destructive whitespace-nowrap mr-3">-{formatCurrency(item.valor)}</span>

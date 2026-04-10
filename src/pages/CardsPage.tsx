@@ -175,6 +175,7 @@ const CardsPage = () => {
   };
 
   return (
+    <PlanGuard requiredPlan="premium" featureName="Cartões">
     <div className="space-y-4 sm:space-y-6 animate-in-up">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -336,7 +337,7 @@ const CardsPage = () => {
         </DialogContent>
       </Dialog>
     </div>
-  );
+    </PlanGuard>
 };
 
 export default CardsPage;

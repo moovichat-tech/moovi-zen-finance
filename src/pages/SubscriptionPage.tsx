@@ -26,6 +26,7 @@ const plans = [
     ],
     current: true,
     popular: false,
+    badgeText: '',
   },
   {
     name: 'Plano Pro',
@@ -45,6 +46,7 @@ const plans = [
     ],
     current: false,
     popular: true,
+    badgeText: 'Mais recomendado',
   },
   {
     name: 'Plano Premium',
@@ -63,7 +65,8 @@ const plans = [
       'Atendimento VIP exclusivo',
     ],
     current: false,
-    popular: false,
+    popular: true,
+    badgeText: 'Tudo ilimitado',
   },
 ];
 
@@ -193,8 +196,8 @@ const SubscriptionPage = () => {
           <div className={cols}>
             {upgradePlans.map(plan => (
               <Card key={plan.name} className={`relative p-5 card-hover ${plan.popular ? 'border-primary' : ''}`}>
-                {plan.popular && <Badge className="absolute -top-2.5 right-4 text-[10px]">Mais recomendado</Badge>}
-                {plan.label && !plan.popular && <Badge variant="secondary" className="absolute -top-2.5 right-4 text-[10px]">{plan.label}</Badge>}
+                {plan.badgeText && <Badge className="absolute -top-2.5 right-4 text-[10px]">{plan.badgeText}</Badge>}
+                {plan.label && !plan.badgeText && <Badge variant="secondary" className="absolute -top-2.5 right-4 text-[10px]">{plan.label}</Badge>}
                 <h3 className="text-lg font-semibold">{plan.name}</h3>
                 <div className="mt-2">
                   <span className="text-2xl font-bold">{formatCurrency(plan.priceMonth)}</span>

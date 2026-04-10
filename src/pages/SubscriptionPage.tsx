@@ -39,7 +39,7 @@ const plans = [
   {
     name: "Plano Básico",
     priceMonth: 14.9,
-    priceTotal: null,
+    priceTotal: 178.8,
     label: "Mais flexível",
     features: [
       "Registro de despesas/receitas via WhatsApp",

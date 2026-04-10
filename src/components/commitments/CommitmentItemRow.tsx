@@ -4,7 +4,6 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -35,6 +34,8 @@ interface CommitmentItemRowProps {
   getDaysDiff: (d: string) => number;
   onDelete: (id: string) => void;
   onEdit: (id: string, data: EditFormData) => void;
+  isDeleting?: boolean;
+  isEditing?: boolean;
 }
 
 export interface EditFormData {
@@ -42,26 +43,22 @@ export interface EditFormData {
   valor: number;
   dia_vencimento: number;
   hora_alerta: string;
-  categoria: string;
 }
 
-const MOCK_CATEGORIES = ['Gastos Gerais', 'Moradia', 'Alimentação', 'Transporte', 'Saúde', 'Educação', 'Lazer', 'Assinaturas'];
-
 const CommitmentItemRow = ({
-  item, variant, today, labels: l, formatCurrency, formatDate, getDaysDiff, onDelete, onEdit,
+  item, variant, today, labels: l, formatCurrency, formatDate, getDaysDiff,
+  onDelete, onEdit, isDeleting, isEditing,
 }: CommitmentItemRowProps) => {
   const isRecorrente = item.tipo === 'recorrente';
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
-  // Parse existing data for the edit form defaults
   const dayFromDate = item.dateStr ? Number(item.dateStr.split('-')[2]) : 1;
   const [form, setForm] = useState<EditFormData>({
     mensagem: item.titulo,
     valor: item.valor ?? 0,
     dia_vencimento: dayFromDate,
     hora_alerta: '08:00',
-    categoria: 'Gastos Gerais',
   });
 
   const handleEditOpen = () => {
@@ -70,7 +67,6 @@ const CommitmentItemRow = ({
       valor: item.valor ?? 0,
       dia_vencimento: dayFromDate,
       hora_alerta: '08:00',
-      categoria: 'Gastos Gerais',
     });
     setEditOpen(true);
   };
@@ -140,9 +136,13 @@ const CommitmentItemRow = ({
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => onDelete(item.id)}
+              disabled={isDeleting}
+              onClick={() => {
+                onDelete(item.id);
+                setDeleteOpen(false);
+              }}
             >
-              Sim, excluir
+              {isDeleting ? 'Excluindo...' : 'Sim, excluir'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -184,38 +184,24 @@ const CommitmentItemRow = ({
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Hora do Alerta</Label>
-                <Input
-                  type="time"
-                  value={form.hora_alerta}
-                  onChange={e => setForm(p => ({ ...p, hora_alerta: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Categoria</Label>
-                <Select value={form.categoria} onValueChange={v => setForm(p => ({ ...p, categoria: v }))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MOCK_CATEGORIES.map(c => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label>Hora do Alerta</Label>
+              <Input
+                type="time"
+                value={form.hora_alerta}
+                onChange={e => setForm(p => ({ ...p, hora_alerta: e.target.value }))}
+              />
             </div>
           </div>
           <DialogFooter>
             <Button
+              disabled={isEditing}
               onClick={() => {
                 onEdit(item.id, form);
                 setEditOpen(false);
               }}
             >
-              Salvar Alterações
+              {isEditing ? 'Salvando...' : 'Salvar Alterações'}
             </Button>
           </DialogFooter>
         </DialogContent>

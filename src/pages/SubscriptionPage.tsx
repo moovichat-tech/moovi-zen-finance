@@ -249,7 +249,7 @@ const SubscriptionPage = () => {
                   {plan.priceTotal && (
                     <p className="text-xs text-muted-foreground">{formatCurrency(plan.priceTotal)}</p>
                   )}
-                  <ul className="mt-4 space-y-2">
+                  <ul className="mt-4 space-y-2 flex-1">
                     {plan.features.map((feat, i) => {
                       const isHeader = feat.startsWith("Tudo do plano");
                       return (

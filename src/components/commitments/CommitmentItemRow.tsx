@@ -51,7 +51,10 @@ const CommitmentItemRow = ({
   item, variant, today, labels: l, formatCurrency, formatDate, getDaysDiff,
   onDelete, onEdit, isDeleting, isEditing,
 }: CommitmentItemRowProps) => {
+  const { plano } = useAuth();
+  const navigate = useNavigate();
   const isRecorrente = item.tipo === 'recorrente';
+  const isBasico = plano === 'basico';
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 

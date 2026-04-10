@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PlanGuard from '@/components/PlanGuard';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useI18n } from '@/i18n/context';

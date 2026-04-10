@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import PlanGuard from '@/components/PlanGuard';
 import { useI18n } from '@/i18n/context';
 import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';

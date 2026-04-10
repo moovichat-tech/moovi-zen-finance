@@ -1,4 +1,5 @@
 import { Card } from '@/components/ui/card';
+import PlanGuard from '@/components/PlanGuard';
 import { Badge } from '@/components/ui/badge';
 import { Landmark, ArrowRightLeft, ShieldCheck, Zap } from 'lucide-react';
 

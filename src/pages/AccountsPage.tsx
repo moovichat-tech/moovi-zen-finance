@@ -397,6 +397,7 @@ const AccountsPage = () => {
         </DialogContent>
       </Dialog>
     </div>
+    </PlanGuard>
   );
 };
 

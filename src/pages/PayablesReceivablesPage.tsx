@@ -266,6 +266,7 @@ const PayablesReceivablesPage = () => {
         </TabsContent>
       </Tabs>
     </div>
+    </PlanGuard>
   );
 };
 

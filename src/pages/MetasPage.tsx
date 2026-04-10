@@ -227,6 +227,7 @@ const MetasPage = () => {
         </div>
       )}
     </div>
+    </PlanGuard>
   );
 };
 

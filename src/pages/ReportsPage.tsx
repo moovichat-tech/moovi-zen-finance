@@ -500,6 +500,7 @@ const ReportsPage = () => {
         </>
       )}
     </div>
+    </PlanGuard>
   );
 };
 

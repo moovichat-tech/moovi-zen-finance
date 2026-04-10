@@ -9,72 +9,58 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Crown, Check, Zap, Shield, BarChart3, Bot, AlertTriangle, Heart, Gift, X, ArrowLeft, MessageCircle, HelpCircle, DollarSign, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 
-const allFeatures = [
-  'Entende áudio/texto/imagem',
-  'Gestão de receitas e despesas',
-  'Gestão de categorias ilimitadas',
-  'Lembretes de compromissos',
-  'Painel de acompanhamento',
-  'Exportação via Excel ou PDF',
-  'Suporte VIP prioritário',
-  'Preço congelado por 1 ano',
-  'Bônus exclusivos para assinantes',
-  'Preço congelado por 2 anos',
-  'Acesso antecipado a novidades',
-];
-
 const plans = [
   {
-    name: 'Plano Mensal',
+    name: 'Plano Básico',
     priceMonth: 24.90,
     priceTotal: null,
     label: 'Mais flexível',
-    included: [
-      'Entende áudio/texto/imagem',
-      'Gestão de receitas e despesas',
-      'Gestão de categorias ilimitadas',
-      'Lembretes de compromissos',
-      'Painel de acompanhamento',
-      'Exportação via Excel ou PDF',
+    features: [
+      'Registro de despesas/receitas via WhatsApp',
+      'Categorização inteligente de gastos',
+      'Compromissos automáticos',
+      'Controle de orçamentos',
+      'Lembretes automáticos de vencimento',
+      'Acesso ao Dashboard',
+      'Suporte padrão',
     ],
     current: true,
     popular: false,
   },
   {
-    name: 'Plano Anual',
+    name: 'Plano Pro',
     priceMonth: 19.00,
     priceTotal: 228.00,
     label: 'Melhor custo-benefício',
-    included: [
-      'Entende áudio/texto/imagem',
-      'Gestão de receitas e despesas',
-      'Gestão de categorias ilimitadas',
-      'Lembretes de compromissos',
-      'Painel de acompanhamento',
-      'Exportação via Excel ou PDF',
-      'Suporte VIP prioritário',
-      'Preço congelado por 1 ano',
+    features: [
+      'Tudo do plano Básico, e mais:',
+      'Gráficos visuais no Dashboard',
+      'Relatórios financeiros mensais detalhados',
+      'Exportação de dados (PDF/Excel)',
+      'Criação de metas e limites de gastos',
+      'Alertas preventivos de orçamento',
+      'Compromissos recorrentes',
+      'Contas a pagar/receber',
+      'Suporte prioritário humanizado',
     ],
     current: false,
     popular: true,
   },
   {
-    name: 'Plano 2 anos',
+    name: 'Plano Premium',
     priceMonth: 14.90,
     priceTotal: 357.60,
     label: 'Maior economia no longo prazo',
-    included: [
-      'Entende áudio/texto/imagem',
-      'Gestão de receitas e despesas',
-      'Gestão de categorias ilimitadas',
-      'Lembretes de compromissos',
-      'Painel de acompanhamento',
-      'Exportação via Excel ou PDF',
-      'Suporte VIP prioritário',
-      'Preço congelado por 1 ano',
-      'Bônus exclusivos para assinantes',
-      'Preço congelado por 2 anos',
-      'Acesso antecipado a novidades',
+    features: [
+      'Tudo do plano Pro, e mais:',
+      'Análise de gastos com Inteligência Artificial',
+      'Gestão de múltiplos cartões de crédito',
+      'Gestão de múltiplas contas bancárias',
+      'Leitura automatizada de comprovantes',
+      'Modo Áudio',
+      'Conversão de moedas automático',
+      'Open Finance (em breve)',
+      'Atendimento VIP exclusivo',
     ],
     current: false,
     popular: false,
@@ -186,7 +172,7 @@ const SubscriptionPage = () => {
       {(() => {
         const currentWeight = planWeights[plano] || 1;
         const upgradePlans = plans.filter(p => {
-          const w = p.name.toLowerCase().includes('2 anos') ? 3 : p.name.toLowerCase().includes('anual') ? 2 : 1;
+          const w = p.name.toLowerCase().includes('premium') ? 3 : p.name.toLowerCase().includes('pro') ? 2 : 1;
           return w > currentWeight;
         });
 
@@ -218,16 +204,16 @@ const SubscriptionPage = () => {
                   <p className="mt-1 text-xs text-muted-foreground">Cobrado {formatCurrency(plan.priceTotal)} {plan.name === 'Anual' ? 'anualmente' : 'bianualmente'}</p>
                 )}
                 <ul className="mt-4 space-y-2">
-                  {allFeatures.map((feat, i) => {
-                    const isIncluded = plan.included.includes(feat);
+                  {plan.features.map((feat, i) => {
+                    const isHeader = feat.startsWith('Tudo do plano');
                     return (
-                      <li key={i} className={`flex items-center gap-2 text-xs ${isIncluded ? 'text-foreground' : 'text-muted-foreground/50'}`}>
-                        {isIncluded ? (
-                          <Check className="h-3.5 w-3.5 text-success shrink-0" />
+                      <li key={i} className={`flex items-center gap-2 text-xs ${isHeader ? 'text-primary font-semibold' : 'text-foreground'}`}>
+                        {isHeader ? (
+                          <Zap className="h-3.5 w-3.5 text-primary shrink-0" />
                         ) : (
-                          <X className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+                          <Check className="h-3.5 w-3.5 text-success shrink-0" />
                         )}
-                        <span className={!isIncluded ? 'line-through' : ''}>{feat}</span>
+                        <span>{feat}</span>
                       </li>
                     );
                   })}

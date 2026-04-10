@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { ArrowDownRight, Bell, Pencil, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowDownRight, Bell, Pencil, Trash2, Lock } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

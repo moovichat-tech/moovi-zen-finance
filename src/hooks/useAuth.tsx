@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       );
       if (res.ok) {
         const data = await res.json();
-        const p = data.plano as PlanTier;
+        const p = String(data.plano || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") as PlanTier;
         if (p === 'basico' || p === 'pro' || p === 'premium') {
           setPlano(p);
         }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PlanGuard from '@/components/PlanGuard';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useI18n } from '@/i18n/context';
@@ -94,6 +95,7 @@ const MetasPage = () => {
   };
 
   return (
+    <PlanGuard requiredPlan="pro" featureName="Metas e Objetivos">
     <div className="space-y-6 animate-in-up">
       <div className="flex items-center justify-between">
         <div>
@@ -225,6 +227,7 @@ const MetasPage = () => {
         </div>
       )}
     </div>
+    </PlanGuard>
   );
 };
 

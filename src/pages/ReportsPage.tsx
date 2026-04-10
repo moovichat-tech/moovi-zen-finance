@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import PlanGuard from '@/components/PlanGuard';
 import { useI18n } from '@/i18n/context';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
@@ -215,6 +216,7 @@ const ReportsPage = () => {
   );
 
   return (
+    <PlanGuard requiredPlan="pro" featureName="Relatórios Detalhados">
     <div className="space-y-4 sm:space-y-6 animate-in-up">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -498,6 +500,7 @@ const ReportsPage = () => {
         </>
       )}
     </div>
+    </PlanGuard>
   );
 };
 

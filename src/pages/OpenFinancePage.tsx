@@ -1,9 +1,11 @@
 import { Card } from '@/components/ui/card';
+import PlanGuard from '@/components/PlanGuard';
 import { Badge } from '@/components/ui/badge';
 import { Landmark, ArrowRightLeft, ShieldCheck, Zap } from 'lucide-react';
 
 const OpenFinancePage = () => {
   return (
+    <PlanGuard requiredPlan="premium" featureName="Open Finance">
     <div className="space-y-6 animate-in-up">
       <div>
         <h2 className="text-lg sm:text-xl font-semibold">Open Finance</h2>
@@ -37,6 +39,7 @@ const OpenFinancePage = () => {
         </div>
       </Card>
     </div>
+    </PlanGuard>
   );
 };
 

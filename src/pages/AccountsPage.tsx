@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useI18n } from '@/i18n/context';
+import PlanGuard from '@/components/PlanGuard';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
@@ -194,6 +195,7 @@ const AccountsPage = () => {
   };
 
   return (
+    <PlanGuard requiredPlan="premium" featureName="Contas Bancárias">
     <div className="space-y-4 sm:space-y-6 animate-in-up">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -395,6 +397,7 @@ const AccountsPage = () => {
         </DialogContent>
       </Dialog>
     </div>
+    </PlanGuard>
   );
 };
 

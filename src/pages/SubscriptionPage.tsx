@@ -26,6 +26,7 @@ const plans = [
     ],
     current: true,
     popular: false,
+    badgeText: '',
   },
   {
     name: 'Plano Pro',
@@ -45,6 +46,7 @@ const plans = [
     ],
     current: false,
     popular: true,
+    badgeText: 'Mais recomendado',
   },
   {
     name: 'Plano Premium',
@@ -63,7 +65,8 @@ const plans = [
       'Atendimento VIP exclusivo',
     ],
     current: false,
-    popular: false,
+    popular: true,
+    badgeText: 'Tudo ilimitado',
   },
 ];
 

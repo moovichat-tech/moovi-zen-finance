@@ -231,9 +231,7 @@ const SubscriptionPage = () => {
                   <span className="text-xs text-muted-foreground">/mês</span>
                 </div>
                 {plan.priceTotal && (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Cobrado {formatCurrency(plan.priceTotal)} {plan.name === "Anual" ? "anualmente" : "bianualmente"}
-                  </p>
+                  
                 )}
                 <ul className="mt-4 space-y-2">
                   {plan.features.map((feat, i) => {

@@ -49,7 +49,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ plano: rows[0].plano }), {
+    const planoNormalizado = String(rows[0].plano).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    return new Response(JSON.stringify({ plano: planoNormalizado }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

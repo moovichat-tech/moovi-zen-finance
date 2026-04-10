@@ -338,6 +338,7 @@ const CardsPage = () => {
       </Dialog>
     </div>
     </PlanGuard>
+  );
 };
 
 export default CardsPage;

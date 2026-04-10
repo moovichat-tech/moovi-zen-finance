@@ -7,6 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Crown,
   Check,
   Zap,
@@ -144,6 +154,7 @@ const SubscriptionPage = () => {
   const { plano } = useAuth();
   const [cancelStep, setCancelStep] = useState(0);
   const [cancelReason, setCancelReason] = useState("");
+  const [downgradeTarget, setDowngradeTarget] = useState<string | null>(null);
 
   const handleStartCancel = () => setCancelStep(1);
   const handleCancelClose = () => {
@@ -193,69 +204,85 @@ const SubscriptionPage = () => {
         <Badge className="text-xs">Ativo</Badge>
       </Card>
 
-      {/* Plans - Upgrade Path */}
+      {/* Plans */}
       {(() => {
         const currentWeight = planWeights[plano] || 1;
-        const upgradePlans = plans.filter((p) => {
-          const w = p.name.toLowerCase().includes("premium") ? 3 : p.name.toLowerCase().includes("pro") ? 2 : 1;
-          return w > currentWeight;
-        });
-
-        if (currentWeight >= 3) {
-          return (
-            <Alert className="border-primary/30 bg-primary/5">
-              <Crown className="h-5 w-5 text-primary" />
-              <AlertDescription className="text-sm ml-2">
-                🎉 <strong>Você está no topo!</strong> Você já possui o plano mais completo da Moovi e tem acesso a
-                todos os recursos ilimitados.
-              </AlertDescription>
-            </Alert>
-          );
-        }
-
-        const cols = upgradePlans.length === 1 ? "max-w-md mx-auto" : "grid grid-cols-1 sm:grid-cols-2 gap-4";
+        const getPlanWeight = (p: typeof plans[0]) =>
+          p.name.toLowerCase().includes("premium") ? 3 : p.name.toLowerCase().includes("pro") ? 2 : 1;
 
         return (
-          <div className={cols}>
-            {upgradePlans.map((plan) => (
-              <Card key={plan.name} className={`relative p-5 card-hover ${plan.popular ? "border-primary" : ""}`}>
-                {plan.popular && <Badge className="absolute -top-2.5 right-4 text-[10px]">Mais recomendado</Badge>}
-                {plan.label && !plan.popular && (
-                  <Badge variant="secondary" className="absolute -top-2.5 right-4 text-[10px]">
-                    {plan.label}
-                  </Badge>
-                )}
-                <h3 className="text-lg font-semibold">{plan.name}</h3>
-                <div className="mt-2">
-                  <span className="text-2xl font-bold">{formatCurrency(plan.priceMonth)}</span>
-                  <span className="text-xs text-muted-foreground"> x12</span>
-                </div>
-                {plan.priceTotal && (
-                  <p className="text-xs text-muted-foreground">{formatCurrency(plan.priceTotal)}</p>
-                )}
-                <ul className="mt-4 space-y-2">
-                  {plan.features.map((feat, i) => {
-                    const isHeader = feat.startsWith("Tudo do plano");
-                    return (
-                      <li
-                        key={i}
-                        className={`flex items-center gap-2 text-xs ${isHeader ? "text-primary font-semibold" : "text-foreground"}`}
-                      >
-                        {isHeader ? (
-                          <Zap className="h-3.5 w-3.5 text-primary shrink-0" />
-                        ) : (
-                          <Check className="h-3.5 w-3.5 text-success shrink-0" />
-                        )}
-                        <span>{feat}</span>
-                      </li>
-                    );
-                  })}
-                </ul>
-                <Button className="mt-5 w-full" variant={plan.popular ? "default" : "secondary"} size="sm">
-                  Assinar {plan.name.replace("Plano ", "")}
-                </Button>
-              </Card>
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {plans.map((plan) => {
+              const w = getPlanWeight(plan);
+              const isCurrent = w === currentWeight;
+              const isUpgrade = w > currentWeight;
+
+              let buttonVariant: "default" | "secondary" | "outline" = "default";
+              let buttonText = "";
+              let buttonDisabled = false;
+
+              if (isCurrent) {
+                buttonVariant = "outline";
+                buttonText = "Plano Atual";
+                buttonDisabled = true;
+              } else if (isUpgrade) {
+                buttonVariant = "default";
+                buttonText = `Assinar ${plan.name.replace("Plano ", "")}`;
+              } else {
+                buttonVariant = "secondary";
+                buttonText = "Fazer Downgrade";
+              }
+
+              return (
+                <Card key={plan.name} className={`relative p-5 card-hover ${plan.popular ? "border-primary" : ""}`}>
+                  {plan.popular && <Badge className="absolute -top-2.5 right-4 text-[10px]">Mais recomendado</Badge>}
+                  {plan.label && !plan.popular && (
+                    <Badge variant="secondary" className="absolute -top-2.5 right-4 text-[10px]">
+                      {plan.label}
+                    </Badge>
+                  )}
+                  <h3 className="text-lg font-semibold">{plan.name}</h3>
+                  <div className="mt-2">
+                    <span className="text-2xl font-bold">{formatCurrency(plan.priceMonth)}</span>
+                    <span className="text-xs text-muted-foreground"> x12</span>
+                  </div>
+                  {plan.priceTotal && (
+                    <p className="text-xs text-muted-foreground">{formatCurrency(plan.priceTotal)}</p>
+                  )}
+                  <ul className="mt-4 space-y-2">
+                    {plan.features.map((feat, i) => {
+                      const isHeader = feat.startsWith("Tudo do plano");
+                      return (
+                        <li
+                          key={i}
+                          className={`flex items-center gap-2 text-xs ${isHeader ? "text-primary font-semibold" : "text-foreground"}`}
+                        >
+                          {isHeader ? (
+                            <Zap className="h-3.5 w-3.5 text-primary shrink-0" />
+                          ) : (
+                            <Check className="h-3.5 w-3.5 text-success shrink-0" />
+                          )}
+                          <span>{feat}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <Button
+                    className="mt-5 w-full"
+                    variant={buttonVariant}
+                    size="sm"
+                    disabled={buttonDisabled}
+                    onClick={() => {
+                      if (!isCurrent && !isUpgrade) {
+                        setDowngradeTarget(plan.name);
+                      }
+                    }}
+                  >
+                    {buttonText}
+                  </Button>
+                </Card>
+              );
+            })}
           </div>
         );
       })()}
@@ -449,6 +476,27 @@ const SubscriptionPage = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Downgrade Confirmation */}
+      <AlertDialog open={!!downgradeTarget} onOpenChange={(open) => { if (!open) setDowngradeTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Downgrade?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Seu plano atual será mantido até o final do período já pago. Após essa data, sua conta passará para o plano inferior e algumas funcionalidades serão desativadas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              toast.info(`Downgrade para ${downgradeTarget} confirmado. Seu plano atual será mantido até o final do período.`);
+              setDowngradeTarget(null);
+            }}>
+              Confirmar Downgrade
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

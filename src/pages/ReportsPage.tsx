@@ -216,7 +216,7 @@ const ReportsPage = () => {
   );
 
   return (
-    <PlanGuard requiredPlan="pro" featureName="Relatórios Detalhados">
+    <>
     <div className="space-y-4 sm:space-y-6 animate-in-up">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -274,17 +274,19 @@ const ReportsPage = () => {
       </div>
 
       {/* Export buttons */}
-      <div className="flex gap-2">
-        <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportCSV}>
-          <FileSpreadsheet className="h-3.5 w-3.5" /> CSV
-        </Button>
-        <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportExcel}>
-          <Download className="h-3.5 w-3.5" /> Excel
-        </Button>
-        <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportPDF}>
-          <FileText className="h-3.5 w-3.5" /> PDF
-        </Button>
-      </div>
+      <PlanGuard requiredPlan="pro" featureName="Exportação de Relatórios">
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportCSV}>
+            <FileSpreadsheet className="h-3.5 w-3.5" /> CSV
+          </Button>
+          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportExcel}>
+            <Download className="h-3.5 w-3.5" /> Excel
+          </Button>
+          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportPDF}>
+            <FileText className="h-3.5 w-3.5" /> PDF
+          </Button>
+        </div>
+      </PlanGuard>
 
       {/* Summary */}
       {isLoading ? (
@@ -500,7 +502,7 @@ const ReportsPage = () => {
         </>
       )}
     </div>
-    </PlanGuard>
+    </>
   );
 };
 

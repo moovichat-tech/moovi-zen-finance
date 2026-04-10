@@ -97,17 +97,10 @@ const CommitmentItemRow = ({
           </div>
         </div>
 
-        {/* Center: Tag column (fixed width for vertical alignment) */}
-        <div className="w-[100px] flex justify-center shrink-0 mx-2">
-          <Badge variant={isRecorrente ? 'default' : 'outline'} className="text-[10px] whitespace-nowrap">
-            {isRecorrente ? l.recorrente : l.temporario}
-          </Badge>
-        </div>
-
-        {/* Right: Value + Action buttons */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Right side: Action buttons + Value + Tag (fixed column) */}
+        <div className="flex items-center shrink-0">
           {isRecorrente && (
-            <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
+            <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity mr-2">
               <button
                 onClick={handleEditOpen}
                 className="p-1 rounded text-muted-foreground hover:text-primary transition-colors"
@@ -125,8 +118,14 @@ const CommitmentItemRow = ({
             </div>
           )}
           {item.valor != null && item.valor > 0 && (
-            <span className="text-sm font-semibold text-destructive whitespace-nowrap">-{formatCurrency(item.valor)}</span>
+            <span className="text-sm font-semibold text-destructive whitespace-nowrap mr-3">-{formatCurrency(item.valor)}</span>
           )}
+          {/* Tag column: fixed width ensures vertical alignment across all rows */}
+          <div className="w-[90px] flex justify-center shrink-0">
+            <Badge variant={isRecorrente ? 'default' : 'outline'} className="text-[10px] whitespace-nowrap">
+              {isRecorrente ? l.recorrente : l.temporario}
+            </Badge>
+          </div>
         </div>
       </div>
 

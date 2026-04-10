@@ -39,6 +39,7 @@ const OpenFinancePage = () => {
         </div>
       </Card>
     </div>
+    </PlanGuard>
   );
 };
 

@@ -7,6 +7,7 @@ interface AuthContextType {
   telefone: string | null;
   token: string | null;
   plano: PlanTier;
+  gatewayPagamento: string | null;
   login: (token: string, userId: string, telefone: string) => void;
   logout: () => void;
   isLoading: boolean;

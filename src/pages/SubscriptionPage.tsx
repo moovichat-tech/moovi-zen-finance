@@ -152,7 +152,7 @@ const planWeights: Record<string, number> = { basico: 1, pro: 2, premium: 3 };
 
 const SubscriptionPage = () => {
   const { formatCurrency } = useI18n();
-  const { plano, telefone } = useAuth();
+  const { plano, telefone, gatewayPagamento } = useAuth();
   const [cancelStep, setCancelStep] = useState(0);
   const [cancelReason, setCancelReason] = useState("");
   const [downgradeTarget, setDowngradeTarget] = useState<string | null>(null);
@@ -222,12 +222,53 @@ const SubscriptionPage = () => {
     setCancelStep(3);
   };
 
+  const isStripeMigration = gatewayPagamento === 'stripe';
+
   return (
-    <div className="space-y-6 animate-in-up">
+    <div className="space-y-6 animate-in-up relative">
       <div>
         <h2 className="text-lg sm:text-xl font-semibold">Gerenciar Assinatura</h2>
         <p className="text-sm text-muted-foreground">Escolha o plano ideal para suas necessidades</p>
       </div>
+
+      {/* Stripe Migration Overlay */}
+      {isStripeMigration && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 backdrop-blur-md bg-background/60" />
+          <Card className="relative z-10 max-w-lg w-full p-6 sm:p-8 border-primary shadow-2xl">
+            <div className="text-center space-y-4">
+              <h3 className="text-xl sm:text-2xl font-bold">Atualização de Sistema Necessária 🚀</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Estamos migrando para um novo e mais seguro sistema de pagamentos. Para continuar aproveitando a Moovi sem interrupções, atualize seus dados de faturamento abaixo. Como agradecimento, adicionaremos <span className="font-semibold text-primary">1 Mês de acesso totalmente grátis</span> ao seu novo plano!
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4">
+                {plans.map((plan) => {
+                  const key = getPlanKey(plan.name);
+                  return (
+                    <Button
+                      key={plan.name}
+                      className="w-full"
+                      variant={plan.popular ? "default" : "outline"}
+                      size="sm"
+                      disabled={loadingPlan === key}
+                      onClick={() => handlePlanChange(plan.name)}
+                    >
+                      {loadingPlan === key ? (
+                        <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Processando...</>
+                      ) : (
+                        `Assinar ${plan.name.replace("Plano ", "")}`
+                      )}
+                    </Button>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-muted-foreground pt-2">
+                Sua cobrança antiga será cancelada automaticamente assim que a nova for confirmada. Você não pagará em duplicidade.
+              </p>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Current Plan */}
       <Card className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-5 gap-3">

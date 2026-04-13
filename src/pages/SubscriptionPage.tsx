@@ -232,43 +232,17 @@ const SubscriptionPage = () => {
         <p className="text-sm text-muted-foreground">Escolha o plano ideal para suas necessidades</p>
       </div>
 
-      {/* Stripe Migration Overlay */}
+      {/* Stripe Migration Banner */}
       {isStripeMigration && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 backdrop-blur-md bg-background/60" />
-          <Card className="relative z-10 max-w-lg w-full p-6 sm:p-8 border-primary shadow-2xl">
-            <div className="text-center space-y-4">
-              <h3 className="text-xl sm:text-2xl font-bold">Atualização de Sistema Necessária 🚀</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Estamos migrando para um novo e mais seguro sistema de pagamentos. Para continuar aproveitando a Moovi sem interrupções, atualize seus dados de faturamento abaixo. Como agradecimento, adicionaremos <span className="font-semibold text-primary">1 Mês de acesso totalmente grátis</span> ao seu novo plano!
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4">
-                {plans.map((plan) => {
-                  const key = getPlanKey(plan.name);
-                  return (
-                    <Button
-                      key={plan.name}
-                      className="w-full"
-                      variant={plan.popular ? "default" : "outline"}
-                      size="sm"
-                      disabled={loadingPlan === key}
-                      onClick={() => handlePlanChange(plan.name)}
-                    >
-                      {loadingPlan === key ? (
-                        <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Processando...</>
-                      ) : (
-                        `Assinar ${plan.name.replace("Plano ", "")}`
-                      )}
-                    </Button>
-                  );
-                })}
-              </div>
-              <p className="text-[11px] text-muted-foreground pt-2">
-                Sua cobrança antiga será cancelada automaticamente assim que a nova for confirmada. Você não pagará em duplicidade.
-              </p>
-            </div>
-          </Card>
-        </div>
+        <Alert className="border-primary bg-primary/10">
+          <Gift className="h-5 w-5 text-primary" />
+          <div className="ml-2">
+            <h3 className="text-sm font-semibold">Atualização de Sistema Necessária 🚀</h3>
+            <AlertDescription className="text-xs text-muted-foreground leading-relaxed mt-1">
+              Estamos migrando para um novo e mais seguro sistema de pagamentos. Para não perder seu acesso, escolha seu plano abaixo e atualize seus dados de faturamento. Como agradecimento, adicionaremos <span className="font-semibold text-primary">1 Mês de acesso totalmente grátis</span>! Sua cobrança antiga será cancelada automaticamente.
+            </AlertDescription>
+          </div>
+        </Alert>
       )}
 
       {/* Current Plan */}
@@ -302,7 +276,11 @@ const SubscriptionPage = () => {
               let buttonText = "";
               let buttonDisabled = false;
 
-              if (isCurrent) {
+              if (isStripeMigration) {
+                buttonVariant = "default";
+                buttonText = `Migrar para o ${plan.name.replace("Plano ", "")}`;
+                buttonDisabled = false;
+              } else if (isCurrent) {
                 buttonVariant = "outline";
                 buttonText = "Plano Atual";
                 buttonDisabled = true;
@@ -354,6 +332,10 @@ const SubscriptionPage = () => {
                     size="sm"
                     disabled={buttonDisabled || loadingPlan === getPlanKey(plan.name)}
                     onClick={() => {
+                      if (isStripeMigration) {
+                        handlePlanChange(plan.name);
+                        return;
+                      }
                       if (isCurrent) return;
                       if (isUpgrade) {
                         handlePlanChange(plan.name);

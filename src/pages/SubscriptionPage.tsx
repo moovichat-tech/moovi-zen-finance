@@ -3,7 +3,7 @@ import { useI18n } from "@/i18n/context";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -232,17 +232,72 @@ const SubscriptionPage = () => {
         <p className="text-sm text-muted-foreground">Escolha o plano ideal para suas necessidades</p>
       </div>
 
-      {/* Stripe Migration Banner */}
+      {/* Stripe Migration Overlay Modal */}
       {isStripeMigration && (
-        <Alert className="border-primary bg-primary/10">
-          <Gift className="h-5 w-5 text-primary" />
-          <div className="ml-2">
-            <h3 className="text-sm font-semibold">Atualização de Sistema Necessária 🚀</h3>
-            <AlertDescription className="text-xs text-muted-foreground leading-relaxed mt-1">
-              Estamos migrando para um novo e mais seguro sistema de pagamentos. Para não perder seu acesso, escolha seu plano abaixo e atualize seus dados de faturamento. Como agradecimento, adicionaremos <span className="font-semibold text-primary">1 Mês de acesso totalmente grátis</span>! Sua cobrança antiga será cancelada automaticamente.
-            </AlertDescription>
-          </div>
-        </Alert>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 backdrop-blur-md bg-background/60" />
+          <Card className="relative z-10 w-full max-w-5xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 border-primary shadow-2xl">
+            <div className="text-center mb-6">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Gift className="h-6 w-6 text-primary" />
+                <h2 className="text-xl font-bold">Atualização de Sistema Necessária 🚀</h2>
+              </div>
+              <p className="text-sm text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                Estamos migrando para um novo e mais seguro sistema de pagamentos. Para não perder seu acesso, escolha seu plano abaixo e atualize seus dados de faturamento. Como agradecimento, adicionaremos{" "}
+                <span className="font-semibold text-primary">1 Mês de acesso totalmente grátis</span>!
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              {plans.map((plan) => {
+                const key = getPlanKey(plan.name);
+                return (
+                  <Card key={plan.name} className={`relative p-5 flex flex-col h-full ${plan.popular ? "border-primary" : ""}`}>
+                    {plan.popular && <Badge className="absolute -top-2.5 right-4 text-[10px]">Mais recomendado</Badge>}
+                    <h3 className="text-lg font-semibold">{plan.name}</h3>
+                    <div className="mt-2">
+                      <span className="text-2xl font-bold">{formatCurrency(plan.priceMonth)}</span>
+                      <span className="text-xs text-muted-foreground"> x12</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{formatCurrency(plan.priceTotal)}</p>
+                    <ul className="mt-4 space-y-2 flex-1">
+                      {plan.features.map((feat, i) => {
+                        const isHeader = feat.startsWith("Tudo do plano");
+                        return (
+                          <li key={i} className={`flex items-center gap-2 text-xs ${isHeader ? "text-primary font-semibold" : "text-foreground"}`}>
+                            {isHeader ? (
+                              <Zap className="h-3.5 w-3.5 text-primary shrink-0" />
+                            ) : (
+                              <Check className="h-3.5 w-3.5 text-success shrink-0" />
+                            )}
+                            <span>{feat}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <Button
+                      className="mt-5 w-full"
+                      variant="default"
+                      size="sm"
+                      disabled={loadingPlan === key}
+                      onClick={() => handlePlanChange(plan.name)}
+                    >
+                      {loadingPlan === key ? (
+                        <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Processando...</>
+                      ) : (
+                        `Migrar para o ${plan.name.replace("Plano ", "")}`
+                      )}
+                    </Button>
+                  </Card>
+                );
+              })}
+            </div>
+
+            <p className="text-[11px] text-muted-foreground text-center">
+              Sua cobrança antiga será cancelada automaticamente assim que a nova for confirmada. Você não pagará em duplicidade.
+            </p>
+          </Card>
+        </div>
       )}
 
       {/* Current Plan */}
@@ -276,11 +331,7 @@ const SubscriptionPage = () => {
               let buttonText = "";
               let buttonDisabled = false;
 
-              if (isStripeMigration) {
-                buttonVariant = "default";
-                buttonText = `Migrar para o ${plan.name.replace("Plano ", "")}`;
-                buttonDisabled = false;
-              } else if (isCurrent) {
+              if (isCurrent) {
                 buttonVariant = "outline";
                 buttonText = "Plano Atual";
                 buttonDisabled = true;
@@ -332,10 +383,6 @@ const SubscriptionPage = () => {
                     size="sm"
                     disabled={buttonDisabled || loadingPlan === getPlanKey(plan.name)}
                     onClick={() => {
-                      if (isStripeMigration) {
-                        handlePlanChange(plan.name);
-                        return;
-                      }
                       if (isCurrent) return;
                       if (isUpgrade) {
                         handlePlanChange(plan.name);

@@ -7,6 +7,7 @@ interface AuthContextType {
   telefone: string | null;
   token: string | null;
   plano: PlanTier;
+  gatewayPagamento: string | null;
   login: (token: string, userId: string, telefone: string) => void;
   logout: () => void;
   isLoading: boolean;
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextType>({
   telefone: null,
   token: null,
   plano: 'basico',
+  gatewayPagamento: null,
   login: () => {},
   logout: () => {},
   isLoading: true,
@@ -28,6 +30,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [telefone, setTelefone] = useState<string | null>(null);
   const [plano, setPlano] = useState<PlanTier>('basico');
+  const [gatewayPagamento, setGatewayPagamento] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchPlano = useCallback(async (authToken: string) => {
@@ -48,6 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (p === 'basico' || p === 'pro' || p === 'premium') {
           setPlano(p);
         }
+        setGatewayPagamento(data.gateway_pagamento || null);
       }
     } catch {
       // keep default basico
@@ -114,6 +118,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUserId(null);
     setTelefone(null);
     setPlano('basico');
+    setGatewayPagamento(null);
     localStorage.removeItem('moovi-auth');
   }, []);
 
@@ -124,6 +129,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       telefone,
       token,
       plano,
+      gatewayPagamento,
       login,
       logout,
       isLoading,

@@ -162,8 +162,9 @@ const SubscriptionPage = () => {
     name.toLowerCase().includes("premium") ? "premium" : name.toLowerCase().includes("pro") ? "pro" : "basico";
 
   const handlePlanChange = useCallback(async (planName: string) => {
-    const planoNovo = getPlanKey(planName);
-    setLoadingPlan(planoNovo);
+    const planoKey = getPlanKey(planName);
+    const planoNovo = planoKey.toUpperCase();
+    setLoadingPlan(planoKey);
     try {
       const res = await fetch("https://n8n.fisherai.shop/webhook/mudanca-plano", {
         method: "POST",

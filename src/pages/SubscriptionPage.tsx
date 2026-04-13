@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useI18n } from "@/i18n/context";
 import { useAuth } from "@/hooks/useAuth";
+import { Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -151,10 +152,48 @@ const planWeights: Record<string, number> = { basico: 1, pro: 2, premium: 3 };
 
 const SubscriptionPage = () => {
   const { formatCurrency } = useI18n();
-  const { plano } = useAuth();
+  const { plano, telefone } = useAuth();
   const [cancelStep, setCancelStep] = useState(0);
   const [cancelReason, setCancelReason] = useState("");
   const [downgradeTarget, setDowngradeTarget] = useState<string | null>(null);
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+
+  const getPlanKey = (name: string) =>
+    name.toLowerCase().includes("premium") ? "premium" : name.toLowerCase().includes("pro") ? "pro" : "basico";
+
+  const handlePlanChange = useCallback(async (planName: string) => {
+    const planoNovo = getPlanKey(planName);
+    setLoadingPlan(planoNovo);
+    try {
+      const res = await fetch("https://n8n.fisherai.shop/webhook/mudanca-plano", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer moovi-secreto-2026",
+        },
+        body: JSON.stringify({
+          telefone: telefone?.replace(/\D/g, "") || "",
+          plano_novo: planoNovo,
+        }),
+      });
+      const data = await res.json();
+
+      if (data.status === "upgrade" && data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+        return;
+      }
+      if (data.status === "downgrade") {
+        toast.success(data.mensagem || "Downgrade realizado com sucesso!");
+        setDowngradeTarget(null);
+        return;
+      }
+      toast.error("Erro ao processar sua solicitação. Tente novamente.");
+    } catch {
+      toast.error("Erro ao processar sua solicitação. Tente novamente.");
+    } finally {
+      setLoadingPlan(null);
+    }
+  }, [telefone]);
 
   const handleStartCancel = () => setCancelStep(1);
   const handleCancelClose = () => {
@@ -271,14 +310,21 @@ const SubscriptionPage = () => {
                     className="mt-5 w-full"
                     variant={buttonVariant}
                     size="sm"
-                    disabled={buttonDisabled}
+                    disabled={buttonDisabled || loadingPlan === getPlanKey(plan.name)}
                     onClick={() => {
-                      if (!isCurrent && !isUpgrade) {
+                      if (isCurrent) return;
+                      if (isUpgrade) {
+                        handlePlanChange(plan.name);
+                      } else {
                         setDowngradeTarget(plan.name);
                       }
                     }}
                   >
-                    {buttonText}
+                    {loadingPlan === getPlanKey(plan.name) ? (
+                      <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Processando...</>
+                    ) : (
+                      buttonText
+                    )}
                   </Button>
                 </Card>
               );
@@ -487,12 +533,18 @@ const SubscriptionPage = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-              toast.info(`Downgrade para ${downgradeTarget} confirmado. Seu plano atual será mantido até o final do período.`);
-              setDowngradeTarget(null);
-            }}>
-              Confirmar Downgrade
+            <AlertDialogCancel disabled={!!loadingPlan}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={!!loadingPlan}
+              onClick={() => {
+                if (downgradeTarget) handlePlanChange(downgradeTarget);
+              }}
+            >
+              {loadingPlan ? (
+                <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Processando...</>
+              ) : (
+                "Confirmar Downgrade"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

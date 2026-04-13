@@ -331,11 +331,7 @@ const SubscriptionPage = () => {
               let buttonText = "";
               let buttonDisabled = false;
 
-              if (isStripeMigration) {
-                buttonVariant = "default";
-                buttonText = `Migrar para o ${plan.name.replace("Plano ", "")}`;
-                buttonDisabled = false;
-              } else if (isCurrent) {
+              if (isCurrent) {
                 buttonVariant = "outline";
                 buttonText = "Plano Atual";
                 buttonDisabled = true;
@@ -387,10 +383,6 @@ const SubscriptionPage = () => {
                     size="sm"
                     disabled={buttonDisabled || loadingPlan === getPlanKey(plan.name)}
                     onClick={() => {
-                      if (isStripeMigration) {
-                        handlePlanChange(plan.name);
-                        return;
-                      }
                       if (isCurrent) return;
                       if (isUpgrade) {
                         handlePlanChange(plan.name);

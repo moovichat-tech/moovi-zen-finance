@@ -179,6 +179,30 @@ export type Database = {
         }
         Relationships: []
       }
+      feedbacks_cancelamento: {
+        Row: {
+          created_at: string
+          detalhes: string | null
+          id: string
+          motivo_principal: string
+          telefone: string
+        }
+        Insert: {
+          created_at?: string
+          detalhes?: string | null
+          id?: string
+          motivo_principal: string
+          telefone: string
+        }
+        Update: {
+          created_at?: string
+          detalhes?: string | null
+          id?: string
+          motivo_principal?: string
+          telefone?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -295,6 +319,7 @@ export type Database = {
           created_at: string
           id: string
           nome: string | null
+          renovacao_automatica: boolean
           senha_hash: string | null
           telefone: string
           ultimo_login: string | null
@@ -304,6 +329,7 @@ export type Database = {
           created_at?: string
           id?: string
           nome?: string | null
+          renovacao_automatica?: boolean
           senha_hash?: string | null
           telefone: string
           ultimo_login?: string | null
@@ -313,6 +339,7 @@ export type Database = {
           created_at?: string
           id?: string
           nome?: string | null
+          renovacao_automatica?: boolean
           senha_hash?: string | null
           telefone?: string
           ultimo_login?: string | null

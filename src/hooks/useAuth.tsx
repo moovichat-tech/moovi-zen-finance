@@ -65,6 +65,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setGatewayPagamento(data.gateway_pagamento || null);
         setRenovacaoAutomatica(data.renovacao_automatica !== false);
         setStatusUsuario(data.status || 'Ativo');
+        setPlanoFuturo(data.plano_futuro || null);
       }
     } catch {
       // keep default basico
@@ -134,6 +135,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setGatewayPagamento(null);
     setRenovacaoAutomatica(true);
     setStatusUsuario('Ativo');
+    setPlanoFuturo(null);
     localStorage.removeItem('moovi-auth');
   }, []);
 
@@ -151,6 +153,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       gatewayPagamento,
       renovacaoAutomatica,
       statusUsuario,
+      planoFuturo,
       login,
       logout,
       refreshPlano,

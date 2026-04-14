@@ -163,14 +163,12 @@ const SubscriptionPage = () => {
     setCancelLoading(true);
     try {
       const tel = telefone?.replace(/\D/g, "") || "";
-      const { data, error } = await supabase.functions.invoke("cancel-subscription", {
-        body: {
-          telefone: tel,
-          motivo: cancelMotivo,
-          detalhes: cancelDetalhes || null,
-        },
+      await supabase.from("feedbacks_cancelamento" as any).insert({
+        telefone: tel,
+        motivo_principal: cancelMotivo,
+        detalhes: cancelDetalhes || null,
       });
-      if (error) throw error;
+      await supabase.from("usuarios" as any).update({ renovacao_automatica: false }).eq("telefone", tel);
       toast.success("Renovação cancelada");
       setRenovacaoCancelada(true);
       handleCancelClose();

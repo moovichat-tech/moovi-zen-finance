@@ -105,7 +105,7 @@ const planWeights: Record<string, number> = { basico: 1, pro: 2, premium: 3 };
 
 const SubscriptionPage = () => {
   const { formatCurrency } = useI18n();
-  const { plano, telefone, gatewayPagamento, renovacaoAutomatica, refreshPlano } = useAuth();
+  const { plano, telefone, gatewayPagamento, renovacaoAutomatica, planoFuturo, refreshPlano, token } = useAuth();
   const [cancelStep, setCancelStep] = useState(0);
   const [cancelMotivo, setCancelMotivo] = useState("");
   const [cancelDetalhes, setCancelDetalhes] = useState("");

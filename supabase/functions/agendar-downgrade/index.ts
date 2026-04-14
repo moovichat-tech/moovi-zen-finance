@@ -41,21 +41,35 @@ Deno.serve(async (req) => {
       });
     }
 
-    const rows = await sql`SELECT COALESCE(plano, 'basico') as plano, gateway_pagamento, renovacao_automatica, COALESCE(status, 'Ativo') as status, plano_futuro FROM usuarios WHERE telefone = ${telefone} LIMIT 1`;
+    const body = await req.json();
+    const planoFuturo = body.plano_futuro;
 
-    if (rows.length === 0) {
-      return new Response(JSON.stringify({ plano: "basico", gateway_pagamento: null, renovacao_automatica: true, status: "Ativo", plano_futuro: null }), {
+    if (!planoFuturo || !["BASICO", "PRO", "PREMIUM"].includes(planoFuturo.toUpperCase())) {
+      return new Response(JSON.stringify({ error: "Plano inválido" }), {
+        status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const planoNormalizado = String(rows[0].plano).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const rows = await sql`
+      UPDATE usuarios 
+      SET plano_futuro = ${planoFuturo.toUpperCase()}, updated_at = now()
+      WHERE telefone = ${telefone}
+      RETURNING plano_futuro
+    `;
 
-    return new Response(JSON.stringify({ plano: planoNormalizado, gateway_pagamento: rows[0].gateway_pagamento || null, renovacao_automatica: rows[0].renovacao_automatica !== false, status: rows[0].status || "Ativo", plano_futuro: rows[0].plano_futuro || null }), {
+    if (rows.length === 0) {
+      return new Response(JSON.stringify({ error: "Usuário não encontrado" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(JSON.stringify({ success: true, plano_futuro: rows[0].plano_futuro }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("get-plano error:", e);
+    console.error("agendar-downgrade error:", e);
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

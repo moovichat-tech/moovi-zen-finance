@@ -10,6 +10,7 @@ interface AuthContextType {
   gatewayPagamento: string | null;
   renovacaoAutomatica: boolean;
   statusUsuario: string;
+  planoFuturo: string | null;
   login: (token: string, userId: string, telefone: string) => void;
   logout: () => void;
   refreshPlano: () => void;

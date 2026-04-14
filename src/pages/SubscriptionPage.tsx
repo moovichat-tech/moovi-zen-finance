@@ -106,50 +106,6 @@ const cancelMotivos = [
   { id: "outro", label: "Outro motivo." },
 ];
 
-const resolutionCards: Record<string, { title: string; description: string; offer?: string; cta: string }> = {
-  "other-tool": {
-    title: "🔄 Vamos comparar?",
-    description:
-      "Gostaríamos de entender melhor sua necessidade. O Moovi possui IA integrada, relatórios avançados e exportação completa. Que tal um desconto exclusivo para continuar?",
-    offer: "30% OFF por 6 meses",
-    cta: "Aceitar desconto e continuar",
-  },
-  expensive: {
-    title: "💰 Temos uma oferta especial!",
-    description:
-      "Sabemos que o preço importa. Por isso, preparamos um desconto exclusivo para você continuar aproveitando todas as funcionalidades.",
-    offer: "50% OFF por 3 meses",
-    cta: "Aceitar oferta e continuar",
-  },
-  "not-enough": {
-    title: "📱 Você sabia?",
-    description:
-      "O Moovi tem funcionalidades que você talvez ainda não conheça: assistente IA, lançamentos por comando, relatórios detalhados, orçamentos automáticos e muito mais!",
-    offer: "2 meses grátis para explorar",
-    cta: "Aceitar e descobrir mais",
-  },
-  "missing-features": {
-    title: "🚀 Sua opinião é valiosa!",
-    description:
-      "Estamos constantemente evoluindo. Conte-nos quais funcionalidades faltam e teremos prioridade em implementá-las. Enquanto isso, aceite nosso desconto!",
-    offer: "40% OFF por 3 meses",
-    cta: "Aceitar e enviar sugestões",
-  },
-  technical: {
-    title: "🔧 Vamos resolver juntos!",
-    description:
-      "Lamentamos pelos problemas técnicos. Nossa equipe de suporte está pronta para ajudar. Vamos agendar um atendimento prioritário para resolver tudo?",
-    offer: "Suporte VIP + 1 mês grátis",
-    cta: "Agendar suporte e continuar",
-  },
-  other: {
-    title: "💜 Não queremos te perder!",
-    description:
-      "Seja qual for o motivo, gostaríamos de oferecer um benefício especial para que você continue fazendo parte da família Moovi.",
-    offer: "50% OFF por 3 meses",
-    cta: "Aceitar oferta e continuar",
-  },
-};
 
 const planWeights: Record<string, number> = { basico: 1, pro: 2, premium: 3 };
 

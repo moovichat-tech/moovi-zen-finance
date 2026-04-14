@@ -98,13 +98,12 @@ const plans = [
   },
 ];
 
-const cancelReasons = [
-  { id: "other-tool", label: "Estou usando outra ferramenta", icon: MessageCircle },
-  { id: "expensive", label: "Achei caro para meu uso", icon: DollarSign },
-  { id: "not-enough", label: "Não uso o suficiente", icon: HelpCircle },
-  { id: "missing-features", label: "Faltam funcionalidades que preciso", icon: Wrench },
-  { id: "technical", label: "Problemas técnicos", icon: AlertTriangle },
-  { id: "other", label: "Outro motivo", icon: MessageCircle },
+const cancelMotivos = [
+  { id: "caro", label: "Achei muito caro." },
+  { id: "nao-uso", label: "Não estou usando com frequência." },
+  { id: "funcionalidade", label: "Faltou alguma funcionalidade." },
+  { id: "dificil", label: "Achei difícil de usar." },
+  { id: "outro", label: "Outro motivo." },
 ];
 
 const resolutionCards: Record<string, { title: string; description: string; offer?: string; cta: string }> = {

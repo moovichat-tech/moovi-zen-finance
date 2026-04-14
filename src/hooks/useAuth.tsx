@@ -8,8 +8,10 @@ interface AuthContextType {
   token: string | null;
   plano: PlanTier;
   gatewayPagamento: string | null;
+  renovacaoAutomatica: boolean;
   login: (token: string, userId: string, telefone: string) => void;
   logout: () => void;
+  refreshPlano: () => void;
   isLoading: boolean;
 }
 

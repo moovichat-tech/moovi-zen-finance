@@ -105,12 +105,11 @@ const planWeights: Record<string, number> = { basico: 1, pro: 2, premium: 3 };
 
 const SubscriptionPage = () => {
   const { formatCurrency } = useI18n();
-  const { plano, telefone, gatewayPagamento } = useAuth();
+  const { plano, telefone, gatewayPagamento, renovacaoAutomatica, refreshPlano } = useAuth();
   const [cancelStep, setCancelStep] = useState(0);
   const [cancelMotivo, setCancelMotivo] = useState("");
   const [cancelDetalhes, setCancelDetalhes] = useState("");
   const [cancelLoading, setCancelLoading] = useState(false);
-  const [renovacaoCancelada, setRenovacaoCancelada] = useState(false);
   const [downgradeTarget, setDowngradeTarget] = useState<string | null>(null);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
@@ -176,7 +175,7 @@ const SubscriptionPage = () => {
       });
       if (!res.ok) throw new Error("Erro");
       toast.success("Renovação cancelada");
-      setRenovacaoCancelada(true);
+      refreshPlano();
       handleCancelClose();
     } catch {
       toast.error("Erro ao processar sua solicitação. Tente novamente.");
@@ -387,7 +386,7 @@ const SubscriptionPage = () => {
 
       {/* Cancel subscription */}
       <div className="pt-6 border-t border-border">
-        {renovacaoCancelada ? (
+        {!renovacaoAutomatica ? (
           <Button variant="outline" size="sm" className="text-xs text-muted-foreground" disabled>
             Renovação Cancelada
           </Button>

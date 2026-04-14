@@ -291,6 +291,9 @@ const SubscriptionPage = () => {
               let buttonVariant: "default" | "secondary" | "outline" = "default";
               let buttonText = "";
               let buttonDisabled = false;
+              const planKey = getPlanKey(plan.name);
+              const planoFuturoNorm = planoFuturo?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") || null;
+              const isDowngradeScheduled = !isCurrent && !isUpgrade && planoFuturoNorm === planKey;
 
               if (isCurrent) {
                 buttonVariant = "outline";
@@ -299,6 +302,10 @@ const SubscriptionPage = () => {
               } else if (isUpgrade) {
                 buttonVariant = "default";
                 buttonText = `Assinar ${plan.name.replace("Plano ", "")}`;
+              } else if (isDowngradeScheduled) {
+                buttonVariant = "outline";
+                buttonText = "Downgrade Agendado";
+                buttonDisabled = true;
               } else {
                 buttonVariant = "secondary";
                 buttonText = "Fazer Downgrade";
@@ -489,23 +496,47 @@ const SubscriptionPage = () => {
       <AlertDialog open={!!downgradeTarget} onOpenChange={(open) => { if (!open) setDowngradeTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Downgrade?</AlertDialogTitle>
+            <AlertDialogTitle>Agendar Downgrade</AlertDialogTitle>
             <AlertDialogDescription>
-              Seu plano atual será mantido até o final do período já pago. Após essa data, sua conta passará para o plano inferior e algumas funcionalidades serão desativadas.
+              Como sua assinatura é anual, seu plano atual continuará ativo até o fim do ciclo vigente. O downgrade para o plano {downgradeTarget?.replace("Plano ", "")} entrará em vigor apenas na sua próxima data de renovação. Deseja confirmar o agendamento?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={!!loadingPlan}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               disabled={!!loadingPlan}
-              onClick={() => {
-                if (downgradeTarget) handlePlanChange(downgradeTarget);
+              onClick={async () => {
+                if (!downgradeTarget) return;
+                const planoKey = getPlanKey(downgradeTarget).toUpperCase();
+                setLoadingPlan(getPlanKey(downgradeTarget));
+                try {
+                  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+                  const res = await fetch(
+                    `https://${projectId}.supabase.co/functions/v1/agendar-downgrade`,
+                    {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                      },
+                      body: JSON.stringify({ plano_futuro: planoKey }),
+                    }
+                  );
+                  if (!res.ok) throw new Error("Erro");
+                  toast.success("Downgrade agendado com sucesso para a próxima renovação!");
+                  refreshPlano();
+                  setDowngradeTarget(null);
+                } catch {
+                  toast.error("Erro ao processar sua solicitação. Tente novamente.");
+                } finally {
+                  setLoadingPlan(null);
+                }
               }}
             >
               {loadingPlan ? (
                 <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Processando...</>
               ) : (
-                "Confirmar Downgrade"
+                "Confirmar Agendamento"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -387,59 +387,39 @@ const SubscriptionPage = () => {
 
       {/* Cancel subscription */}
       <div className="pt-6 border-t border-border">
-        <Button variant="destructive" size="sm" className="text-xs" onClick={handleStartCancel}>
-          Cancelar assinatura
-        </Button>
+        {renovacaoCancelada ? (
+          <Button variant="outline" size="sm" className="text-xs text-muted-foreground" disabled>
+            Renovação Cancelada
+          </Button>
+        ) : (
+          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={handleStartCancel}>
+            Cancelar assinatura
+          </Button>
+        )}
       </div>
 
       {/* Cancellation Flow Dialog */}
-      <Dialog
-        open={cancelStep > 0}
-        onOpenChange={(open) => {
-          if (!open) handleCancelClose();
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
+      <Dialog open={cancelStep > 0} onOpenChange={(open) => { if (!open) handleCancelClose(); }}>
+        <DialogContent className="sm:max-w-lg">
           {cancelStep === 1 && (
             <>
               <DialogHeader>
-                <div className="flex items-center gap-2">
-                  <button onClick={handleBack} className="p-1 rounded-md hover:bg-secondary transition-colors">
-                    <ArrowLeft className="h-4 w-4 text-muted-foreground" />
-                  </button>
-                  <DialogTitle className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-warning" />
-                    Tem certeza que deseja cancelar?
-                  </DialogTitle>
-                </div>
+                <DialogTitle>Poxa, é uma pena ver você partir... 😢</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4 py-2">
-                <p className="text-sm text-muted-foreground">Ao cancelar, você perderá acesso a:</p>
-                <div className="space-y-2">
-                  {[
-                    "Lançamentos e controle financeiro ilimitado",
-                    "Relatórios avançados com exportação",
-                    "Assistente IA para lançamentos rápidos",
-                    "Sincronização entre dispositivos",
-                    "Suporte prioritário",
-                  ].map((benefit, i) => (
-                    <div key={i} className="flex items-center gap-2 text-sm">
-                      <X className="h-4 w-4 text-destructive" />
-                      <span>{benefit}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <DialogFooter className="flex-col gap-2 sm:flex-col">
-                <Button className="w-full gap-2" onClick={handleCancelClose}>
-                  <Heart className="h-4 w-4" /> Continuar usando o Moovi
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="w-full text-muted-foreground text-xs"
-                  onClick={() => setCancelStep(2)}
-                >
-                  Quero continuar o cancelamento
+              <p className="text-sm text-muted-foreground">
+                Para podermos melhorar a Moovi, conta pra gente: qual o motivo principal do cancelamento?
+              </p>
+              <RadioGroup value={cancelMotivo} onValueChange={setCancelMotivo} className="space-y-2 py-2">
+                {cancelMotivos.map((m) => (
+                  <div key={m.id} className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-secondary/50 transition-colors">
+                    <RadioGroupItem value={m.id} id={`motivo-${m.id}`} />
+                    <Label htmlFor={`motivo-${m.id}`} className="text-sm cursor-pointer flex-1">{m.label}</Label>
+                  </div>
+                ))}
+              </RadioGroup>
+              <DialogFooter>
+                <Button className="w-full" disabled={!cancelMotivo} onClick={() => setCancelStep(2)}>
+                  Continuar
                 </Button>
               </DialogFooter>
             </>
@@ -448,107 +428,52 @@ const SubscriptionPage = () => {
           {cancelStep === 2 && (
             <>
               <DialogHeader>
-                <div className="flex items-center gap-2">
-                  <button onClick={handleBack} className="p-1 rounded-md hover:bg-secondary transition-colors">
-                    <ArrowLeft className="h-4 w-4 text-muted-foreground" />
-                  </button>
-                  <DialogTitle>Por que você está saindo?</DialogTitle>
-                </div>
+                <DialogTitle>Poderia nos dar mais detalhes?</DialogTitle>
               </DialogHeader>
-              <div className="space-y-2 py-2">
-                <p className="text-sm text-muted-foreground mb-3">Seu feedback nos ajuda a melhorar:</p>
-                {cancelReasons.map((reason) => (
-                  <button
-                    key={reason.id}
-                    className="flex items-center gap-3 w-full p-3 rounded-lg border border-border cursor-pointer hover:bg-secondary/50 transition-colors text-left"
-                    onClick={() => handleReasonSelect(reason.id)}
-                  >
-                    <reason.icon className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <span className="text-sm">{reason.label}</span>
-                  </button>
-                ))}
-              </div>
-              <DialogFooter className="flex-col gap-2 sm:flex-col">
-                <Button className="w-full gap-2" onClick={handleCancelClose}>
-                  <Heart className="h-4 w-4" /> Mudei de ideia, vou continuar
+              <p className="text-sm text-muted-foreground">Sua opinião vai direto para o nosso time de desenvolvimento.</p>
+              <Textarea
+                placeholder="Opcional: conte mais sobre sua experiência..."
+                value={cancelDetalhes}
+                onChange={(e) => setCancelDetalhes(e.target.value)}
+                className="min-h-[100px]"
+              />
+              <DialogFooter className="flex-col gap-2 sm:flex-row">
+                <Button variant="outline" className="w-full sm:w-auto" onClick={() => setCancelStep(1)}>
+                  Voltar
+                </Button>
+                <Button className="w-full sm:w-auto" onClick={() => setCancelStep(3)}>
+                  Continuar
                 </Button>
               </DialogFooter>
             </>
           )}
 
-          {cancelStep === 3 && cancelReason && (
+          {cancelStep === 3 && (
             <>
               <DialogHeader>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setCancelStep(2)}
-                    className="p-1 rounded-md hover:bg-secondary transition-colors"
-                  >
-                    <ArrowLeft className="h-4 w-4 text-muted-foreground" />
-                  </button>
-                  <DialogTitle className="flex items-center gap-2">
-                    <Gift className="h-5 w-5 text-primary" />
-                    {resolutionCards[cancelReason]?.title}
-                  </DialogTitle>
-                </div>
+                <DialogTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                  Tem certeza que deseja cancelar a renovação?
+                </DialogTitle>
               </DialogHeader>
-              <div className="space-y-4 py-2">
-                <p className="text-sm text-muted-foreground">{resolutionCards[cancelReason]?.description}</p>
-                {resolutionCards[cancelReason]?.offer && (
-                  <Card className="p-5 border-primary bg-primary/5">
-                    <div className="text-center">
-                      <p className="text-xl font-bold text-primary">{resolutionCards[cancelReason].offer}</p>
-                      <p className="text-xs text-muted-foreground mt-1">Oferta exclusiva válida apenas agora 💜</p>
-                    </div>
-                  </Card>
-                )}
-              </div>
+              <p className="text-sm text-muted-foreground">
+                Seu plano continuará ativo até o fim do período já pago, mas você perderá seu preço atual em renovações futuras.
+              </p>
               <DialogFooter className="flex-col gap-2 sm:flex-col">
-                <Button className="w-full gap-2" onClick={handleAcceptOffer}>
-                  <Gift className="h-4 w-4" /> {resolutionCards[cancelReason]?.cta}
+                <Button className="w-full gap-2" onClick={handleCancelClose}>
+                  <Heart className="h-4 w-4" /> Manter meu plano
                 </Button>
                 <Button
                   variant="ghost"
-                  className="w-full text-muted-foreground text-xs"
-                  onClick={() => setCancelStep(4)}
+                  className="w-full text-destructive text-xs"
+                  disabled={cancelLoading}
+                  onClick={handleFinalCancel}
                 >
-                  Não, quero cancelar mesmo
-                </Button>
-              </DialogFooter>
-            </>
-          )}
-
-          {cancelStep === 4 && (
-            <>
-              <DialogHeader>
-                <div className="flex items-center gap-2">
-                  <button onClick={handleBack} className="p-1 rounded-md hover:bg-secondary transition-colors">
-                    <ArrowLeft className="h-4 w-4 text-muted-foreground" />
-                  </button>
-                  <DialogTitle className="flex items-center gap-2 text-destructive">
-                    <AlertTriangle className="h-5 w-5" />
-                    Confirmação final
-                  </DialogTitle>
-                </div>
-              </DialogHeader>
-              <div className="space-y-4 py-2">
-                <div className="rounded-lg bg-destructive/10 p-4">
-                  <p className="text-sm font-medium text-destructive">⚠️ Esta ação não pode ser desfeita</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Seus dados serão mantidos por 30 dias após o cancelamento. Depois disso, serão permanentemente
-                    excluídos.
-                  </p>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Você ainda terá acesso ao Moovi até o final do período atual (04/04/2026).
-                </p>
-              </div>
-              <DialogFooter className="flex-col gap-2 sm:flex-col">
-                <Button className="w-full gap-2" onClick={handleCancelClose}>
-                  <Heart className="h-4 w-4" /> Não, quero continuar usando
-                </Button>
-                <Button variant="ghost" className="w-full text-muted-foreground text-xs" onClick={handleFinalCancel}>
-                  Cancelar definitivamente minha assinatura
+                  {cancelLoading ? (
+                    <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Processando...</>
+                  ) : (
+                    "Sim, cancelar renovação"
+                  )}
                 </Button>
               </DialogFooter>
             </>

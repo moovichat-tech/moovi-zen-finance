@@ -26,6 +26,7 @@ const AuthContext = createContext<AuthContextType>({
   gatewayPagamento: null,
   renovacaoAutomatica: true,
   statusUsuario: 'Ativo',
+  planoFuturo: null,
   login: () => {},
   logout: () => {},
   refreshPlano: () => {},
@@ -40,6 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [gatewayPagamento, setGatewayPagamento] = useState<string | null>(null);
   const [renovacaoAutomatica, setRenovacaoAutomatica] = useState(true);
   const [statusUsuario, setStatusUsuario] = useState('Ativo');
+  const [planoFuturo, setPlanoFuturo] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchPlano = useCallback(async (authToken: string) => {

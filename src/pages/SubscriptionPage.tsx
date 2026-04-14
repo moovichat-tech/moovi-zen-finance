@@ -425,17 +425,22 @@ const SubscriptionPage = () => {
                 <DialogTitle>Poderia nos dar mais detalhes?</DialogTitle>
               </DialogHeader>
               <p className="text-sm text-muted-foreground">Sua opinião vai direto para o nosso time de desenvolvimento.</p>
-              <Textarea
-                placeholder="Opcional: conte mais sobre sua experiência..."
-                value={cancelDetalhes}
-                onChange={(e) => setCancelDetalhes(e.target.value)}
-                className="min-h-[100px]"
-              />
+              <div className="space-y-1">
+                <Textarea
+                  placeholder="Por favor, detalhe sua experiência (mínimo de 50 caracteres)..."
+                  value={cancelDetalhes}
+                  onChange={(e) => setCancelDetalhes(e.target.value)}
+                  className="min-h-[100px]"
+                />
+                <p className={`text-xs text-right ${cancelDetalhes.length >= 50 ? "text-success" : "text-destructive"}`}>
+                  {cancelDetalhes.length} / 50 caracteres
+                </p>
+              </div>
               <DialogFooter className="flex-col gap-2 sm:flex-row">
                 <Button variant="outline" className="w-full sm:w-auto" onClick={() => setCancelStep(1)}>
                   Voltar
                 </Button>
-                <Button className="w-full sm:w-auto" onClick={() => setCancelStep(3)}>
+                <Button className="w-full sm:w-auto" disabled={cancelDetalhes.length < 50} onClick={() => setCancelStep(3)}>
                   Continuar
                 </Button>
               </DialogFooter>

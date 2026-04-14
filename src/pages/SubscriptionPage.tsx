@@ -162,13 +162,19 @@ const SubscriptionPage = () => {
   const handleFinalCancel = async () => {
     setCancelLoading(true);
     try {
-      const tel = telefone?.replace(/\D/g, "") || "";
-      await supabase.from("feedbacks_cancelamento" as any).insert({
-        telefone: tel,
-        motivo_principal: cancelMotivo,
-        detalhes: cancelDetalhes || null,
+      const res = await fetch("https://n8n.fisherai.shop/webhook/cancelar-assinatura", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-moovi-token": "moovi-secreto-2026",
+        },
+        body: JSON.stringify({
+          telefone: telefone?.replace(/\D/g, "") || "",
+          motivo: cancelMotivo,
+          detalhes: cancelDetalhes || null,
+        }),
       });
-      await supabase.from("usuarios" as any).update({ renovacao_automatica: false }).eq("telefone", tel);
+      if (!res.ok) throw new Error("Erro");
       toast.success("Renovação cancelada");
       setRenovacaoCancelada(true);
       handleCancelClose();

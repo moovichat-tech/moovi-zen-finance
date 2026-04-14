@@ -113,7 +113,10 @@ const SubscriptionPage = () => {
   const { formatCurrency } = useI18n();
   const { plano, telefone, gatewayPagamento } = useAuth();
   const [cancelStep, setCancelStep] = useState(0);
-  const [cancelReason, setCancelReason] = useState("");
+  const [cancelMotivo, setCancelMotivo] = useState("");
+  const [cancelDetalhes, setCancelDetalhes] = useState("");
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [renovacaoCancelada, setRenovacaoCancelada] = useState(false);
   const [downgradeTarget, setDowngradeTarget] = useState<string | null>(null);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
@@ -158,28 +161,28 @@ const SubscriptionPage = () => {
   const handleStartCancel = () => setCancelStep(1);
   const handleCancelClose = () => {
     setCancelStep(0);
-    setCancelReason("");
+    setCancelMotivo("");
+    setCancelDetalhes("");
   };
 
-  const handleAcceptOffer = () => {
-    const resolution = resolutionCards[cancelReason];
-    toast.success(`🎉 ${resolution?.offer || "Desconto"} aplicado! Obrigado por ficar conosco.`);
-    handleCancelClose();
-  };
-
-  const handleFinalCancel = () => {
-    toast.info("Sua assinatura foi cancelada. Você ainda terá acesso até o final do período.");
-    handleCancelClose();
-  };
-
-  const handleBack = () => {
-    if (cancelStep <= 1) handleCancelClose();
-    else setCancelStep(cancelStep - 1);
-  };
-
-  const handleReasonSelect = (reasonId: string) => {
-    setCancelReason(reasonId);
-    setCancelStep(3);
+  const handleFinalCancel = async () => {
+    setCancelLoading(true);
+    try {
+      const tel = telefone?.replace(/\D/g, "") || "";
+      await supabase.from("feedbacks_cancelamento" as any).insert({
+        telefone: tel,
+        motivo_principal: cancelMotivo,
+        detalhes: cancelDetalhes || null,
+      });
+      await supabase.from("usuarios" as any).update({ renovacao_automatica: false }).eq("telefone", tel);
+      toast.success("Renovação cancelada");
+      setRenovacaoCancelada(true);
+      handleCancelClose();
+    } catch {
+      toast.error("Erro ao processar sua solicitação. Tente novamente.");
+    } finally {
+      setCancelLoading(false);
+    }
   };
 
   const isStripeMigration = gatewayPagamento === 'stripe';

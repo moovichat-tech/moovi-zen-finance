@@ -41,17 +41,17 @@ Deno.serve(async (req) => {
       });
     }
 
-    const rows = await sql`SELECT COALESCE(plano, 'basico') as plano, gateway_pagamento, renovacao_automatica FROM usuarios WHERE telefone = ${telefone} LIMIT 1`;
+    const rows = await sql`SELECT COALESCE(plano, 'basico') as plano, gateway_pagamento, renovacao_automatica, COALESCE(status, 'Ativo') as status FROM usuarios WHERE telefone = ${telefone} LIMIT 1`;
 
     if (rows.length === 0) {
-      return new Response(JSON.stringify({ plano: "basico", gateway_pagamento: null, renovacao_automatica: true }), {
+      return new Response(JSON.stringify({ plano: "basico", gateway_pagamento: null, renovacao_automatica: true, status: "Ativo" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const planoNormalizado = String(rows[0].plano).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-    return new Response(JSON.stringify({ plano: planoNormalizado, gateway_pagamento: rows[0].gateway_pagamento || null, renovacao_automatica: rows[0].renovacao_automatica !== false }), {
+    return new Response(JSON.stringify({ plano: planoNormalizado, gateway_pagamento: rows[0].gateway_pagamento || null, renovacao_automatica: rows[0].renovacao_automatica !== false, status: rows[0].status || "Ativo" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

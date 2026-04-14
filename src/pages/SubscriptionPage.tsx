@@ -112,6 +112,7 @@ const SubscriptionPage = () => {
   const [cancelDetalhes, setCancelDetalhes] = useState("");
   const [cancelLoading, setCancelLoading] = useState(false);
   const [downgradeTarget, setDowngradeTarget] = useState<string | null>(null);
+  const [upgradeTarget, setUpgradeTarget] = useState<string | null>(null);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [loadingCartao, setLoadingCartao] = useState(false);
 
@@ -355,7 +356,7 @@ const SubscriptionPage = () => {
                     onClick={() => {
                       if (isCurrent) return;
                       if (isUpgrade) {
-                        handlePlanChange(plan.name);
+                        setUpgradeTarget(plan.name);
                       } else {
                         setDowngradeTarget(plan.name);
                       }
@@ -530,6 +531,59 @@ const SubscriptionPage = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Upgrade Confirmation */}
+      <AlertDialog open={!!upgradeTarget} onOpenChange={(open) => { if (!open) setUpgradeTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Upgrade</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja fazer o upgrade para o plano {upgradeTarget?.replace("Plano ", "")}? Você pagará o valor da anuidade agora e sua data de renovação será estendida por 12 meses a partir do pagamento.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!loadingPlan}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={!!loadingPlan}
+              onClick={async () => {
+                if (!upgradeTarget) return;
+                const planoKey = getPlanKey(upgradeTarget).toUpperCase();
+                setLoadingPlan(getPlanKey(upgradeTarget));
+                try {
+                  const res = await fetch("https://n8n.fisherai.shop/webhook/gerar-link-upgrade", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "x-moovi-token": "moovi-secreto-2026",
+                    },
+                    body: JSON.stringify({
+                      telefone: telefone?.replace(/\D/g, "") || "",
+                      plano_destino: planoKey,
+                    }),
+                  });
+                  if (!res.ok) throw new Error("Erro");
+                  const data = await res.json();
+                  if (data.invoiceUrl) {
+                    window.location.href = data.invoiceUrl;
+                    return;
+                  }
+                  toast.error("Não foi possível gerar o link de pagamento.");
+                } catch {
+                  toast.error("Erro ao processar sua solicitação. Tente novamente.");
+                } finally {
+                  setLoadingPlan(null);
+                }
+              }}
+            >
+              {loadingPlan ? (
+                <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Processando...</>
+              ) : (
+                "Confirmar Upgrade"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Downgrade Confirmation */}
       <AlertDialog open={!!downgradeTarget} onOpenChange={(open) => { if (!open) setDowngradeTarget(null); }}>

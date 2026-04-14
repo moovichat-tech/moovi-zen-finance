@@ -31,6 +31,7 @@ import {
   AlertTriangle,
   Heart,
   Gift,
+  CreditCard,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -112,6 +113,7 @@ const SubscriptionPage = () => {
   const [cancelLoading, setCancelLoading] = useState(false);
   const [downgradeTarget, setDowngradeTarget] = useState<string | null>(null);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [loadingCartao, setLoadingCartao] = useState(false);
 
   const getPlanKey = (name: string) =>
     name.toLowerCase().includes("premium") ? "premium" : name.toLowerCase().includes("pro") ? "pro" : "basico";
@@ -391,8 +393,45 @@ const SubscriptionPage = () => {
         </div>
       </div>
 
-      {/* Cancel subscription */}
-      <div className="pt-6 border-t border-border">
+      {/* Update card & Cancel subscription */}
+      <div className="pt-6 border-t border-border flex flex-wrap items-center gap-3">
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-xs gap-1.5"
+          disabled={loadingCartao}
+          onClick={async () => {
+            setLoadingCartao(true);
+            try {
+              const res = await fetch("https://n8n.fisherai.shop/webhook/gerar-link-cartao", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "x-moovi-token": "moovi-secreto-2026",
+                },
+                body: JSON.stringify({ telefone: telefone?.replace(/\D/g, "") || "" }),
+              });
+              if (!res.ok) throw new Error("Erro");
+              const data = await res.json();
+              if (data.invoiceUrl) {
+                window.open(data.invoiceUrl, "_blank");
+              } else {
+                toast.error("Não foi possível gerar o link. Tente novamente.");
+              }
+            } catch {
+              toast.error("Erro ao processar sua solicitação. Tente novamente.");
+            } finally {
+              setLoadingCartao(false);
+            }
+          }}
+        >
+          {loadingCartao ? (
+            <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Gerando link...</>
+          ) : (
+            <><CreditCard className="h-3.5 w-3.5" /> Atualizar Cartão de Crédito</>
+          )}
+        </Button>
+
         {!renovacaoAutomatica ? (
           <Button variant="outline" size="sm" className="text-xs text-muted-foreground" disabled>
             Renovação Cancelada

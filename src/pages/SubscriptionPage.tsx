@@ -31,12 +31,6 @@ import {
   AlertTriangle,
   Heart,
   Gift,
-  X,
-  ArrowLeft,
-  MessageCircle,
-  HelpCircle,
-  DollarSign,
-  Wrench,
 } from "lucide-react";
 import { toast } from "sonner";
 

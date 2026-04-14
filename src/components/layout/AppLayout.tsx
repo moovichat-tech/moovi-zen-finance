@@ -4,7 +4,9 @@ import { AppSidebar } from './AppSidebar';
 import { TopBar } from './TopBar';
 import { MobileHeader } from './MobileHeader';
 import { MobileBottomNav } from './MobileBottomNav';
+import { BlockedScreen } from '@/components/BlockedScreen';
 import { useI18n } from '@/i18n/context';
+import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from 'react-router-dom';
 
 const routeTitles: Record<string, string> = {
@@ -25,6 +27,7 @@ const routeTitles: Record<string, string> = {
 
 export const AppLayout = () => {
   const { t } = useI18n();
+  const { statusUsuario } = useAuth();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(() => {
     return localStorage.getItem('moovi-sidebar-collapsed') === 'true';
@@ -53,14 +56,17 @@ export const AppLayout = () => {
     });
   };
 
+  const isBlocked = statusUsuario === 'Inativo';
+  const mainContent = isBlocked ? <BlockedScreen /> : <Outlet />;
+
   if (!isDesktop) {
     return (
       <div className="min-h-screen bg-background">
         <MobileHeader />
         <main className="pt-14 pb-20 px-3 sm:px-4">
-          <Outlet />
+          {mainContent}
         </main>
-        <MobileBottomNav />
+        {!isBlocked && <MobileBottomNav />}
       </div>
     );
   }
@@ -73,7 +79,7 @@ export const AppLayout = () => {
       <AppSidebar collapsed={collapsed} onToggle={toggleCollapsed} mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} isDesktop={isDesktop} />
       <div className="transition-all duration-300" style={{ paddingLeft: collapsed ? 60 : 208 }}>
         <TopBar title={title} onMenuClick={() => setMobileOpen(true)} />
-        <main className="p-3 sm:p-4 md:p-6"><Outlet /></main>
+        <main className="p-3 sm:p-4 md:p-6">{mainContent}</main>
       </div>
     </div>
   );

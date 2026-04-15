@@ -81,6 +81,7 @@ const ReportsPage = () => {
   const [filterAccount, setFilterAccount] = useState('all');
   const [detailSort, setDetailSort] = useState<DetailSortKey>('data_transacao');
   const [detailSortAsc, setDetailSortAsc] = useState(false);
+  const isMobile = useIsMobile();
 
   const toggleDetailSort = (key: DetailSortKey) => {
     if (detailSort === key) setDetailSortAsc(!detailSortAsc);

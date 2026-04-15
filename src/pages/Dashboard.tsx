@@ -347,18 +347,22 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Card className="p-3 sm:p-5 card-hover">
               <h3 className="mb-4 text-sm font-semibold">{t.dashboard.spendingByCategory}</h3>
-              {d.gastosCategoria.length > 0 ? (
+              {(() => {
+                const chartData = groupSmallCategories(d.gastosCategoria);
+                return chartData.length > 0 ? (
                 <>
-                  <ResponsiveContainer width="100%" height={180}>
+                  <ResponsiveContainer width="100%" height={isMobile ? 220 : 180}>
                     <PieChart>
-                      <Pie data={d.gastosCategoria} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
-                        {d.gastosCategoria.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                      <Pie data={chartData} cx="50%" cy="50%" innerRadius={isMobile ? 40 : 50} outerRadius={isMobile ? 65 : 75} paddingAngle={3} dataKey="value" label={isMobile ? false : undefined}>
+                        {chartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                       </Pie>
                       <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--foreground))', fontSize: '12px', fontFamily: 'var(--font-sans)' }} itemStyle={{ color: 'hsl(var(--foreground))' }} labelStyle={{ color: 'hsl(var(--foreground))' }} formatter={(value: number) => formatCurrency(value)} />
+                      {isMobile && <Legend verticalAlign="bottom" iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} formatter={(value: string) => <span style={{ color: 'hsl(var(--foreground))' }}>{value}</span>} />}
                     </PieChart>
                   </ResponsiveContainer>
+                  {!isMobile && (
                   <div className="mt-2 space-y-1.5">
-                    {d.gastosCategoria.slice(0, 4).map((cat, i) => (
+                    {chartData.slice(0, 4).map((cat, i) => (
                       <div key={i} className="flex items-center justify-between text-xs">
                         <div className="flex items-center gap-2">
                           <div className="h-2 w-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
@@ -368,6 +372,7 @@ const Dashboard = () => {
                       </div>
                     ))}
                   </div>
+                  )}
                 </>
               ) : (
                 <p className="text-xs text-muted-foreground text-center py-8">Nenhum gasto neste período</p>

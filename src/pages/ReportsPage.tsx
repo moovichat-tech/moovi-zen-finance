@@ -375,18 +375,22 @@ const ReportsPage = () => {
                 </Card>
                 <Card className="p-3 sm:p-5">
                   <h3 className="mb-4 text-sm font-semibold">Despesas por Categoria</h3>
-                  {porCategoria.length > 0 ? (
+                  {(() => {
+                    const chartData = groupSmallCategories(porCategoria);
+                    return chartData.length > 0 ? (
                     <>
-                      <ResponsiveContainer width="100%" height={180}>
+                      <ResponsiveContainer width="100%" height={isMobile ? 220 : 180}>
                         <PieChart>
-                          <Pie data={porCategoria} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
-                            {porCategoria.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                          <Pie data={chartData} cx="50%" cy="50%" innerRadius={isMobile ? 35 : 45} outerRadius={isMobile ? 60 : 70} paddingAngle={3} dataKey="value" label={isMobile ? false : undefined}>
+                            {chartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                           </Pie>
                           <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} formatter={(value: number) => formatCurrency(value)} />
+                          {isMobile && <Legend verticalAlign="bottom" iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} formatter={(value: string) => <span style={{ color: 'hsl(var(--foreground))' }}>{value}</span>} />}
                         </PieChart>
                       </ResponsiveContainer>
+                      {!isMobile && (
                       <div className="mt-2 space-y-1.5">
-                        {porCategoria.map((cat, i) => (
+                        {chartData.map((cat, i) => (
                           <div key={i} className="flex items-center justify-between text-xs">
                             <div className="flex items-center gap-2">
                               <div className="h-2 w-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
@@ -396,6 +400,7 @@ const ReportsPage = () => {
                           </div>
                         ))}
                       </div>
+                      )}
                     </>
                   ) : (
                     <p className="text-sm text-muted-foreground text-center py-12">Sem despesas</p>

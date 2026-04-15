@@ -10,11 +10,28 @@ import { DatePicker } from '@/components/DatePicker';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { FileText, FileSpreadsheet, Download, ArrowUpDown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const COLORS = ['hsl(145, 63%, 32%)', 'hsl(152, 60%, 42%)', 'hsl(38, 92%, 50%)', 'hsl(170, 50%, 40%)', 'hsl(200, 70%, 50%)', 'hsl(120, 40%, 55%)'];
+
+function groupSmallCategories(data: { name: string; value: number }[], threshold = 0.05) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+  if (total === 0 || data.length <= 6) return data;
+  const main: typeof data = [];
+  let othersValue = 0;
+  for (const d of data) {
+    if (d.value / total < threshold && main.length >= 6) {
+      othersValue += d.value;
+    } else {
+      main.push(d);
+    }
+  }
+  if (othersValue > 0) main.push({ name: 'Outros', value: othersValue });
+  return main;
+}
 
 type DetailSortKey = 'descricao' | 'categoria' | 'data_transacao' | 'valor' | 'tipo';
 
@@ -64,6 +81,7 @@ const ReportsPage = () => {
   const [filterAccount, setFilterAccount] = useState('all');
   const [detailSort, setDetailSort] = useState<DetailSortKey>('data_transacao');
   const [detailSortAsc, setDetailSortAsc] = useState(false);
+  const isMobile = useIsMobile();
 
   const toggleDetailSort = (key: DetailSortKey) => {
     if (detailSort === key) setDetailSortAsc(!detailSortAsc);
@@ -357,18 +375,22 @@ const ReportsPage = () => {
                 </Card>
                 <Card className="p-3 sm:p-5">
                   <h3 className="mb-4 text-sm font-semibold">Despesas por Categoria</h3>
-                  {porCategoria.length > 0 ? (
+                  {(() => {
+                    const chartData = groupSmallCategories(porCategoria);
+                    return chartData.length > 0 ? (
                     <>
-                      <ResponsiveContainer width="100%" height={180}>
+                      <ResponsiveContainer width="100%" height={isMobile ? 220 : 180}>
                         <PieChart>
-                          <Pie data={porCategoria} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
-                            {porCategoria.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                          <Pie data={chartData} cx="50%" cy="50%" innerRadius={isMobile ? 35 : 45} outerRadius={isMobile ? 60 : 70} paddingAngle={3} dataKey="value" label={isMobile ? false : undefined}>
+                            {chartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                           </Pie>
                           <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} formatter={(value: number) => formatCurrency(value)} />
+                          {isMobile && <Legend verticalAlign="bottom" iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} formatter={(value: string) => <span style={{ color: 'hsl(var(--foreground))' }}>{value}</span>} />}
                         </PieChart>
                       </ResponsiveContainer>
+                      {!isMobile && (
                       <div className="mt-2 space-y-1.5">
-                        {porCategoria.map((cat, i) => (
+                        {chartData.map((cat, i) => (
                           <div key={i} className="flex items-center justify-between text-xs">
                             <div className="flex items-center gap-2">
                               <div className="h-2 w-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
@@ -378,10 +400,12 @@ const ReportsPage = () => {
                           </div>
                         ))}
                       </div>
+                      )}
                     </>
                   ) : (
                     <p className="text-sm text-muted-foreground text-center py-12">Sem despesas</p>
-                  )}
+                  );
+                  })()}
                 </Card>
               </div>
             </TabsContent>

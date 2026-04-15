@@ -15,11 +15,28 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Rectangle,
+  PieChart, Pie, Cell, Rectangle, Legend,
 } from 'recharts';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const COLORS = ['hsl(145, 63%, 32%)', 'hsl(152, 60%, 42%)', 'hsl(38, 92%, 50%)', 'hsl(170, 50%, 40%)', 'hsl(200, 70%, 50%)', 'hsl(120, 40%, 55%)'];
+
+function groupSmallCategories(data: { name: string; value: number }[], threshold = 0.05) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+  if (total === 0 || data.length <= 6) return data;
+  const main: typeof data = [];
+  let othersValue = 0;
+  for (const d of data) {
+    if (d.value / total < threshold && main.length >= 6) {
+      othersValue += d.value;
+    } else {
+      main.push(d);
+    }
+  }
+  if (othersValue > 0) main.push({ name: 'Outros', value: othersValue });
+  return main;
+}
 
 interface TransacaoDetalhe {
   descricao: string;

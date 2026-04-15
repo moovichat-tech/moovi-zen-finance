@@ -376,7 +376,8 @@ const Dashboard = () => {
                 </>
               ) : (
                 <p className="text-xs text-muted-foreground text-center py-8">Nenhum gasto neste período</p>
-              )}
+              );
+              })()}
             </Card>
 
             <Card className="p-3 sm:p-5 card-hover">

@@ -404,7 +404,8 @@ const ReportsPage = () => {
                     </>
                   ) : (
                     <p className="text-sm text-muted-foreground text-center py-12">Sem despesas</p>
-                  )}
+                  );
+                  })()}
                 </Card>
               </div>
             </TabsContent>

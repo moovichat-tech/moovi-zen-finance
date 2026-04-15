@@ -10,11 +10,28 @@ import { DatePicker } from '@/components/DatePicker';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { FileText, FileSpreadsheet, Download, ArrowUpDown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const COLORS = ['hsl(145, 63%, 32%)', 'hsl(152, 60%, 42%)', 'hsl(38, 92%, 50%)', 'hsl(170, 50%, 40%)', 'hsl(200, 70%, 50%)', 'hsl(120, 40%, 55%)'];
+
+function groupSmallCategories(data: { name: string; value: number }[], threshold = 0.05) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+  if (total === 0 || data.length <= 6) return data;
+  const main: typeof data = [];
+  let othersValue = 0;
+  for (const d of data) {
+    if (d.value / total < threshold && main.length >= 6) {
+      othersValue += d.value;
+    } else {
+      main.push(d);
+    }
+  }
+  if (othersValue > 0) main.push({ name: 'Outros', value: othersValue });
+  return main;
+}
 
 type DetailSortKey = 'descricao' | 'categoria' | 'data_transacao' | 'valor' | 'tipo';
 

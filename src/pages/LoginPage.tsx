@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Lock, KeyRound, ArrowLeft, Loader2, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { CountryCodeSelector, countries, applyMask, Country } from '@/components/CountryCodeSelector';
+import mooviLogo from '@/assets/moovi-logo-transparent.png';
 
 type Step = 'phone' | 'password' | 'otp' | 'create-password';
 

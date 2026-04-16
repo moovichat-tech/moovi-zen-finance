@@ -328,6 +328,7 @@ const Dashboard = () => {
               <BarChart
                 data={d.evolucaoTempo}
                 barGap={2}
+                margin={{ top: 10, right: 10, left: -10, bottom: isMobile ? 10 : 50 }}
                 onMouseMove={(state: any) => { if (state?.activeTooltipIndex !== undefined) setActiveIndex(state.activeTooltipIndex); }}
                 onMouseLeave={() => setActiveIndex(null)}
               >

@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { LayoutDashboard, TrendingUp, TrendingDown, CreditCard, Landmark, Target, BarChart3, Settings, LogOut, Crown, Tag, PanelLeftClose, PanelLeft, ClipboardList, X, CalendarDays, Building2, LineChart, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import mooviLogo from '@/assets/moovi-logo.jpeg';
+import mooviLogo from '@/assets/moovi-logo-transparent.png';
 
 const navItems = [
   { key: 'dashboard', path: '/', icon: LayoutDashboard },
@@ -74,7 +74,7 @@ export const AppSidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose, isD
     >
       <div className={`flex h-14 items-center justify-between ${!showLabels ? 'px-2' : 'px-4'} gap-2.5`}>
         <div className="flex items-center gap-2.5">
-          <img src={mooviLogo} alt="Moovi" className="h-8 w-8 rounded-lg object-cover shrink-0" />
+          <img src={mooviLogo} alt="Moovi" className="h-8 w-8 object-contain shrink-0" />
           {showLabels && <span className="text-base font-bold tracking-tight text-sidebar-accent-foreground">Moovi</span>}
         </div>
         <button onClick={onMobileClose} className="lg:hidden text-sidebar-foreground"><X className="h-5 w-5" /></button>

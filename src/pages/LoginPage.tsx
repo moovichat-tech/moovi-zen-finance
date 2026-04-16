@@ -163,8 +163,8 @@ const LoginPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md shadow-xl border-0">
         <CardHeader className="text-center space-y-2 pb-4">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-2">
-            <span className="text-2xl font-bold text-primary">M</span>
+          <div className="mx-auto w-20 h-20 flex items-center justify-center mb-2">
+            <img src={mooviLogo} alt="Moovi" className="w-full h-full object-contain" />
           </div>
           <CardTitle className="text-2xl font-bold">Moovi</CardTitle>
           <CardDescription className="text-muted-foreground">

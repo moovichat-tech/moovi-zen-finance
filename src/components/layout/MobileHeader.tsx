@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import mooviLogo from '@/assets/moovi-logo.jpeg';
+import mooviLogo from '@/assets/moovi-logo-transparent.png';
 
 export const MobileHeader = () => {
   const { currency, setCurrency } = useI18n();
@@ -19,7 +19,7 @@ export const MobileHeader = () => {
   return (
     <header className="fixed top-0 left-0 right-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background/90 backdrop-blur-xl px-4">
       <div className="flex items-center gap-2.5">
-        <img src={mooviLogo} alt="Moovi" className="h-8 w-8 rounded-lg object-cover" />
+        <img src={mooviLogo} alt="Moovi" className="h-8 w-8 object-contain" />
         <span className="text-base font-bold tracking-tight text-foreground">Moovi</span>
       </div>
 

@@ -28,8 +28,10 @@ interface AppSidebarProps { collapsed: boolean; onToggle: () => void; mobileOpen
 export const AppSidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose, isDesktop }: AppSidebarProps) => {
   const { t, locale } = useI18n();
   const { logout } = useAuth();
+  const { theme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
+  const mooviLogo = theme === 'dark' ? mooviLogoDark : mooviLogoLight;
 
   const navLabels: Record<string, string> = {
     dashboard: t.nav.dashboard, income: t.nav.income, expenses: t.nav.expenses,

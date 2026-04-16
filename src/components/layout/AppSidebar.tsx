@@ -3,7 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { LayoutDashboard, TrendingUp, TrendingDown, CreditCard, Landmark, Target, BarChart3, Settings, LogOut, Crown, Tag, PanelLeftClose, PanelLeft, ClipboardList, X, CalendarDays, Building2, LineChart, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import mooviLogo from '@/assets/moovi-logo-transparent.png';
+import mooviLogoLight from '@/assets/moovi-logo-light.png';
+import mooviLogoDark from '@/assets/moovi-logo-dark.png';
+import { useTheme } from '@/hooks/use-theme';
 
 const navItems = [
   { key: 'dashboard', path: '/', icon: LayoutDashboard },

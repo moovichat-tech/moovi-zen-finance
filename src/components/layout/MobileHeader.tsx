@@ -10,7 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import mooviLogo from '@/assets/moovi-logo-transparent.png';
+import mooviLogoLight from '@/assets/moovi-logo-light.png';
+import mooviLogoDark from '@/assets/moovi-logo-dark.png';
 
 export const MobileHeader = () => {
   const { currency, setCurrency } = useI18n();

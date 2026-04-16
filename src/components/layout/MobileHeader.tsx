@@ -10,11 +10,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import mooviLogo from '@/assets/moovi-logo-transparent.png';
+import mooviLogoLight from '@/assets/moovi-logo-light.png';
+import mooviLogoDark from '@/assets/moovi-logo-dark.png';
 
 export const MobileHeader = () => {
   const { currency, setCurrency } = useI18n();
   const { theme, setTheme } = useTheme();
+  const mooviLogo = theme === 'dark' ? mooviLogoDark : mooviLogoLight;
 
   return (
     <header className="fixed top-0 left-0 right-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background/90 backdrop-blur-xl px-4">

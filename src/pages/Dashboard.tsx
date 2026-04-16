@@ -82,24 +82,30 @@ function fmt(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-const CustomXAxisTick = ({ x, y, payload, hoveredTick, setHoveredTick }: any) => {
+const truncateLabel = (label: string, max = 10) =>
+  label && label.length > max ? label.slice(0, max) + '…' : label;
+
+const CustomXAxisTick = ({ x, y, payload, hoveredTick, setHoveredTick, isMobile: mobile }: any) => {
+  if (mobile) return null;
   const isHovered = hoveredTick === payload.value;
   const isOtherHovered = hoveredTick !== null && hoveredTick !== payload.value;
 
   return (
     <text
       x={x}
-      y={y + 15}
-      textAnchor="middle"
-      fontSize={isHovered ? 14 : isOtherHovered ? 10 : 11}
+      y={y}
+      dy={10}
+      textAnchor="end"
+      fontSize={isHovered ? 12 : isOtherHovered ? 10 : 11}
       fontWeight={isHovered ? 'bold' : 'normal'}
       fill={isHovered ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))'}
       opacity={isOtherHovered ? 0.4 : 1}
+      transform={`rotate(-45, ${x}, ${y})`}
       style={{ transition: 'all 0.2s ease', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
       onMouseEnter={() => setHoveredTick(payload.value)}
       onMouseLeave={() => setHoveredTick(null)}
     >
-      {payload.value}
+      {truncateLabel(payload.value)}
     </text>
   );
 };
@@ -322,11 +328,12 @@ const Dashboard = () => {
               <BarChart
                 data={d.evolucaoTempo}
                 barGap={2}
+                margin={{ top: 10, right: 10, left: -10, bottom: isMobile ? 10 : 50 }}
                 onMouseMove={(state: any) => { if (state?.activeTooltipIndex !== undefined) setActiveIndex(state.activeTooltipIndex); }}
                 onMouseLeave={() => setActiveIndex(null)}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border/30" strokeOpacity={0.3} />
-                <XAxis dataKey="label" tick={{ fontSize: 11, fontFamily: 'var(--font-sans)' }} stroke="currentColor" className="text-muted-foreground" />
+                <XAxis dataKey="label" tick={isMobile ? false : { fontSize: 11, fontFamily: 'var(--font-sans)' }} stroke="currentColor" className="text-muted-foreground" tickFormatter={(v: string) => truncateLabel(v)} angle={-45} textAnchor="end" height={isMobile ? 20 : 60} interval={0} />
                 <YAxis tick={{ fontSize: 11, fontFamily: 'var(--font-sans)' }} stroke="currentColor" className="text-muted-foreground" width={60} />
                 <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--foreground))', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '12px', fontFamily: 'var(--font-sans)' }} itemStyle={{ color: 'hsl(var(--foreground))' }} labelStyle={{ color: 'hsl(var(--foreground))' }} formatter={(value: number) => formatCurrency(value)} />
                 <Bar dataKey="receitas" fill="#10b981" radius={[4, 4, 0, 0]} name={t.dashboard.monthIncome} activeBar={<Rectangle stroke="hsl(var(--foreground))" strokeWidth={2} strokeOpacity={0.8} />}>
@@ -385,9 +392,9 @@ const Dashboard = () => {
               {d.comparacaoMensal.length > 0 ? (
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={d.comparacaoMensal} barGap={4} margin={{ top: 10, right: 10, left: -10, bottom: 5 }}>
+                    <BarChart data={d.comparacaoMensal} barGap={4} margin={{ top: 10, right: 10, left: -10, bottom: isMobile ? 10 : 60 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border/30" strokeOpacity={0.3} />
-                      <XAxis dataKey="category" tick={<CustomXAxisTick hoveredTick={hoveredTick} setHoveredTick={setHoveredTick} />} tickLine={false} axisLine={false} interval={0} />
+                      <XAxis dataKey="category" tick={<CustomXAxisTick hoveredTick={hoveredTick} setHoveredTick={setHoveredTick} isMobile={isMobile} />} tickLine={false} axisLine={false} interval={0} height={isMobile ? 20 : 70} />
                       <YAxis tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))', fontFamily: 'var(--font-sans)' }} tickMargin={10} tickLine={false} axisLine={false} width={60} />
                       <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--foreground))', fontSize: '12px', fontFamily: 'var(--font-sans)' }} itemStyle={{ color: 'hsl(var(--foreground))' }} labelStyle={{ color: 'hsl(var(--foreground))' }} formatter={(value: number) => formatCurrency(value)} />
                       <Bar dataKey="previous" fill="hsl(var(--muted-foreground) / 0.3)" radius={[4, 4, 0, 0]} barSize={20} name={t.dashboard.comparison + ' (anterior)'} />

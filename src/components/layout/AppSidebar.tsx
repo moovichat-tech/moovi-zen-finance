@@ -31,7 +31,7 @@ export const AppSidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose, isD
   const { theme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const mooviLogo = theme === 'dark' ? mooviLogoDark : mooviLogoLight;
+  
 
   const navLabels: Record<string, string> = {
     dashboard: t.nav.dashboard, income: t.nav.income, expenses: t.nav.expenses,
@@ -78,7 +78,10 @@ export const AppSidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose, isD
     >
       <div className={`flex h-14 items-center justify-between ${!showLabels ? 'px-2' : 'px-4'} gap-2.5`}>
         <div className="flex items-center gap-2.5">
-          <img src={mooviLogo} alt="Moovi" className="h-8 w-8 object-contain shrink-0" />
+          <div className="relative h-8 w-8 shrink-0">
+            <img src={mooviLogoLight} alt="Moovi" className={`absolute inset-0 h-8 w-8 object-contain transition-opacity duration-200 ${theme === 'dark' ? 'opacity-0' : 'opacity-100'}`} />
+            <img src={mooviLogoDark} alt="Moovi" className={`absolute inset-0 h-8 w-8 object-contain transition-opacity duration-200 ${theme === 'dark' ? 'opacity-100' : 'opacity-0'}`} />
+          </div>
           {showLabels && <span className="text-base font-bold tracking-tight text-sidebar-accent-foreground">Moovi</span>}
         </div>
         <button onClick={onMobileClose} className="lg:hidden text-sidebar-foreground"><X className="h-5 w-5" /></button>

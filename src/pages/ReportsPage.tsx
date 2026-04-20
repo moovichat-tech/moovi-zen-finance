@@ -151,77 +151,165 @@ const ReportsPage = () => {
     { value: '10', label: 'Outubro' }, { value: '11', label: 'Novembro' }, { value: '12', label: 'Dezembro' },
   ];
 
-  // ---------- Export functions ----------
+  // ---------- Smart export functions ----------
   const tipoLabel = (t: string) => {
     const lower = (t || '').toLowerCase();
     return lower === 'receita' || lower === 'income' ? 'Receita' : 'Despesa';
   };
 
+  const tabLabels: Record<typeof activeTab, string> = {
+    overview: 'Visão Geral',
+    category: 'Por Categoria',
+    account: 'Por Conta',
+    detail: 'Detalhado',
+  };
+
+  const periodLabel = useMemo(() => {
+    if (period === 'month') return `${months.find(m => m.value === selectedMonth)?.label || ''}/${selectedYear}`;
+    if (period === 'year') return selectedYear;
+    return `${customStart} a ${customEnd}`;
+  }, [period, selectedMonth, selectedYear, customStart, customEnd]);
+
+  // Build dataset based on active tab — respects all global filters (data is already filtered by API)
+  const buildExportDataset = (): { headers: string[]; rows: (string | number)[][]; numericCols: number[] } => {
+    if (activeTab === 'overview') {
+      const headers = ['Data', 'Receitas (R$)', 'Despesas (R$)', 'Resultado (R$)'];
+      const rows: (string | number)[][] = visaoGeral.map(v => [
+        v.month,
+        Number(v.income.toFixed(2)),
+        Number(v.expense.toFixed(2)),
+        Number((v.income - v.expense).toFixed(2)),
+      ]);
+      rows.push([
+        'TOTAL',
+        Number(resumo.totalReceitas.toFixed(2)),
+        Number(resumo.totalDespesas.toFixed(2)),
+        Number(resumo.resultado.toFixed(2)),
+      ]);
+      return { headers, rows, numericCols: [1, 2, 3] };
+    }
+
+    if (activeTab === 'category') {
+      const headers = ['Categoria', 'Tipo', 'Valor Total (R$)', 'Porcentagem (%)'];
+      const totalDesp = porCategoria.reduce((s, c) => s + c.value, 0);
+      const rows: (string | number)[][] = porCategoria.map(c => [
+        c.name,
+        'Despesa',
+        Number(c.value.toFixed(2)),
+        totalDesp > 0 ? Number(((c.value / totalDesp) * 100).toFixed(2)) : 0,
+      ]);
+      return { headers, rows, numericCols: [2, 3] };
+    }
+
+    if (activeTab === 'account') {
+      const headers = ['Conta', 'Total Receitas (R$)', 'Total Despesas (R$)', 'Resultado (R$)'];
+      const rows: (string | number)[][] = porConta.map(a => [
+        a.name,
+        Number(a.income.toFixed(2)),
+        Number(a.expense.toFixed(2)),
+        Number((a.income - a.expense).toFixed(2)),
+      ]);
+      return { headers, rows, numericCols: [1, 2, 3] };
+    }
+
+    // detail
+    const headers = ['Tipo', 'Descrição', 'Categoria', 'Data', 'Valor (R$)', 'Conta'];
+    const rows: (string | number)[][] = detailTransactions.map(tr => [
+      tipoLabel(tr.tipo),
+      tr.descricao || '',
+      tr.categoria || '',
+      tr.data_transacao ? formatDate(tr.data_transacao) : '',
+      Number((tr.valor || 0).toFixed(2)),
+      tr.conta || '',
+    ]);
+    return { headers, rows, numericCols: [4] };
+  };
+
+  const fileBaseName = () => {
+    const tabSlug = activeTab;
+    const periodSlug = periodLabel.replace(/[\s/]+/g, '-').toLowerCase();
+    return `moovi-relatorio-${tabSlug}-${periodSlug}`;
+  };
+
   const exportCSV = () => {
-    if (!transacoesRaw.length) { toast.error('Nenhuma transação para exportar'); return; }
+    const { headers, rows, numericCols } = buildExportDataset();
+    if (!rows.length) { toast.error('Nenhum dado para exportar'); return; }
     const BOM = '\uFEFF';
     const sep = ';';
     const esc = (s: string) => `"${(s || '').replace(/"/g, '""')}"`;
-    const headers = ['Tipo', 'Descrição', 'Valor', 'Categoria', 'Data', 'Status', 'Conta'].map(esc).join(sep) + '\r\n';
-    const rows = transacoesRaw.map(tr =>
-      [tipoLabel(tr.tipo), tr.descricao, tr.valor.toFixed(2).replace('.', ','), tr.categoria, tr.data_transacao, tr.status, tr.conta].map(v => esc(String(v ?? ''))).join(sep)
-    ).join('\r\n');
-    const blob = new Blob([BOM + headers + rows], { type: 'text/csv;charset=utf-8' });
+    const fmt = (v: string | number, idx: number) =>
+      numericCols.includes(idx) && typeof v === 'number'
+        ? esc(v.toFixed(2).replace('.', ','))
+        : esc(String(v ?? ''));
+    const csv = [headers.map(esc).join(sep), ...rows.map(r => r.map(fmt).join(sep))].join('\r\n');
+    const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'moovi-relatorio.csv'; a.click();
+    const a = document.createElement('a'); a.href = url; a.download = `${fileBaseName()}.csv`; a.click();
     URL.revokeObjectURL(url);
     toast.success('CSV exportado!');
   };
 
   const exportExcel = async () => {
-    if (!transacoesRaw.length) { toast.error('Nenhuma transação para exportar'); return; }
+    const { headers, rows } = buildExportDataset();
+    if (!rows.length) { toast.error('Nenhum dado para exportar'); return; }
     const XLSX = await import('xlsx');
-    const wsData = [
-      ['Tipo', 'Descrição', 'Valor', 'Categoria', 'Data', 'Status', 'Conta'],
-      ...transacoesRaw.map(tr => [tipoLabel(tr.tipo), tr.descricao, tr.valor, tr.categoria, tr.data_transacao, tr.status, tr.conta]),
-    ];
+    const wsData = [headers, ...rows];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Relatório');
-    XLSX.writeFile(wb, 'moovi-relatorio.xlsx');
+    XLSX.utils.book_append_sheet(wb, ws, tabLabels[activeTab].slice(0, 31));
+    XLSX.writeFile(wb, `${fileBaseName()}.xlsx`);
     toast.success('Excel exportado!');
   };
 
   const exportPDF = async () => {
-    if (!transacoesRaw.length) { toast.error('Nenhuma transação para exportar'); return; }
+    const { headers, rows, numericCols } = buildExportDataset();
+    if (!rows.length) { toast.error('Nenhum dado para exportar'); return; }
     const { default: jsPDF } = await import('jspdf');
     const autoTable = (await import('jspdf-autotable')).default;
 
     const doc = new jsPDF();
-    doc.setFontSize(18);
+    doc.setFontSize(16);
     doc.setTextColor(26, 26, 46);
-    doc.text('Relatório Financeiro — Moovi', 14, 20);
+    doc.text(`Relatório Moovi — ${tabLabels[activeTab]} — ${periodLabel}`, 14, 18);
 
     doc.setFontSize(10);
     doc.setTextColor(100);
-    const periodLabel = period === 'month' ? `${months.find(m => m.value === selectedMonth)?.label || ''} ${selectedYear}` : period === 'year' ? selectedYear : `${customStart} a ${customEnd}`;
-    doc.text(`Período: ${periodLabel}`, 14, 28);
+    let cursorY = 26;
+    if (filterCategory !== 'all' || filterAccount !== 'all') {
+      const filters: string[] = [];
+      if (filterCategory !== 'all') filters.push(`Categoria: ${filterCategory}`);
+      if (filterAccount !== 'all') filters.push(`Conta: ${filterAccount}`);
+      doc.text(`Filtros: ${filters.join('  |  ')}`, 14, cursorY);
+      cursorY += 6;
+    }
 
     doc.setFontSize(11);
     doc.setTextColor(0);
-    doc.text(`Receitas: ${formatCurrency(resumo.totalReceitas)}   |   Despesas: ${formatCurrency(resumo.totalDespesas)}   |   Resultado: ${formatCurrency(resumo.resultado)}`, 14, 36);
+    doc.text(
+      `Receitas: ${formatCurrency(resumo.totalReceitas)}   |   Despesas: ${formatCurrency(resumo.totalDespesas)}   |   Resultado: ${formatCurrency(resumo.resultado)}`,
+      14,
+      cursorY
+    );
+    cursorY += 6;
+
+    // Format numeric columns as currency for PDF readability
+    const formattedRows = rows.map(r =>
+      r.map((v, idx) =>
+        numericCols.includes(idx) && typeof v === 'number'
+          ? (headers[idx].includes('%') ? `${v.toFixed(2)}%` : formatCurrency(v))
+          : String(v ?? '')
+      )
+    );
 
     autoTable(doc, {
-      startY: 42,
-      head: [['Tipo', 'Descrição', 'Valor', 'Categoria', 'Data', 'Conta']],
-      body: transacoesRaw.map(tr => [
-        tipoLabel(tr.tipo),
-        tr.descricao,
-        formatCurrency(tr.valor),
-        tr.categoria,
-        tr.data_transacao ? formatDate(tr.data_transacao) : '',
-        tr.conta || '',
-      ]),
+      startY: cursorY + 2,
+      head: [headers],
+      body: formattedRows,
       styles: { fontSize: 8, cellPadding: 2 },
       headStyles: { fillColor: [43, 163, 93] },
     });
 
-    doc.save('moovi-relatorio.pdf');
+    doc.save(`${fileBaseName()}.pdf`);
     toast.success('PDF exportado!');
   };
 

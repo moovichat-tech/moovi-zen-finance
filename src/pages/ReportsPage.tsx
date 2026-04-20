@@ -420,7 +420,7 @@ const ReportsPage = () => {
           </div>
 
           {/* Tabs for different report views */}
-          <Tabs defaultValue="overview" className="space-y-4">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="space-y-4">
             <TabsList className="flex-wrap h-auto gap-1">
               <TabsTrigger value="overview" className="text-xs sm:text-sm">Visão Geral</TabsTrigger>
               <TabsTrigger value="category" className="text-xs sm:text-sm">Por Categoria</TabsTrigger>

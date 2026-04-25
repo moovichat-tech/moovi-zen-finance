@@ -294,14 +294,14 @@ const Dashboard = () => {
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {statCards.map((stat, i) => (
-              <Card key={i} className="p-5 sm:p-5 min-h-[120px] sm:min-h-0 card-hover relative" style={{ animationDelay: `${i * 60}ms` }}>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm sm:text-xs font-medium text-muted-foreground">{stat.label}</span>
-                  <div className="flex items-center gap-1.5">
+              <Card key={i} className="p-4 sm:p-5 card-hover relative flex flex-col justify-between min-h-[120px] sm:min-h-0" style={{ animationDelay: `${i * 60}ms` }}>
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-xs sm:text-xs font-medium text-muted-foreground leading-tight line-clamp-1 flex-1">{stat.label}</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <HoverCard openDelay={200} closeDelay={100}>
                       <HoverCardTrigger asChild>
                         <button className="text-muted-foreground/50 hover:text-muted-foreground transition-colors">
-                          <Info className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                          <Info className="h-3.5 w-3.5" />
                         </button>
                       </HoverCardTrigger>
                       <HoverCardContent className="w-72 p-3" side="bottom" align="end">
@@ -310,10 +310,10 @@ const Dashboard = () => {
                         </ScrollArea>
                       </HoverCardContent>
                     </HoverCard>
-                    <stat.icon className={`h-5 w-5 sm:h-4 sm:w-4 ${i === 0 ? 'text-primary' : i === 1 ? 'text-success' : i === 2 ? 'text-destructive' : (stat.positive ? 'text-success' : 'text-destructive')}`} />
+                    <stat.icon className={`h-4 w-4 ${i === 0 ? 'text-primary' : i === 1 ? 'text-success' : i === 2 ? 'text-destructive' : (stat.positive ? 'text-success' : 'text-destructive')}`} />
                   </div>
                 </div>
-                <div className="mt-3 sm:mt-2 text-2xl sm:text-2xl font-semibold tracking-tight">
+                <div className="mt-3 text-xl sm:text-2xl font-semibold tracking-tight tabular-nums truncate">
                   {formatCurrency(stat.value)}
                 </div>
               </Card>

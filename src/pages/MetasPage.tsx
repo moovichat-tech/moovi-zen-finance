@@ -221,10 +221,12 @@ const MetasPage = () => {
                 Crie o seu primeiro objetivo financeiro e comece a acompanhar o progresso!
               </p>
             </div>
-            <Button size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setDialogOpen(true)}>
-              <Plus className="h-4 w-4" />
-              Criar Primeira Meta
-            </Button>
+            <ActionButtonGuard requiredPlan="pro" featureName="Criar Metas">
+              <Button size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setDialogOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Criar Primeira Meta
+              </Button>
+            </ActionButtonGuard>
           </div>
         </Card>
       ) : (

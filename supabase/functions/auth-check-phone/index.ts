@@ -57,7 +57,8 @@ Deno.serve(async (req) => {
     );
   } catch (e) {
     console.error("[auth-check-phone] Erro:", e);
-    return new Response(JSON.stringify({ error: e.message }), {
+    const msg = e instanceof Error ? e.message : String(e);
+    return new Response(JSON.stringify({ error: msg }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

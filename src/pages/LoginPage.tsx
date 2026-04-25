@@ -340,6 +340,60 @@ const LoginPage = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* CENÁRIO 1: Modal - Usuário não encontrado */}
+      <Dialog open={showNotFoundModal} onOpenChange={setShowNotFoundModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+              <Sparkles className="h-6 w-6 text-primary" />
+            </div>
+            <DialogTitle className="text-center text-xl">Comece a organizar suas finanças</DialogTitle>
+            <DialogDescription className="text-center pt-2">
+              Não encontramos um cadastro ativo com este número. Que tal começar sua jornada agora?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center">
+            <Button
+              className="w-full h-12 text-base"
+              onClick={() => {
+                window.open('https://www.moovi.chat', '_blank', 'noopener,noreferrer');
+                setShowNotFoundModal(false);
+              }}
+            >
+              Criar conta no WhatsApp
+              <ExternalLink className="h-4 w-4 ml-2" />
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* CENÁRIO 2: Modal - Usuário Inativo/Cancelado */}
+      <Dialog open={showInactiveModal} onOpenChange={setShowInactiveModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+              <RefreshCw className="h-6 w-6 text-primary" />
+            </div>
+            <DialogTitle className="text-center text-xl">Volte a ser organizado</DialogTitle>
+            <DialogDescription className="text-center pt-2">
+              Sua assinatura está inativa no momento. Reative seu plano para recuperar o acesso ao dashboard.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center">
+            <Button
+              className="w-full h-12 text-base"
+              onClick={() => {
+                window.open('https://www.moovi.chat', '_blank', 'noopener,noreferrer');
+                setShowInactiveModal(false);
+              }}
+            >
+              Reativar Plano
+              <ExternalLink className="h-4 w-4 ml-2" />
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

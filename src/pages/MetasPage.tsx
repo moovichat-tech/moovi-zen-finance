@@ -155,15 +155,17 @@ const MetasPage = () => {
           <h2 className="text-xl font-semibold">Metas</h2>
           <p className="text-sm text-muted-foreground">Acompanhe seus objetivos financeiros</p>
         </div>
+        <ActionButtonGuard requiredPlan="pro" featureName="Criar Metas">
+          <Button
+            size="sm"
+            className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+            onClick={() => setDialogOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+            Adicionar
+          </Button>
+        </ActionButtonGuard>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <ActionButtonGuard requiredPlan="pro" featureName="Criar Metas">
-            <DialogTrigger asChild>
-              <Button size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white">
-                <Plus className="h-4 w-4" />
-                Adicionar
-              </Button>
-            </DialogTrigger>
-          </ActionButtonGuard>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Nova Meta</DialogTitle>

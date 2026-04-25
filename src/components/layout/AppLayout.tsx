@@ -47,6 +47,8 @@ export const AppLayout = () => {
 
   const navKey = routeTitles[location.pathname] || 'dashboard';
   const title = t.nav[navKey as keyof typeof t.nav] || 'Moovi';
+  const pageMeta = (t.pages as any)?.[navKey];
+  const subtitle: string | undefined = pageMeta?.subtitle;
 
   const toggleCollapsed = () => {
     setCollapsed(prev => {

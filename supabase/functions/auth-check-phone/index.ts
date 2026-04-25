@@ -1,5 +1,10 @@
-import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 import postgres from "https://deno.land/x/postgresjs@v3.4.5/mod.js";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -17,25 +22,41 @@ Deno.serve(async (req) => {
       });
     }
 
-    const rows = await sql`SELECT id, senha_hash, COALESCE(status, 'Ativo') as status FROM usuarios WHERE telefone = ${telefone} LIMIT 1`;
+    // Normaliza: apenas dígitos
+    const phone = telefone.replace(/\D/g, "");
+    console.log("[auth-check-phone] Buscando telefone:", phone);
+
+    // Query estrita: SELECT status FROM usuarios WHERE telefone = phone
+    const rows = await sql`
+      SELECT id, senha_hash, status
+      FROM usuarios
+      WHERE telefone = ${phone}
+      LIMIT 1
+    `;
 
     if (rows.length === 0) {
-      return new Response(JSON.stringify({ exists: false, has_password: false, status: null }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.log("[auth-check-phone] Usuário NÃO encontrado");
+      return new Response(
+        JSON.stringify({ exists: false, has_password: false, status: null }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const user = rows[0];
+    const status = user.status ? String(user.status).trim() : "Ativo";
+    console.log("[auth-check-phone] Usuário encontrado, status:", status);
+
     return new Response(
       JSON.stringify({
         exists: true,
         has_password: !!user.senha_hash,
         user_id: user.id,
-        status: user.status || "Ativo",
+        status,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
+    console.error("[auth-check-phone] Erro:", e);
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

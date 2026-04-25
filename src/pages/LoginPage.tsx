@@ -42,6 +42,8 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showNotFoundModal, setShowNotFoundModal] = useState(false);
+  const [showInactiveModal, setShowInactiveModal] = useState(false);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Build the clean full number: DDI + local digits (all numeric, no special chars)

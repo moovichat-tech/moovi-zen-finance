@@ -11,17 +11,22 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-export const TopBar = ({ title, onMenuClick }: { title: string; onMenuClick: () => void }) => {
+export const TopBar = ({ title, subtitle, onMenuClick }: { title: string; subtitle?: string; onMenuClick: () => void }) => {
   const { locale, currency, setLocale, setCurrency } = useI18n();
   const { theme, setTheme } = useTheme();
 
   return (
     <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border bg-background/80 px-3 sm:px-6 backdrop-blur-xl">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 min-w-0">
         <Button variant="ghost" size="icon" className="h-8 w-8 lg:hidden" onClick={onMenuClick}>
           <Menu className="h-5 w-5" />
         </Button>
-        <h1 className="text-base sm:text-lg font-semibold truncate">{title}</h1>
+        <div className="flex flex-col min-w-0 leading-tight">
+          <h1 className="text-base sm:text-lg font-semibold truncate">{title}</h1>
+          {subtitle && (
+            <p className="hidden lg:block text-xs text-muted-foreground truncate">{subtitle}</p>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-1 sm:gap-2">

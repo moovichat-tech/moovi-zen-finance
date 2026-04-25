@@ -17,10 +17,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    const rows = await sql`SELECT id, senha_hash FROM usuarios WHERE telefone = ${telefone} LIMIT 1`;
+    const rows = await sql`SELECT id, senha_hash, COALESCE(status, 'Ativo') as status FROM usuarios WHERE telefone = ${telefone} LIMIT 1`;
 
     if (rows.length === 0) {
-      return new Response(JSON.stringify({ exists: false, has_password: false }), {
+      return new Response(JSON.stringify({ exists: false, has_password: false, status: null }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -31,6 +31,7 @@ Deno.serve(async (req) => {
         exists: true,
         has_password: !!user.senha_hash,
         user_id: user.id,
+        status: user.status || "Ativo",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

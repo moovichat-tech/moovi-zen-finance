@@ -47,6 +47,8 @@ export const AppLayout = () => {
 
   const navKey = routeTitles[location.pathname] || 'dashboard';
   const title = t.nav[navKey as keyof typeof t.nav] || 'Moovi';
+  const pageMeta = (t.pages as any)?.[navKey];
+  const subtitle: string | undefined = pageMeta?.subtitle;
 
   const toggleCollapsed = () => {
     setCollapsed(prev => {
@@ -78,7 +80,7 @@ export const AppLayout = () => {
       )}
       <AppSidebar collapsed={collapsed} onToggle={toggleCollapsed} mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} isDesktop={isDesktop} />
       <div className="transition-all duration-300" style={{ paddingLeft: collapsed ? 60 : 208 }}>
-        <TopBar title={title} onMenuClick={() => setMobileOpen(true)} />
+        <TopBar title={title} subtitle={subtitle} onMenuClick={() => setMobileOpen(true)} />
         <main className="p-3 sm:p-4 md:p-6">{mainContent}</main>
       </div>
     </div>

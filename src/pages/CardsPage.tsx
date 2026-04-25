@@ -178,7 +178,7 @@ const CardsPage = () => {
     <PlanGuard requiredPlan="premium" featureName="Cartões">
     <div className="space-y-4 sm:space-y-6 animate-in-up">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
+        <div className="lg:hidden">
           <h2 className="text-lg sm:text-xl font-semibold">{t.pages.cards.title}</h2>
           <p className="text-sm text-muted-foreground">{t.pages.cards.subtitle}</p>
         </div>

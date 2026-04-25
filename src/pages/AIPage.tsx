@@ -145,7 +145,7 @@ const AIPage = () => {
 
   return (
     <div className="flex h-[calc(100vh-7rem)] sm:h-[calc(100vh-8rem)] flex-col animate-in-up">
-      <div className="mb-4">
+      <div className="mb-4 lg:hidden">
         <h2 className="text-xl font-semibold">{t.pages.ai.title}</h2>
         <p className="text-sm text-muted-foreground">{t.pages.ai.subtitle}</p>
       </div>

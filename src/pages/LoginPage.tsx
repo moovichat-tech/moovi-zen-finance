@@ -67,30 +67,40 @@ const LoginPage = () => {
     }
     setLoading(true);
     try {
-      const data = await callEdge('auth-check-phone', { telefone: fullPhone });
+      // Garante que o número é enviado SEM máscaras (apenas dígitos, formato 55...)
+      const cleanPhone = fullPhone.replace(/\D/g, '');
+      console.log('[LoginPage] Verificando telefone:', cleanPhone);
 
-      // CENÁRIO 1: Usuário não encontrado
-      if (!data.exists) {
+      const data = await callEdge('auth-check-phone', { telefone: cleanPhone });
+      console.log('[LoginPage] Resposta auth-check-phone:', data);
+
+      // CENÁRIO 1: Usuário não encontrado — INTERROMPE login
+      if (data?.exists !== true) {
         setShowNotFoundModal(true);
         return;
       }
 
-      // CENÁRIO 2: Usuário Inativo ou Cancelado
-      const status = String(data.status || 'Ativo').toLowerCase();
-      if (status === 'inativo' || status === 'cancelado') {
+      // CENÁRIO 2 & 3: Apenas status === 'Ativo' (case-insensitive) avança.
+      // Qualquer outro valor (Inativo, Cancelado, null, undefined) é bloqueado.
+      const rawStatus = data?.status;
+      const status = String(rawStatus ?? '').trim().toLowerCase();
+
+      if (status !== 'ativo') {
+        // Inativo, Cancelado, vazio ou desconhecido → bloqueia
         setShowInactiveModal(true);
         return;
       }
 
-      // CENÁRIO 3: Usuário ativo - segue fluxo normal
+      // CENÁRIO 3: Usuário ATIVO confirmado — segue fluxo normal
       if (data.has_password) {
         setStep('password');
       } else {
-        await callEdge('auth-send-otp', { telefone: fullPhone });
+        await callEdge('auth-send-otp', { telefone: cleanPhone });
         toast.success('Código enviado para seu WhatsApp!');
         setStep('otp');
       }
     } catch (err: any) {
+      console.error('[LoginPage] Erro ao verificar telefone:', err);
       toast.error(err.message || 'Erro ao verificar telefone');
     } finally {
       setLoading(false);

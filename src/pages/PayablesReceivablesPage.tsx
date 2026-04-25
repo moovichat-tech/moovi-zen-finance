@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import PlanGuard from '@/components/PlanGuard';
+import ActionButtonGuard from '@/components/ActionButtonGuard';
 import { useI18n } from '@/i18n/context';
 import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
@@ -176,16 +176,18 @@ const PayablesReceivablesPage = () => {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 text-xs gap-1"
-                    disabled={markPaidMutation.isPending}
-                    onClick={() => handleMarkPaid(tr)}
-                  >
-                    {markPaidMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
-                    <span className="hidden sm:inline">{tipo === 'despesa' ? l.markPaid : l.markReceived}</span>
-                  </Button>
+                  <ActionButtonGuard requiredPlan="pro" featureName="Marcar Pendência como Paga">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs gap-1"
+                      disabled={markPaidMutation.isPending}
+                      onClick={() => handleMarkPaid(tr)}
+                    >
+                      {markPaidMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
+                      <span className="hidden sm:inline">{tipo === 'despesa' ? l.markPaid : l.markReceived}</span>
+                    </Button>
+                  </ActionButtonGuard>
                 </TableCell>
               </TableRow>
             );
@@ -207,7 +209,6 @@ const PayablesReceivablesPage = () => {
   }
 
   return (
-    <PlanGuard requiredPlan="pro" featureName="Contas a Pagar/Receber">
     <div className="space-y-4 sm:space-y-6 animate-in-up">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -266,7 +267,6 @@ const PayablesReceivablesPage = () => {
         </TabsContent>
       </Tabs>
     </div>
-    </PlanGuard>
   );
 };
 

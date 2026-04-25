@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import PlanGuard from '@/components/PlanGuard';
+import ActionButtonGuard from '@/components/ActionButtonGuard';
 import { useI18n } from '@/i18n/context';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
@@ -382,19 +382,21 @@ const ReportsPage = () => {
 
       {/* Export buttons */}
       <div className="flex gap-2">
-        <PlanGuard requiredPlan="pro" featureName="Exportação" variant="compact">
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportCSV}>
-              <FileSpreadsheet className="h-3.5 w-3.5" /> CSV
-            </Button>
-            <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportExcel}>
-              <Download className="h-3.5 w-3.5" /> Excel
-            </Button>
-            <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportPDF}>
-              <FileText className="h-3.5 w-3.5" /> PDF
-            </Button>
-          </div>
-        </PlanGuard>
+        <ActionButtonGuard requiredPlan="pro" featureName="Exportar Relatório (CSV)">
+          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportCSV}>
+            <FileSpreadsheet className="h-3.5 w-3.5" /> CSV
+          </Button>
+        </ActionButtonGuard>
+        <ActionButtonGuard requiredPlan="pro" featureName="Exportar Relatório (Excel)">
+          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportExcel}>
+            <Download className="h-3.5 w-3.5" /> Excel
+          </Button>
+        </ActionButtonGuard>
+        <ActionButtonGuard requiredPlan="pro" featureName="Exportar Relatório (PDF)">
+          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportPDF}>
+            <FileText className="h-3.5 w-3.5" /> PDF
+          </Button>
+        </ActionButtonGuard>
       </div>
 
       {/* Summary */}

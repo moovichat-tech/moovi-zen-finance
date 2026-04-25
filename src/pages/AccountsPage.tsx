@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useI18n } from '@/i18n/context';
-import PlanGuard from '@/components/PlanGuard';
+import ActionButtonGuard from '@/components/ActionButtonGuard';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
@@ -195,7 +195,6 @@ const AccountsPage = () => {
   };
 
   return (
-    <PlanGuard requiredPlan="premium" featureName="Contas Bancárias">
     <div className="space-y-4 sm:space-y-6 animate-in-up">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="lg:hidden">
@@ -203,12 +202,16 @@ const AccountsPage = () => {
           <p className="text-sm text-muted-foreground">{t.pages.accounts.subtitle}</p>
         </div>
         <div className="flex gap-2 self-start">
-          <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setOpenTransfer(true)}>
-            <ArrowRightLeft className="h-4 w-4" /> <span className="hidden sm:inline">Transferir</span>
-          </Button>
-          <Button size="sm" className="gap-1.5" onClick={() => { setEditingAccount(null); setForm({ name: '', type: 'corrente', balance: '', institution: '', color: 'hsl(234, 62%, 52%)' }); setOpenAdd(true); }}>
-            <Plus className="h-4 w-4" /> {t.common.add}
-          </Button>
+          <ActionButtonGuard requiredPlan="premium" featureName="Transferência entre Contas">
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setOpenTransfer(true)}>
+              <ArrowRightLeft className="h-4 w-4" /> <span className="hidden sm:inline">Transferir</span>
+            </Button>
+          </ActionButtonGuard>
+          <ActionButtonGuard requiredPlan="premium" featureName="Gestão de Contas Bancárias">
+            <Button size="sm" className="gap-1.5" onClick={() => { setEditingAccount(null); setForm({ name: '', type: 'corrente', balance: '', institution: '', color: 'hsl(234, 62%, 52%)' }); setOpenAdd(true); }}>
+              <Plus className="h-4 w-4" /> {t.common.add}
+            </Button>
+          </ActionButtonGuard>
         </div>
       </div>
 
@@ -397,7 +400,6 @@ const AccountsPage = () => {
         </DialogContent>
       </Dialog>
     </div>
-    </PlanGuard>
   );
 };
 

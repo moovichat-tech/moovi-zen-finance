@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useI18n } from '@/i18n/context';
-import PlanGuard from '@/components/PlanGuard';
+import ActionButtonGuard from '@/components/ActionButtonGuard';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
@@ -175,16 +175,17 @@ const CardsPage = () => {
   };
 
   return (
-    <PlanGuard requiredPlan="premium" featureName="Cartões">
     <div className="space-y-4 sm:space-y-6 animate-in-up">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="lg:hidden">
           <h2 className="text-lg sm:text-xl font-semibold">{t.pages.cards.title}</h2>
           <p className="text-sm text-muted-foreground">{t.pages.cards.subtitle}</p>
         </div>
-        <Button size="sm" className="gap-1.5 self-start" onClick={openAdd}>
-          <Plus className="h-4 w-4" /> {t.common.add}
-        </Button>
+        <ActionButtonGuard requiredPlan="premium" featureName="Gestão de Cartões">
+          <Button size="sm" className="gap-1.5 self-start" onClick={openAdd}>
+            <Plus className="h-4 w-4" /> {t.common.add}
+          </Button>
+        </ActionButtonGuard>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -337,7 +338,6 @@ const CardsPage = () => {
         </DialogContent>
       </Dialog>
     </div>
-    </PlanGuard>
   );
 };
 

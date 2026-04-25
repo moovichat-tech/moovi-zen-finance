@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import PlanGuard from '@/components/PlanGuard';
+import ActionButtonGuard from '@/components/ActionButtonGuard';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useI18n } from '@/i18n/context';
@@ -149,7 +149,6 @@ const MetasPage = () => {
   };
 
   return (
-    <PlanGuard requiredPlan="pro" featureName="Metas e Objetivos">
     <div className="space-y-6 animate-in-up">
       <div className="flex items-center justify-between">
         <div>
@@ -157,12 +156,14 @@ const MetasPage = () => {
           <p className="text-sm text-muted-foreground">Acompanhe seus objetivos financeiros</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white">
-              <Plus className="h-4 w-4" />
-              Adicionar
-            </Button>
-          </DialogTrigger>
+          <ActionButtonGuard requiredPlan="pro" featureName="Criar Metas">
+            <DialogTrigger asChild>
+              <Button size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white">
+                <Plus className="h-4 w-4" />
+                Adicionar
+              </Button>
+            </DialogTrigger>
+          </ActionButtonGuard>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Nova Meta</DialogTitle>

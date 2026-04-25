@@ -68,7 +68,22 @@ const LoginPage = () => {
     setLoading(true);
     try {
       const data = await callEdge('auth-check-phone', { telefone: fullPhone });
-      if (data.exists && data.has_password) {
+
+      // CENÁRIO 1: Usuário não encontrado
+      if (!data.exists) {
+        setShowNotFoundModal(true);
+        return;
+      }
+
+      // CENÁRIO 2: Usuário Inativo ou Cancelado
+      const status = String(data.status || 'Ativo').toLowerCase();
+      if (status === 'inativo' || status === 'cancelado') {
+        setShowInactiveModal(true);
+        return;
+      }
+
+      // CENÁRIO 3: Usuário ativo - segue fluxo normal
+      if (data.has_password) {
         setStep('password');
       } else {
         await callEdge('auth-send-otp', { telefone: fullPhone });

@@ -381,7 +381,9 @@ const ReportsPage = () => {
       </div>
 
       {/* Export buttons */}
-      <div className="flex gap-2">
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold text-foreground">Exportar relatório</h3>
+        <div className="flex gap-2">
         <ActionButtonGuard requiredPlan="pro" featureName="Exportar Relatório (CSV)">
           <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportCSV}>
             <FileSpreadsheet className="h-3.5 w-3.5" /> CSV
@@ -397,6 +399,7 @@ const ReportsPage = () => {
             <FileText className="h-3.5 w-3.5" /> PDF
           </Button>
         </ActionButtonGuard>
+        </div>
       </div>
 
       {/* Summary */}

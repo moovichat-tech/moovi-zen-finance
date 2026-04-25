@@ -326,7 +326,7 @@ const ReportsPage = () => {
     <>
     <div className="space-y-4 sm:space-y-6 animate-in-up">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
+        <div className="lg:hidden">
           <h2 className="text-lg sm:text-xl font-semibold">{t.pages.reports.title}</h2>
           <p className="text-sm text-muted-foreground">{t.pages.reports.subtitle}</p>
         </div>

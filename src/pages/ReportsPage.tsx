@@ -399,6 +399,7 @@ const ReportsPage = () => {
             <FileText className="h-3.5 w-3.5" /> PDF
           </Button>
         </ActionButtonGuard>
+        </div>
       </div>
 
       {/* Summary */}

@@ -317,7 +317,6 @@ const MetasPage = () => {
         </DialogContent>
       </Dialog>
     </div>
-    </PlanGuard>
   );
 };
 

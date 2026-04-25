@@ -242,7 +242,6 @@ const Dashboard = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-lg sm:text-xl font-semibold">{t.nav.dashboard}</h2>
-          <p className="text-sm text-muted-foreground">{t.dashboard.totalBalance}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Select value={preset} onValueChange={(v) => setPreset(v as DatePreset)}>

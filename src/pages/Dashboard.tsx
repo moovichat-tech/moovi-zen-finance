@@ -394,9 +394,9 @@ const Dashboard = () => {
                     <BarChart data={d.comparacaoMensal} barGap={4} margin={{ top: 10, right: 10, left: -10, bottom: isMobile ? 10 : 60 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border/30" strokeOpacity={0.3} />
                       <XAxis dataKey="category" tick={<CustomXAxisTick hoveredTick={hoveredTick} setHoveredTick={setHoveredTick} isMobile={isMobile} />} tickLine={false} axisLine={false} interval={0} height={isMobile ? 20 : 70} />
-                      <YAxis tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))', fontFamily: 'var(--font-sans)' }} tickMargin={10} tickLine={false} axisLine={false} width={60} />
+                      <YAxis tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))', fontFamily: 'var(--font-sans)' }} tickMargin={10} tickLine={false} axisLine={false} width={60} domain={[0, (dataMax: number) => Math.ceil((dataMax || 1) * 1.05)]} allowDataOverflow={false} />
                       <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--foreground))', fontSize: '12px', fontFamily: 'var(--font-sans)' }} itemStyle={{ color: 'hsl(var(--foreground))' }} labelStyle={{ color: 'hsl(var(--foreground))' }} formatter={(value: number) => formatCurrency(value)} />
-                      <Bar dataKey="previous" fill="hsl(var(--muted-foreground) / 0.3)" radius={[4, 4, 0, 0]} barSize={20} name={t.dashboard.comparison + ' (anterior)'} />
+                      <Bar dataKey="previous" fill="hsl(var(--muted-foreground) / 0.65)" stroke="hsl(var(--muted-foreground) / 0.9)" strokeWidth={1} radius={[4, 4, 0, 0]} barSize={20} name={t.dashboard.comparison + ' (anterior)'} />
                       <Bar dataKey="current" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} barSize={20} name={t.dashboard.comparison + ' (atual)'} />
                     </BarChart>
                   </ResponsiveContainer>

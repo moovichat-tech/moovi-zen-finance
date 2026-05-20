@@ -17,46 +17,52 @@ const getSystemTheme = (): Theme => {
 };
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('moovi-theme') as Theme | null;
-      if (stored === 'light' || stored === 'dark') return stored;
-      return getSystemTheme();
-    }
-    return 'light';
-  });
-
-  const [userOverride, setUserOverride] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('moovi-theme');
-      return stored === 'light' || stored === 'dark';
-    }
-    return false;
-  });
+  // Always start from the system theme on every visit/reload.
+  // We intentionally do NOT read from localStorage on init so the dashboard
+  // mirrors the OS/browser theme automatically (desktop + mobile).
+  const [theme, setThemeState] = useState<Theme>(() => getSystemTheme());
 
   const setTheme = (t: Theme) => {
+    // Manual override only lasts for the current session (in-memory).
     setThemeState(t);
-    setUserOverride(true);
-    try { localStorage.setItem('moovi-theme', t); } catch {}
   };
 
   useEffect(() => {
     const root = document.documentElement;
     root.classList.remove('light', 'dark');
     root.classList.add(theme);
+    // Sync mobile browser chrome color
+    try {
+      const meta = document.querySelector('meta[name="theme-color"]:not([media])') as HTMLMetaElement | null;
+      const color = theme === 'dark' ? '#0f1410' : '#f5f7f5';
+      if (meta) meta.setAttribute('content', color);
+    } catch {}
   }, [theme]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return;
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const handler = (e: MediaQueryListEvent) => {
-      if (!userOverride) {
-        setThemeState(e.matches ? 'dark' : 'light');
-      }
+      setThemeState(e.matches ? 'dark' : 'light');
     };
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
-  }, [userOverride]);
+  }, []);
+
+  // Re-sync to system theme whenever the tab becomes visible again
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        setThemeState(getSystemTheme());
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
+  }, []);
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>

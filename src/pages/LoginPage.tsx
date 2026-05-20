@@ -34,6 +34,7 @@ async function callEdge(fnName: string, body: Record<string, string>) {
 const LoginPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { theme } = useTheme();
   const [step, setStep] = useState<Step>('phone');
   const [country, setCountry] = useState<Country>(countries[0]); // Brazil default
   const [phoneDigits, setPhoneDigits] = useState('');

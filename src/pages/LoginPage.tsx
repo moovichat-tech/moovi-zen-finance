@@ -193,7 +193,16 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md shadow-xl border-0">
+      <Card className="w-full max-w-md shadow-xl border-0 relative">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-3 right-3 h-8 w-8 z-10"
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          aria-label="Alternar tema"
+        >
+          {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </Button>
         <CardHeader className="text-center space-y-2 pb-4">
           <div className="mx-auto w-20 h-20 flex items-center justify-center mb-2">
             <img src={theme === 'dark' ? mooviLogoLogin : mooviLogoLight} alt="Moovi" className="w-full h-full object-contain" />

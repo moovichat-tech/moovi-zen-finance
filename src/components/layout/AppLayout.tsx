@@ -65,7 +65,7 @@ export const AppLayout = () => {
     return (
       <div className="min-h-screen bg-background">
         <MobileHeader />
-        <main className="pt-14 pb-20 px-3 sm:px-4">
+        <main className="pt-20 pb-20 px-3 sm:px-4">
           {mainContent}
         </main>
         {!isBlocked && <MobileBottomNav />}

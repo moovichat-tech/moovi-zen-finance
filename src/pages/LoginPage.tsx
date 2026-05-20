@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Lock, KeyRound, ArrowLeft, Loader2, Eye, EyeOff, Sparkles, RefreshCw, ExternalLink } from 'lucide-react';
+import { Lock, KeyRound, ArrowLeft, Loader2, Eye, EyeOff, Sparkles, RefreshCw, ExternalLink, Sun, Moon } from 'lucide-react';
 import { toast } from 'sonner';
 import { CountryCodeSelector, countries, applyMask, Country } from '@/components/CountryCodeSelector';
 import mooviLogoLogin from '@/assets/moovi-logo-login.png';

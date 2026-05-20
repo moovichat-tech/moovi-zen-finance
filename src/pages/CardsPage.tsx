@@ -193,19 +193,19 @@ const CardsPage = () => {
           const usedLimit = card.gastoTotal;
           const usagePercent = card.limit > 0 ? Math.round((usedLimit / card.limit) * 100) : 0;
           return (
-            <Card key={card.id} className="p-4 sm:p-5 card-hover">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: card.color + '20' }}>
+            <Card key={card.id} className="p-4 sm:p-5 card-hover overflow-hidden min-w-0">
+              <div className="flex items-start justify-between gap-2 min-w-0">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: card.color + '20' }}>
                     <CreditCard className="h-5 w-5" style={{ color: card.color }} />
                   </div>
-                  <div>
-                    <h3 className="text-sm font-semibold">{card.name}</h3>
-                    {card.lastDigits && <p className="text-xs text-muted-foreground">•••• {card.lastDigits}</p>}
-                    {card.nomeConta && <p className="text-xs text-muted-foreground">Conta: {card.nomeConta}</p>}
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-sm font-semibold truncate">{card.name}</h3>
+                    {card.lastDigits && <p className="text-xs text-muted-foreground truncate">•••• {card.lastDigits}</p>}
+                    {card.nomeConta && <p className="text-xs text-muted-foreground truncate">Conta: {card.nomeConta}</p>}
                   </div>
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-1 shrink-0">
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(card.id)}>
                     <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                   </Button>
@@ -215,29 +215,29 @@ const CardsPage = () => {
                 </div>
               </div>
 
-              <div className="mt-4 space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Limite usado</span>
-                  <span className={`font-medium ${usagePercent > 80 ? 'text-destructive' : ''}`}>{usagePercent}%</span>
+              <div className="mt-4 space-y-2 min-w-0">
+                <div className="flex justify-between items-center gap-2 text-xs min-w-0">
+                  <span className="text-muted-foreground truncate">Limite usado</span>
+                  <span className={`font-medium shrink-0 ${usagePercent > 80 ? 'text-destructive' : ''}`}>{usagePercent}%</span>
                 </div>
                 <Progress value={Math.min(usagePercent, 100)} className="h-1.5" />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{formatCurrency(usedLimit)}</span>
-                  <span>{formatCurrency(card.limit)}</span>
+                <div className="flex justify-between items-center gap-2 text-xs text-muted-foreground min-w-0">
+                  <span className="truncate">{formatCurrency(usedLimit)}</span>
+                  <span className="truncate text-right">{formatCurrency(card.limit)}</span>
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-muted-foreground truncate">
                   Disponível: <span className="font-medium text-foreground">{formatCurrency(Math.max(card.limit - usedLimit, 0))}</span>
                 </div>
               </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
-                <div className="rounded-lg bg-secondary p-2.5">
+              <div className="mt-4 grid grid-cols-2 gap-3 text-xs min-w-0">
+                <div className="rounded-lg bg-secondary p-2.5 min-w-0">
                   <span className="text-muted-foreground">Fechamento</span>
-                  <div className="mt-0.5 font-semibold">Dia {card.closingDay}</div>
+                  <div className="mt-0.5 font-semibold truncate">Dia {card.closingDay}</div>
                 </div>
-                <div className="rounded-lg bg-secondary p-2.5">
+                <div className="rounded-lg bg-secondary p-2.5 min-w-0">
                   <span className="text-muted-foreground">Vencimento</span>
-                  <div className="mt-0.5 font-semibold">Dia {card.dueDay}</div>
+                  <div className="mt-0.5 font-semibold truncate">Dia {card.dueDay}</div>
                 </div>
               </div>
 

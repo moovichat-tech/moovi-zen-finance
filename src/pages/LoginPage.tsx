@@ -9,6 +9,8 @@ import { Lock, KeyRound, ArrowLeft, Loader2, Eye, EyeOff, Sparkles, RefreshCw, E
 import { toast } from 'sonner';
 import { CountryCodeSelector, countries, applyMask, Country } from '@/components/CountryCodeSelector';
 import mooviLogoLogin from '@/assets/moovi-logo-login.png';
+import mooviLogoLight from '@/assets/moovi-logo-light.png';
+import { useTheme } from '@/hooks/use-theme';
 
 type Step = 'phone' | 'password' | 'otp' | 'create-password';
 

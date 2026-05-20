@@ -9,6 +9,8 @@ import { Lock, KeyRound, ArrowLeft, Loader2, Eye, EyeOff, Sparkles, RefreshCw, E
 import { toast } from 'sonner';
 import { CountryCodeSelector, countries, applyMask, Country } from '@/components/CountryCodeSelector';
 import mooviLogoLogin from '@/assets/moovi-logo-login.png';
+import mooviLogoLight from '@/assets/moovi-logo-light.png';
+import { useTheme } from '@/hooks/use-theme';
 
 type Step = 'phone' | 'password' | 'otp' | 'create-password';
 
@@ -32,6 +34,7 @@ async function callEdge(fnName: string, body: Record<string, string>) {
 const LoginPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { theme } = useTheme();
   const [step, setStep] = useState<Step>('phone');
   const [country, setCountry] = useState<Country>(countries[0]); // Brazil default
   const [phoneDigits, setPhoneDigits] = useState('');
@@ -189,11 +192,11 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="dark min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md shadow-xl border-0">
         <CardHeader className="text-center space-y-2 pb-4">
           <div className="mx-auto w-20 h-20 flex items-center justify-center mb-2">
-            <img src={mooviLogoLogin} alt="Moovi" className="w-full h-full object-contain" />
+            <img src={theme === 'dark' ? mooviLogoLogin : mooviLogoLight} alt="Moovi" className="w-full h-full object-contain" />
           </div>
           <CardTitle className="text-2xl font-bold">Moovi</CardTitle>
           <CardDescription className="text-muted-foreground">

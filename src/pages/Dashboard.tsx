@@ -323,6 +323,11 @@ const Dashboard = () => {
           {/* Full-width Evolution Chart - BarChart */}
           <Card className="p-3 sm:p-5 card-hover">
             <h3 className="mb-3 sm:mb-4 text-sm font-semibold">{t.dashboard.monthlyEvolution}</h3>
+            {d.evolucaoTempo.length === 0 ? (
+              <div className="flex h-[250px] items-center justify-center text-sm text-muted-foreground">
+                {t.common?.noData ?? 'Sem dados para exibir'}
+              </div>
+            ) : (
             <ResponsiveContainer width="100%" height={250}>
               <BarChart
                 data={d.evolucaoTempo}
@@ -347,6 +352,7 @@ const Dashboard = () => {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+            )}
           </Card>
 
           {/* Second Row */}

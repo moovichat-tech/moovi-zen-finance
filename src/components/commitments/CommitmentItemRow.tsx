@@ -1,156 +1,106 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowDownRight, Bell, Pencil, Trash2, Lock } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { CalendarClock, CheckCircle2, Trash2, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 
-interface CommitmentItem {
-  id: string;
+export interface Compromisso {
+  id: number;
+  telefone_usuario: string;
   titulo: string;
-  data: string;
-  dateStr: string;
-  tipo: 'recorrente' | 'temporario';
-  valor?: number;
+  descricao: string | null;
+  data_hora_limite: string;
   status: string;
-  recorrencia?: string | null;
-  notas?: string | null;
 }
 
-interface CommitmentItemRowProps {
-  item: CommitmentItem;
-  variant: 'full' | 'compact';
-  today: string;
-  labels: Record<string, string>;
-  formatCurrency: (v: number) => string;
-  formatDate: (d: string) => string;
-  getDaysDiff: (d: string) => number;
-  onDelete: (id: string) => void;
-  onEdit: (id: string, data: EditFormData) => void;
+interface Props {
+  item: Compromisso;
+  onDelete: (id: number) => void;
+  onMarkDone?: (id: number) => void;
   isDeleting?: boolean;
-  isEditing?: boolean;
 }
 
-export interface EditFormData {
-  mensagem: string;
-  valor: number;
-  dia_vencimento: number;
-  hora_alerta: string;
-}
-
-const CommitmentItemRow = ({
-  item, variant, today, labels: l, formatCurrency, formatDate, getDaysDiff,
-  onDelete, onEdit, isDeleting, isEditing,
-}: CommitmentItemRowProps) => {
-  const { plano } = useAuth();
-  const navigate = useNavigate();
-  const isRecorrente = item.tipo === 'recorrente';
-  const isBasico = plano === 'basico';
+const CommitmentItemRow = ({ item, onDelete, onMarkDone, isDeleting }: Props) => {
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
 
-  const dayFromDate = item.dateStr ? Number(item.dateStr.split('-')[2]) : 1;
-  const [form, setForm] = useState<EditFormData>({
-    mensagem: item.titulo,
-    valor: item.valor ?? 0,
-    dia_vencimento: dayFromDate,
-    hora_alerta: '08:00',
-  });
+  const dueDate = new Date(item.data_hora_limite);
+  const now = new Date();
+  const isExpired = item.status === 'pendente' && dueDate.getTime() < now.getTime();
+  const isDone = item.status === 'concluido';
 
-  const handleEditOpen = () => {
-    setForm({
-      mensagem: item.titulo,
-      valor: item.valor ?? 0,
-      dia_vencimento: dayFromDate,
-      hora_alerta: '08:00',
-    });
-    setEditOpen(true);
-  };
+  const statusLabel = isDone ? 'Concluído' : isExpired ? 'Expirado' : 'Pendente';
+  const statusVariant: 'default' | 'destructive' | 'secondary' | 'outline' =
+    isDone ? 'secondary' : isExpired ? 'destructive' : 'default';
 
   return (
     <>
-      <div className={`flex items-center py-2.5 px-3 rounded-lg group/row ${variant === 'full' ? 'bg-secondary/50' : 'border-b border-border last:border-0'}`}>
-        {/* Left: Icon + Texts (flex-1) */}
-        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-          {item.valor ? (
-            <ArrowDownRight className="h-4 w-4 shrink-0 text-destructive" />
+      <div
+        className={cn(
+          'flex items-center gap-3 py-3 px-3 rounded-lg border border-border bg-card group transition',
+          (isExpired || isDone) && 'opacity-60'
+        )}
+      >
+        <div className="shrink-0">
+          {isDone ? (
+            <CheckCircle2 className="h-5 w-5 text-muted-foreground" />
+          ) : isExpired ? (
+            <AlertCircle className="h-5 w-5 text-destructive" />
           ) : (
-            <Bell className="h-4 w-4 shrink-0 text-primary" />
+            <CalendarClock className="h-5 w-5 text-primary" />
           )}
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium truncate">{item.titulo}</p>
-            {variant === 'compact' && (
-              <p className="text-[11px] text-muted-foreground">
-                {formatDate(item.dateStr)}
-                {item.recorrencia && ` • ${item.recorrencia}`}
-                {item.dateStr >= today && (() => {
-                  const diff = getDaysDiff(item.dateStr);
-                  return ` • ${diff === 0 ? l.today : l.inDays.replace('{n}', String(diff))}`;
-                })()}
-              </p>
-            )}
-            {item.notas && <p className="text-[11px] text-muted-foreground truncate">{item.notas}</p>}
-          </div>
         </div>
 
-        {/* Right side: Action buttons + Value + Tag (fixed column) */}
-        <div className="flex items-center shrink-0">
-          {isRecorrente && (
-            isBasico ? (
-              <button
-                onClick={() => navigate('/subscription')}
-                className="p-1 rounded text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover/row:opacity-100 mr-2"
-                title="Desbloquear Lembretes Recorrentes"
-              >
-                <Lock className="h-4 w-4" />
-              </button>
-            ) : (
-              <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity mr-2">
-                <button
-                  onClick={handleEditOpen}
-                  className="p-1 rounded text-muted-foreground hover:text-primary transition-colors"
-                  title="Editar"
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setDeleteOpen(true)}
-                  className="p-1 rounded text-muted-foreground hover:text-destructive transition-colors"
-                  title="Excluir"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            )
+        <div className="min-w-0 flex-1">
+          <p className={cn('text-sm font-medium truncate', (isExpired || isDone) && 'text-muted-foreground')}>
+            {item.titulo}
+          </p>
+          {item.descricao && (
+            <p className="text-xs text-muted-foreground truncate">{item.descricao}</p>
           )}
-          {item.valor != null && item.valor > 0 && (
-            <span className="text-sm font-semibold text-destructive whitespace-nowrap mr-3">-{formatCurrency(item.valor)}</span>
+          <p className={cn('text-[11px] mt-0.5', isExpired ? 'text-destructive' : 'text-muted-foreground')}>
+            {format(dueDate, "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <Badge variant={statusVariant} className="text-[10px]">
+            {statusLabel}
+          </Badge>
+          {!isDone && onMarkDone && (
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={() => onMarkDone(item.id)}
+              title="Marcar como concluído"
+            >
+              <CheckCircle2 className="h-4 w-4" />
+            </Button>
           )}
-          {/* Tag column: fixed width ensures vertical alignment across all rows */}
-          <div className="w-[90px] flex justify-center shrink-0">
-            <Badge variant={isRecorrente ? 'default' : 'outline'} className="text-[10px] whitespace-nowrap">
-              {isRecorrente ? l.recorrente : l.temporario}
-            </Badge>
-          </div>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={() => setDeleteOpen(true)}
+            title="Excluir"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
-      {/* Delete AlertDialog */}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Lembrete Recorrente?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir compromisso?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir este lembrete? Essa ação cancelará as cobranças e avisos futuros e não poderá ser desfeita.
+              Essa ação não pode ser desfeita. O compromisso "{item.titulo}" será removido.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -158,75 +108,13 @@ const CommitmentItemRow = ({
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={isDeleting}
-              onClick={() => {
-                onDelete(item.id);
-                setDeleteOpen(false);
-              }}
+              onClick={() => { onDelete(item.id); setDeleteOpen(false); }}
             >
               {isDeleting ? 'Excluindo...' : 'Sim, excluir'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Edit Dialog */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Editar Lembrete Recorrente</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label>Mensagem / Descrição</Label>
-              <Input
-                value={form.mensagem}
-                onChange={e => setForm(p => ({ ...p, mensagem: e.target.value }))}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Valor (R$)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  value={form.valor}
-                  onChange={e => setForm(p => ({ ...p, valor: Number(e.target.value) }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Dia do Vencimento</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={31}
-                  value={form.dia_vencimento}
-                  onChange={e => setForm(p => ({ ...p, dia_vencimento: Number(e.target.value) }))}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Hora do Alerta</Label>
-              <Input
-                type="time"
-                value={form.hora_alerta}
-                onChange={e => setForm(p => ({ ...p, hora_alerta: e.target.value }))}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              disabled={isEditing}
-              onClick={() => {
-                onEdit(item.id, form);
-                setEditOpen(false);
-              }}
-            >
-              {isEditing ? 'Salvando...' : 'Salvar Alterações'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 };

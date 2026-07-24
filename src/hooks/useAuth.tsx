@@ -103,21 +103,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        let valid = true;
-        // If a JWT is present, validate its expiry. Sessions without a JWT
-        // (e.g. passwordless OTP login via n8n) are accepted as long as the
-        // telefone is stored — dashboard queries depend on it.
-        if (parsed.token && typeof parsed.token === 'string' && parsed.token.split('.').length === 3) {
-          try {
-            const payload = JSON.parse(atob(parsed.token.split('.')[1]));
-            if (payload.exp && payload.exp * 1000 <= Date.now()) valid = false;
-          } catch { /* non-JWT token, keep session */ }
-        }
-        if (valid && parsed.telefone) {
-          setToken(parsed.token || null);
+        const payload = JSON.parse(atob(parsed.token.split('.')[1]));
+        if (payload.exp * 1000 > Date.now()) {
+          setToken(parsed.token);
           setUserId(parsed.userId);
           setTelefone(parsed.telefone);
-          if (parsed.token) fetchPlano(parsed.token);
+          fetchPlano(parsed.token);
         } else {
           localStorage.removeItem('moovi-auth');
         }
@@ -127,7 +118,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     setIsLoading(false);
   }, [fetchPlano]);
-
 
   const login = useCallback((token: string, userId: string, telefone: string) => {
     setToken(token);
@@ -155,7 +145,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider value={{
-      isAuthenticated: !!(token || telefone),
+      isAuthenticated: !!token,
       userId,
       telefone,
       token,

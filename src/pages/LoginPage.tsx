@@ -5,55 +5,134 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Mail, ArrowLeft, Loader2, Sparkles, RefreshCw, ExternalLink, Sun, Moon } from 'lucide-react';
+import { Lock, KeyRound, ArrowLeft, Loader2, Eye, EyeOff, Sparkles, RefreshCw, ExternalLink, Sun, Moon } from 'lucide-react';
 import { toast } from 'sonner';
+import { CountryCodeSelector, countries, applyMask, Country } from '@/components/CountryCodeSelector';
 import mooviLogoLogin from '@/assets/moovi-logo-login.png';
 import mooviLogoLight from '@/assets/moovi-logo-light.png';
 import { useTheme } from '@/hooks/use-theme';
 
-type Step = 'email' | 'otp';
+type Step = 'phone' | 'password' | 'otp' | 'create-password';
 
-const N8N_REQUEST_URL = 'https://n8n.fisherai.shop/webhook-test/solicitar-codigo-login';
-const N8N_VALIDATE_URL = 'https://n8n.fisherai.shop/webhook-test/validar-codigo-login';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+async function callEdge(fnName: string, body: Record<string, string>) {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/${fnName}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Erro desconhecido');
+  return data;
+}
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const { theme, setTheme } = useTheme();
-  const [step, setStep] = useState<Step>('email');
-  const [email, setEmail] = useState('');
+  const [step, setStep] = useState<Step>('phone');
+  const [country, setCountry] = useState<Country>(countries[0]); // Brazil default
+  const [phoneDigits, setPhoneDigits] = useState('');
+  const [senha, setSenha] = useState('');
+  const [novaSenha, setNovaSenha] = useState('');
+  const [confirmSenha, setConfirmSenha] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [showNotFoundModal, setShowNotFoundModal] = useState(false);
   const [showInactiveModal, setShowInactiveModal] = useState(false);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  // Build the clean full number: DDI + local digits (all numeric, no special chars)
+  const fullPhone = country.ddi.replace(/\D/g, '') + phoneDigits.replace(/\D/g, '');
 
-  const handleRequestCode = async () => {
-    if (!isEmailValid) {
-      toast.error('Digite um e-mail válido');
+  const displayPhone = applyMask(phoneDigits.replace(/\D/g, ''), country.mask, country.maxDigits);
+  const displayFull = `+${country.ddi} ${displayPhone}`;
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    if (raw.length <= country.maxDigits) setPhoneDigits(raw);
+  };
+
+  const localDigits = phoneDigits.replace(/\D/g, '');
+  const isPhoneValid = localDigits.length >= country.maxDigits - 1;
+
+  const handleCheckPhone = async () => {
+    if (!isPhoneValid) {
+      toast.error('Digite um telefone válido');
       return;
     }
     setLoading(true);
     try {
-      const res = await fetch(N8N_REQUEST_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || data?.status !== 'sucesso') {
-        if (data?.status === 'nao_encontrado' || res.status === 404) {
-          setShowNotFoundModal(true);
-          return;
-        }
-        throw new Error(data?.mensagem || data?.error || 'Falha ao enviar o código');
+      // Garante que o número é enviado SEM máscaras (apenas dígitos, formato 55...)
+      const cleanPhone = fullPhone.replace(/\D/g, '');
+      console.log('[LoginPage] Verificando telefone:', cleanPhone);
+
+      const data = await callEdge('auth-check-phone', { telefone: cleanPhone });
+      console.log('[LoginPage] Resposta auth-check-phone:', data);
+
+      // CENÁRIO 1: Usuário não encontrado — INTERROMPE login
+      if (data?.exists !== true) {
+        setShowNotFoundModal(true);
+        return;
       }
-      toast.success('Código enviado para seu e-mail!');
+
+      // CENÁRIO 2 & 3: Apenas status === 'Ativo' (case-insensitive) avança.
+      // Qualquer outro valor (Inativo, Cancelado, null, undefined) é bloqueado.
+      const rawStatus = data?.status;
+      const status = String(rawStatus ?? '').trim().toLowerCase();
+
+      if (status !== 'ativo') {
+        // Inativo, Cancelado, vazio ou desconhecido → bloqueia
+        setShowInactiveModal(true);
+        return;
+      }
+
+      // CENÁRIO 3: Usuário ATIVO confirmado — segue fluxo normal
+      if (data.has_password) {
+        setStep('password');
+      } else {
+        await callEdge('auth-send-otp', { telefone: cleanPhone });
+        toast.success('Código enviado para seu WhatsApp!');
+        setStep('otp');
+      }
+    } catch (err: any) {
+      console.error('[LoginPage] Erro ao verificar telefone:', err);
+      toast.error(err.message || 'Erro ao verificar telefone');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogin = async () => {
+    if (!senha) { toast.error('Digite sua senha'); return; }
+    setLoading(true);
+    try {
+      const data = await callEdge('auth-login-password', { telefone: fullPhone, senha });
+      login(data.token, data.user_id, fullPhone);
+      toast.success('Login realizado com sucesso!');
+      navigate('/');
+    } catch (err: any) {
+      toast.error(err.message || 'Senha incorreta');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setLoading(true);
+    try {
+      await callEdge('auth-send-otp', { telefone: fullPhone });
+      toast.success('Código enviado para seu WhatsApp!');
       setStep('otp');
     } catch (err: any) {
-      toast.error(err.message || 'Erro ao solicitar código');
+      toast.error(err.message || 'Erro ao enviar código');
     } finally {
       setLoading(false);
     }
@@ -77,50 +156,14 @@ const LoginPage = () => {
     if (pasted.length === 6) { setOtp(pasted.split('')); otpRefs.current[5]?.focus(); e.preventDefault(); }
   };
 
-  const handleValidateCode = async () => {
+  const handleVerifyOtp = async () => {
     const code = otp.join('');
     if (code.length !== 6) { toast.error('Digite o código completo'); return; }
     setLoading(true);
     try {
-      const res = await fetch(N8N_VALIDATE_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), codigo: code }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || data?.status !== 'sucesso' || !data?.usuario) {
-        throw new Error(data?.mensagem || data?.error || 'Código inválido ou expirado');
-      }
-
-      const usuario = data.usuario;
-      const status = String(usuario.status ?? '').trim().toLowerCase();
-      if (status !== 'ativo') {
-        setShowInactiveModal(true);
-        return;
-      }
-
-      const telefone = String(usuario.telefone ?? '').replace(/\D/g, '');
-      if (!telefone) {
-        toast.error('Sessão inválida: telefone não retornado pelo servidor');
-        return;
-      }
-
-      // Persiste a sessão. O telefone é essencial para todas as consultas
-      // do dashboard (transações, contas, cartões, compromissos).
-      login(data.token || '', String(usuario.id ?? ''), telefone);
-      try {
-        localStorage.setItem('moovi_usuario', JSON.stringify({
-          id: usuario.id,
-          nome: usuario.nome,
-          email: email.trim(),
-          telefone,
-          plano: usuario.plano,
-          status: usuario.status,
-        }));
-      } catch {}
-
-      toast.success(`Bem-vindo${usuario.nome ? `, ${usuario.nome}` : ''}!`);
-      navigate('/');
+      await callEdge('auth-verify-otp', { telefone: fullPhone, codigo: code });
+      toast.success('Código verificado!');
+      setStep('create-password');
     } catch (err: any) {
       toast.error(err.message || 'Código inválido');
     } finally {
@@ -128,13 +171,24 @@ const LoginPage = () => {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
-    if (e.key === 'Enter') action();
+  const handleCreatePassword = async () => {
+    if (novaSenha.length < 6) { toast.error('A senha deve ter pelo menos 6 caracteres'); return; }
+    if (novaSenha !== confirmSenha) { toast.error('As senhas não coincidem'); return; }
+    setLoading(true);
+    try {
+      const data = await callEdge('auth-set-password', { telefone: fullPhone, senha: novaSenha });
+      login(data.token, data.user_id, fullPhone);
+      toast.success('Senha criada com sucesso!');
+      navigate('/');
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao criar senha');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const resetToEmail = () => {
-    setStep('email');
-    setOtp(['', '', '', '', '', '']);
+  const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
+    if (e.key === 'Enter') action();
   };
 
   return (
@@ -155,40 +209,77 @@ const LoginPage = () => {
           </div>
           <CardTitle className="text-2xl font-bold">Moovi</CardTitle>
           <CardDescription className="text-muted-foreground">
-            {step === 'email' && 'Digite seu e-mail para receber o código de acesso'}
-            {step === 'otp' && `Digite o código enviado para ${email}`}
+            {step === 'phone' && 'Digite seu telefone para continuar'}
+            {step === 'password' && 'Digite sua senha'}
+            {step === 'otp' && 'Digite o código enviado para seu WhatsApp'}
+            {step === 'create-password' && 'Crie sua senha definitiva'}
           </CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {step === 'email' && (
+          {/* PHONE STEP */}
+          {step === 'phone' && (
             <>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <div className="flex">
+                <CountryCodeSelector selected={country} onSelect={setCountry} />
                 <Input
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  placeholder="seu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(e, handleRequestCode)}
-                  className="pl-10 h-12 text-base"
+                  placeholder={country.mask.replace(/#/g, '9')}
+                  value={applyMask(phoneDigits, country.mask, country.maxDigits)}
+                  onChange={handlePhoneChange}
+                  onKeyDown={(e) => handleKeyDown(e, handleCheckPhone)}
+                  className="rounded-l-none h-12 text-base flex-1"
                   autoFocus
                 />
               </div>
-              <Button
-                onClick={handleRequestCode}
-                disabled={loading || !isEmailValid}
-                className="w-full h-12 text-base"
-              >
-                {loading ? <Loader2 className="animate-spin h-5 w-5" /> : 'Enviar Código de Acesso'}
+              <Button onClick={handleCheckPhone} disabled={loading || !isPhoneValid} className="w-full h-12 text-base">
+                {loading ? <Loader2 className="animate-spin h-5 w-5" /> : 'Continuar'}
               </Button>
             </>
           )}
 
+          {/* PASSWORD STEP */}
+          {step === 'password' && (
+            <>
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+                <span className="text-lg leading-none">{country.flag}</span>
+                <span className="text-sm text-muted-foreground">{displayFull}</span>
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Sua senha"
+                  value={senha}
+                  onChange={(e) => setSenha(e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, handleLogin)}
+                  className="pl-10 pr-10 h-12 text-base"
+                  autoFocus
+                />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <Button onClick={handleLogin} disabled={loading || !senha} className="w-full h-12 text-base">
+                {loading ? <Loader2 className="animate-spin h-5 w-5" /> : 'Entrar'}
+              </Button>
+              <div className="flex items-center justify-between">
+                <Button variant="ghost" size="sm" onClick={() => { setStep('phone'); setSenha(''); }}>
+                  <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
+                </Button>
+                <Button variant="link" size="sm" onClick={handleForgotPassword} disabled={loading}>
+                  Esqueci minha senha
+                </Button>
+              </div>
+            </>
+          )}
+
+          {/* OTP STEP */}
           {step === 'otp' && (
             <>
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+                <span className="text-lg leading-none">{country.flag}</span>
+                <span className="text-sm text-muted-foreground">{displayFull}</span>
+              </div>
               <div className="flex justify-center gap-2" onPaste={handleOtpPaste}>
                 {otp.map((digit, i) => (
                   <input
@@ -205,27 +296,74 @@ const LoginPage = () => {
                   />
                 ))}
               </div>
-              <Button
-                onClick={handleValidateCode}
-                disabled={loading || otp.join('').length !== 6}
-                className="w-full h-12 text-base"
-              >
-                {loading ? <Loader2 className="animate-spin h-5 w-5" /> : 'Validar e Entrar'}
+              <Button onClick={handleVerifyOtp} disabled={loading || otp.join('').length !== 6} className="w-full h-12 text-base">
+                {loading ? <Loader2 className="animate-spin h-5 w-5" /> : 'Verificar Código'}
               </Button>
               <div className="flex items-center justify-between">
-                <Button variant="ghost" size="sm" onClick={resetToEmail}>
-                  <ArrowLeft className="h-4 w-4 mr-1" /> Usar outro e-mail
+                <Button variant="ghost" size="sm" onClick={() => { setStep('phone'); setOtp(['','','','','','']); }}>
+                  <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
                 </Button>
-                <Button variant="link" size="sm" onClick={handleRequestCode} disabled={loading}>
+                <Button variant="link" size="sm" onClick={handleForgotPassword} disabled={loading}>
                   Reenviar código
                 </Button>
               </div>
             </>
           )}
+
+          {/* CREATE PASSWORD STEP */}
+          {step === 'create-password' && (
+            <>
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+                <KeyRound className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Crie uma senha para acessos futuros</span>
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type={showNewPassword ? 'text' : 'password'}
+                  placeholder="Nova senha (mín. 6 caracteres)"
+                  value={novaSenha}
+                  onChange={(e) => setNovaSenha(e.target.value)}
+                  className="pl-10 pr-10 h-12 text-base"
+                  autoFocus
+                />
+                <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type={showNewPassword ? 'text' : 'password'}
+                  placeholder="Confirme a senha"
+                  value={confirmSenha}
+                  onChange={(e) => setConfirmSenha(e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, handleCreatePassword)}
+                  className="pl-10 h-12 text-base"
+                />
+              </div>
+              {novaSenha && novaSenha.length < 6 && (
+                <p className="text-xs text-destructive">Mínimo de 6 caracteres</p>
+              )}
+              {confirmSenha && novaSenha !== confirmSenha && (
+                <p className="text-xs text-destructive">As senhas não coincidem</p>
+              )}
+              <Button
+                onClick={handleCreatePassword}
+                disabled={loading || novaSenha.length < 6 || novaSenha !== confirmSenha}
+                className="w-full h-12 text-base"
+              >
+                {loading ? <Loader2 className="animate-spin h-5 w-5" /> : 'Criar Senha e Entrar'}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => { setStep('phone'); setNovaSenha(''); setConfirmSenha(''); }}>
+                <ArrowLeft className="h-4 w-4 mr-1" /> Voltar ao início
+              </Button>
+            </>
+          )}
         </CardContent>
       </Card>
 
-      {/* Usuário não encontrado */}
+      {/* CENÁRIO 1: Modal - Usuário não encontrado */}
       <Dialog open={showNotFoundModal} onOpenChange={setShowNotFoundModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -234,7 +372,7 @@ const LoginPage = () => {
             </div>
             <DialogTitle className="text-center text-xl">Comece a organizar suas finanças</DialogTitle>
             <DialogDescription className="text-center pt-2">
-              Não encontramos um cadastro ativo com este e-mail. Que tal começar sua jornada agora?
+              Não encontramos um cadastro ativo com este número. Que tal começar sua jornada agora?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="sm:justify-center">
@@ -252,7 +390,7 @@ const LoginPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Usuário Inativo/Cancelado */}
+      {/* CENÁRIO 2: Modal - Usuário Inativo/Cancelado */}
       <Dialog open={showInactiveModal} onOpenChange={setShowInactiveModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

@@ -140,6 +140,39 @@ export type Database = {
         }
         Relationships: []
       }
+      compromissos: {
+        Row: {
+          created_at: string
+          data_hora_limite: string
+          descricao: string | null
+          id: number
+          status: string
+          telefone_usuario: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_hora_limite: string
+          descricao?: string | null
+          id?: number
+          status?: string
+          telefone_usuario: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_hora_limite?: string
+          descricao?: string | null
+          id?: number
+          status?: string
+          telefone_usuario?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       credit_cards: {
         Row: {
           closing_day: number

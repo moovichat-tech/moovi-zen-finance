@@ -325,7 +325,7 @@ const Dashboard = () => {
             <h3 className="mb-3 sm:mb-4 text-sm font-semibold">{t.dashboard.monthlyEvolution}</h3>
             {d.evolucaoTempo.length === 0 ? (
               <div className="flex h-[250px] items-center justify-center text-sm text-muted-foreground">
-                {t.common?.noData ?? 'Sem dados para exibir'}
+                {(t.common as any)?.noData ?? 'Sem dados para exibir'}
               </div>
             ) : (
             <ResponsiveContainer width="100%" height={250}>

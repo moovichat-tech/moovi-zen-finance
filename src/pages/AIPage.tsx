@@ -83,33 +83,50 @@ const AIPage = () => {
     if (!content || loading) return;
     setInput('');
     setMessages(prev => [...prev, { id: `u-${Date.now()}`, role: 'user', content }]);
-
-    const lower = content.toLowerCase();
-    const isExpense = EXPENSE_WORDS.some(w => lower.includes(w));
-    const isIncome = INCOME_WORDS.some(w => lower.includes(w));
-
-    if (isExpense || isIncome) {
-      setTransactionType(isExpense ? 'expense' : 'income');
-      setTransactionInitialData({
-        amount: parseAmount(content),
-        description: parseDescription(content),
-      });
-      setIsTransactionModalOpen(true);
-      return;
-    }
-
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setMessages(prev => [
-      ...prev,
-      {
-        id: `a-${Date.now()}`,
-        role: 'assistant',
-        content: `Integração com o backend em desenvolvimento. Você disse: ${content}`,
-      },
-    ]);
-    setLoading(false);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('chat-intent', {
+        body: { message: content },
+      });
+      if (error) throw error;
+
+      const intent = data?.intent as 'expense' | 'income' | 'general' | undefined;
+
+      if (intent === 'expense' || intent === 'income') {
+        setTransactionType(intent);
+        setTransactionInitialData({
+          amount: data?.amount != null ? String(data.amount).replace('.', ',') : '',
+          description: data?.description ?? '',
+        });
+        setIsTransactionModalOpen(true);
+        return;
+      }
+
+      setMessages(prev => [
+        ...prev,
+        {
+          id: `a-${Date.now()}`,
+          role: 'assistant',
+          content:
+            "Ainda estou aprendendo a responder perguntas complexas, mas já consigo anotar seus gastos! Tente dizer: 'Gastei 50 no posto'.",
+        },
+      ]);
+    } catch (err) {
+      console.error(err);
+      setMessages(prev => [
+        ...prev,
+        {
+          id: `a-${Date.now()}`,
+          role: 'assistant',
+          content: 'Não consegui processar sua mensagem agora. Tente novamente em instantes.',
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   }, [loading]);
+
 
   const handleQuickAction = (prompt: string) => {
     if (prompt.trim().endsWith('mês')) {

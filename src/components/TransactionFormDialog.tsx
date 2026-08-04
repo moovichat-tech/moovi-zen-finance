@@ -103,6 +103,20 @@ export function TransactionFormDialog({ type, open, onOpenChange, initialData, i
     enabled: !!token && open,
   });
 
+  const { data: cartoes = [] } = useQuery<Cartao[]>({
+    queryKey: ['cartoes-list'],
+    queryFn: async () => {
+      if (!token) return [];
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/get-cartoes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!token && open,
+  });
+
   const { data: categorias = [] } = useQuery<Categoria[]>({
     queryKey: ['categorias'],
     queryFn: async () => {
@@ -117,26 +131,53 @@ export function TransactionFormDialog({ type, open, onOpenChange, initialData, i
     enabled: !!token && open,
   });
 
+  // Pré-preenche a conta a partir do método de pagamento sugerido pela IA (match por nome, sem case/acentos)
+  useEffect(() => {
+    if (!open || !paymentMethod || form.conta) return;
+    const target = normalize(paymentMethod);
+    const match = contas.find(c => normalize(c.nome) === target)
+      ?? contas.find(c => normalize(c.nome).includes(target) || target.includes(normalize(c.nome)));
+    if (match) setForm(prev => ({ ...prev, conta: match.nome }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, paymentMethod, contas]);
+
   const filteredCategorias = categorias.filter(c =>
     c.tipo === (type === 'income' ? 'receita' : 'despesa')
   );
 
   const createMutation = useMutation({
     mutationFn: async (data: TransactionFormData) => {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/create-transacao`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          tipo: type === 'income' ? 'receita' : 'despesa',
-          descricao: data.description,
-          valor: Number(data.amount),
-          categoria: data.category,
-          data_transacao: data.date,
-          status: data.status,
-          conta: data.conta?.trim() ? data.conta : null,
-        }),
-      });
-      if (!res.ok) throw new Error('Erro ao criar transação');
+      const total = Number(data.amount);
+      const parcels = Math.max(1, Math.floor(Number(data.installments) || 1));
+      const valorParcela = Number((total / parcels).toFixed(2));
+
+      // Data da primeira parcela: se o método for um cartão e a compra passou do fechamento, joga pro mês seguinte
+      let startDate = data.date;
+      if (parcels > 1 && data.conta) {
+        const card = cartoes.find(c => normalize(c.nome) === normalize(data.conta));
+        const fechamento = Number(card?.dia_fechamento);
+        const dia = Number(data.date.split('-')[2]);
+        if (Number.isFinite(fechamento) && fechamento > 0 && dia > fechamento) {
+          startDate = addMonths(data.date, 1);
+        }
+      }
+
+      for (let i = 0; i < parcels; i++) {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/create-transacao`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            tipo: type === 'income' ? 'receita' : 'despesa',
+            descricao: parcels > 1 ? `${data.description} (${i + 1}/${parcels})` : data.description,
+            valor: parcels > 1 ? valorParcela : total,
+            categoria: data.category,
+            data_transacao: parcels > 1 ? addMonths(startDate, i) : data.date,
+            status: parcels > 1 && i > 0 ? 'PENDENTE' : data.status,
+            conta: data.conta?.trim() ? data.conta : null,
+          }),
+        });
+        if (!res.ok) throw new Error('Erro ao criar transação');
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: type === 'income' ? ['receitas'] : ['despesas'] });

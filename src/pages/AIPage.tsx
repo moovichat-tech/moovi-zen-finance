@@ -185,8 +185,11 @@ const AIPage = () => {
   const send = useCallback(async (text: string) => {
     const content = text.trim();
     if (!content || loading) return;
+    const msgId = `u-${Date.now()}`;
+    const setStatus = (status: Message['status']) =>
+      setMessages(prev => prev.map(m => (m.id === msgId ? { ...m, status } : m)));
     setInput('');
-    setMessages(prev => [...prev, { id: `u-${Date.now()}`, role: 'user', content }]);
+    setMessages(prev => [...prev, { id: msgId, role: 'user', content, status: 'sending' }]);
     setLoading(true);
 
     try {
@@ -196,6 +199,7 @@ const AIPage = () => {
         body: { message: content, today: todayStr, userCategories },
       });
       if (error) throw error;
+      setStatus('success');
 
       // Validação rigorosa do payload retornado
       if (!data || typeof data !== 'object' || Array.isArray(data)) {

@@ -24,15 +24,6 @@ const QUICK_ACTIONS = [
   { label: 'Resumo do Mês', icon: CalendarRange, prompt: 'Resumo do mês' },
 ];
 
-const parseAmount = (text: string): string => {
-  const m = text.match(/(\d+(?:[.,]\d{1,2})?)/);
-  return m ? m[1].replace('.', ',') : '';
-};
-
-const parseDescription = (text: string): string => {
-  const m = text.match(/(?:com|no|na|em|de|para)\s+(.{2,40})$/i);
-  return (m ? m[1] : text).trim();
-};
 
 const MooviAvatar = () => (
   <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full" style={{ backgroundColor: '#0E110F' }}>

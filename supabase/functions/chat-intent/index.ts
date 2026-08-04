@@ -56,6 +56,14 @@ Deno.serve(async (req) => {
     const clientToday = typeof body?.today === 'string' && DATE_RE.test(body.today) ? body.today : null;
     const today = clientToday ?? todayInSaoPaulo();
 
+    const rawUserCategories = Array.isArray(body?.userCategories) ? body.userCategories : [];
+    const userCategories = rawUserCategories
+      .filter((c: unknown): c is string => typeof c === 'string' && !!c.trim())
+      .map((c: string) => c.trim())
+      .slice(0, 100);
+    const availableCategories = userCategories.length ? userCategories : FALLBACK_CATEGORIES;
+    const categoriesStr = availableCategories.join(', ');
+
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {

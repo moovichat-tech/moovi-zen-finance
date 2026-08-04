@@ -121,10 +121,15 @@ const AIPage = () => {
         return;
       }
 
+      const rawCategory = (data as any).category;
+      const category =
+        typeof rawCategory === 'string' && rawCategory.trim() ? rawCategory.trim() : 'Gastos Gerais';
+
       setTransactionType(rawIntent);
       setTransactionInitialData({
         amount: String(amount).replace('.', ','),
         description,
+        category,
       });
       setIsTransactionModalOpen(true);
     } catch (err) {

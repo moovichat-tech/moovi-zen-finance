@@ -127,11 +127,20 @@ const AIPage = () => {
       const category =
         typeof rawCategory === 'string' && rawCategory.trim() ? rawCategory.trim() : 'Gastos Gerais';
 
+      const rawDate = (data as any).date;
+      const isValidDate =
+        typeof rawDate === 'string' &&
+        /^\d{4}-\d{2}-\d{2}$/.test(rawDate) &&
+        !Number.isNaN(new Date(`${rawDate}T00:00:00`).getTime());
+      const parsedDate = isValidDate ? new Date(`${rawDate}T00:00:00`) : new Date();
+      const dateStr = `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, '0')}-${String(parsedDate.getDate()).padStart(2, '0')}`;
+
       setTransactionType(rawIntent);
       setTransactionInitialData({
         amount: String(amount).replace('.', ','),
         description,
         category,
+        date: dateStr,
       });
       setIsTransactionModalOpen(true);
     } catch (err) {

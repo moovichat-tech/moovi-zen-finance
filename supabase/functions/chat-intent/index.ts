@@ -108,10 +108,13 @@ Deno.serve(async (req) => {
       : 'support';
     const amountNum = Number(parsed.amount);
     const amount = Number.isFinite(amountNum) && amountNum > 0 ? amountNum : null;
-    const description =
+    const rawDescription =
       typeof parsed.description === 'string' && parsed.description.trim()
         ? parsed.description.trim()
         : null;
+    const description =
+      rawDescription ??
+      (intent === 'expense' ? 'Despesa não especificada' : intent === 'income' ? 'Receita não especificada' : null);
 
     const instNum = Math.floor(Number(parsed.installments));
     const installments = Number.isFinite(instNum) && instNum >= 1 ? Math.min(instNum, 72) : 1;

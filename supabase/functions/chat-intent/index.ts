@@ -1,7 +1,9 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
+const CATEGORIES = ['Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Lazer', 'Gastos Gerais'];
+
 const SYSTEM_PROMPT =
-  "Você é um classificador de intenções financeiras. Leia a mensagem do usuário e extraia os dados em um JSON estrito. Chaves obrigatórias: 'intent' ('expense', 'income' ou 'general'), 'amount' (número ou null), 'description' (string ou null). Exemplo: Se 'gastei 20 no almoço', retorne {\"intent\": \"expense\", \"amount\": 20, \"description\": \"almoço\"}.";
+  "Você é um classificador de intenções financeiras. Leia a mensagem do usuário e extraia os dados em um JSON estrito. Chaves obrigatórias: 'intent' ('expense', 'income' ou 'general'), 'amount' (número ou null), 'description' (string da compra/ganho em si, ex: 'pizza') e 'category' (string). Para a chave 'category', você DEVE classificar OBRIGATORIAMENTE em uma destas macro-categorias: 'Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Lazer' ou 'Gastos Gerais'. Exemplo: Se 'gastei 40 com pizza', retorne {\"intent\": \"expense\", \"amount\": 40, \"description\": \"pizza\", \"category\": \"Alimentação\"}.";
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });

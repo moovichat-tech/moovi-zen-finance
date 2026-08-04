@@ -105,7 +105,7 @@ export function TransactionFormDialog({ type, open, onOpenChange, initialData }:
           categoria: data.category,
           data_transacao: data.date,
           status: data.status,
-          conta: data.conta,
+          conta: data.conta?.trim() ? data.conta : null,
         }),
       });
       if (!res.ok) throw new Error('Erro ao criar transação');
@@ -126,7 +126,7 @@ export function TransactionFormDialog({ type, open, onOpenChange, initialData }:
   });
 
   const handleSubmit = () => {
-    if (!form.description || !form.amount || !form.conta || !form.category) return;
+    if (!form.description || !form.amount || !form.category) return;
     createMutation.mutate(form);
   };
 

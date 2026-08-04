@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -7,18 +7,50 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Calendar } from '@/components/ui/calendar';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
 } from '@/components/ui/dialog';
-import { Plus, Loader2, CalendarCheck2 } from 'lucide-react';
+import { Plus, Loader2, CalendarCheck2, CalendarDays, Link2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { format, isSameDay } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import CommitmentItemRow, { type Compromisso } from '@/components/commitments/CommitmentItemRow';
 
 const CommitmentsPage = () => {
-  const { telefone } = useAuth();
+  const { telefone, token } = useAuth();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [form, setForm] = useState({ titulo: '', descricao: '', data: '', hora: '' });
+
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+  const fnUrl = (name: string) => `https://${projectId}.supabase.co/functions/v1/${name}`;
+
+  // Feedback do retorno do OAuth do Google
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const g = params.get('google');
+    if (g === 'ok') toast.success('Google Agendas conectado!');
+    if (g === 'erro') toast.error('Não foi possível conectar o Google Agendas.');
+    if (g) {
+      window.history.replaceState({}, '', window.location.pathname);
+      queryClient.invalidateQueries({ queryKey: ['google-status'] });
+    }
+  }, [queryClient]);
+
+  const { data: google } = useQuery<{ connected: boolean; auth_url: string | null }>({
+    queryKey: ['google-status', telefone],
+    queryFn: async () => {
+      const res = await fetch(fnUrl('google-status'), {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) throw new Error('Erro ao verificar Google');
+      return res.json();
+    },
+    enabled: !!token,
+  });
 
   const { data: compromissos = [], isLoading, isError } = useQuery<Compromisso[]>({
     queryKey: ['compromissos', telefone],
@@ -35,6 +67,35 @@ const CommitmentsPage = () => {
     enabled: !!telefone,
   });
 
+  const pendingDays = useMemo(
+    () =>
+      compromissos
+        .filter(c => c.status === 'pendente')
+        .map(c => new Date(c.data_hora_limite)),
+    [compromissos]
+  );
+
+  const filtered = useMemo(() => {
+    if (!selectedDate) return compromissos;
+    return compromissos.filter(c => isSameDay(new Date(c.data_hora_limite), selectedDate));
+  }, [compromissos, selectedDate]);
+
+  const syncGoogle = async (payload: { titulo: string; descricao: string; data_hora_limite: string }) => {
+    if (!google?.connected || !token) return;
+    try {
+      const res = await fetch(fnUrl('sync-google-event'), {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const body = await res.json();
+      if (body?.synced) toast.success('Evento criado no Google Agendas!');
+      else if (res.ok === false) toast.error('Falha ao sincronizar com o Google Agendas.');
+    } catch {
+      toast.error('Falha ao sincronizar com o Google Agendas.');
+    }
+  };
+
   const createMutation = useMutation({
     mutationFn: async (payload: { titulo: string; descricao: string; data_hora_limite: string }) => {
       if (!telefone) throw new Error('Usuário não autenticado');
@@ -46,6 +107,7 @@ const CommitmentsPage = () => {
         status: 'pendente',
       } as never);
       if (error) throw error;
+      await syncGoogle(payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['compromissos', telefone] });
@@ -95,6 +157,12 @@ const CommitmentsPage = () => {
     });
   };
 
+  const openDialog = () => {
+    const base = selectedDate ?? new Date();
+    setForm(p => ({ ...p, data: format(base, 'yyyy-MM-dd') }));
+    setDialogOpen(true);
+  };
+
   return (
     <div className="space-y-5 animate-in-up">
       <div className="flex items-center justify-between gap-3 lg:hidden">
@@ -104,10 +172,28 @@ const CommitmentsPage = () => {
         </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {google?.connected ? (
+          <Badge variant="secondary" className="gap-1.5 py-1.5 px-3">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            Google Agendas conectado
+          </Badge>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-2"
+            disabled={!google?.auth_url}
+            onClick={() => google?.auth_url && (window.location.href = google.auth_url)}
+          >
+            <Link2 className="h-4 w-4" />
+            Conectar Google Agendas
+          </Button>
+        )}
+
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-2">
+            <Button size="sm" className="gap-2" onClick={openDialog}>
               <Plus className="h-4 w-4" />
               Novo Compromisso
             </Button>
@@ -163,34 +249,68 @@ const CommitmentsPage = () => {
         </Dialog>
       </div>
 
-      <Card className="p-5">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-10">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <span className="ml-2 text-sm text-muted-foreground">Carregando...</span>
+      <div className="grid gap-5 lg:grid-cols-[auto_1fr] items-start">
+        <Card className="p-3 w-full lg:w-auto flex justify-center">
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={setSelectedDate}
+            locale={ptBR}
+            modifiers={{ pendente: pendingDays }}
+            modifiersClassNames={{
+              pendente: 'font-bold text-primary relative after:content-[""] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-1 after:rounded-full after:bg-primary',
+            }}
+            className="p-3 pointer-events-auto"
+          />
+        </Card>
+
+        <Card className="p-5">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2 min-w-0">
+              <CalendarDays className="h-4 w-4 text-primary shrink-0" />
+              <h3 className="text-sm font-semibold truncate">
+                {selectedDate
+                  ? format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+                  : 'Todos os compromissos'}
+              </h3>
+            </div>
+            {selectedDate && (
+              <Button variant="ghost" size="sm" onClick={() => setSelectedDate(undefined)}>
+                Ver todos
+              </Button>
+            )}
           </div>
-        ) : isError ? (
-          <p className="text-center text-sm text-destructive py-10">Erro ao carregar compromissos</p>
-        ) : compromissos.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <CalendarCheck2 className="h-10 w-10 text-muted-foreground/40 mb-3" />
-            <p className="text-sm text-muted-foreground">Nenhum compromisso cadastrado ainda.</p>
-            <p className="text-xs text-muted-foreground mt-1">Clique em "Novo Compromisso" para começar.</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {compromissos.map(item => (
-              <CommitmentItemRow
-                key={item.id}
-                item={item}
-                onDelete={id => deleteMutation.mutate(id)}
-                onMarkDone={id => markDoneMutation.mutate(id)}
-                isDeleting={deleteMutation.isPending}
-              />
-            ))}
-          </div>
-        )}
-      </Card>
+
+          {isLoading ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <span className="ml-2 text-sm text-muted-foreground">Carregando...</span>
+            </div>
+          ) : isError ? (
+            <p className="text-center text-sm text-destructive py-10">Erro ao carregar compromissos</p>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <CalendarCheck2 className="h-10 w-10 text-muted-foreground/40 mb-3" />
+              <p className="text-sm text-muted-foreground">
+                {selectedDate ? 'Nenhum compromisso nesta data.' : 'Nenhum compromisso cadastrado ainda.'}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">Clique em "Novo Compromisso" para começar.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filtered.map(item => (
+                <CommitmentItemRow
+                  key={item.id}
+                  item={item}
+                  onDelete={id => deleteMutation.mutate(id)}
+                  onMarkDone={id => markDoneMutation.mutate(id)}
+                  isDeleting={deleteMutation.isPending}
+                />
+              ))}
+            </div>
+          )}
+        </Card>
+      </div>
     </div>
   );
 };

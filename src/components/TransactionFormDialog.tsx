@@ -19,6 +19,12 @@ interface Conta {
   tipo: string;
 }
 
+interface Cartao {
+  id: string;
+  nome: string;
+  dia_fechamento?: number | string | null;
+}
+
 interface Categoria {
   id: string;
   nome: string;
@@ -32,6 +38,7 @@ export interface TransactionFormData {
   date: string;
   status: 'PAGO' | 'PENDENTE';
   conta: string;
+  installments: string;
 }
 
 const emptyForm = (type: 'income' | 'expense'): TransactionFormData => ({
@@ -41,25 +48,46 @@ const emptyForm = (type: 'income' | 'expense'): TransactionFormData => ({
   date: new Date().toISOString().split('T')[0],
   status: type === 'income' ? 'PAGO' : 'PAGO',
   conta: '',
+  installments: '1',
 });
+
+const normalize = (v: string) =>
+  v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
+const addMonths = (dateStr: string, months: number) => {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const base = new Date(y, m - 1 + months, 1);
+  const lastDay = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+  base.setDate(Math.min(d, lastDay));
+  return `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, '0')}-${String(base.getDate()).padStart(2, '0')}`;
+};
 
 interface TransactionFormDialogProps {
   type: 'income' | 'expense';
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialData?: Partial<TransactionFormData>;
+  installments?: number;
+  paymentMethod?: string | null;
 }
 
-export function TransactionFormDialog({ type, open, onOpenChange, initialData }: TransactionFormDialogProps) {
+export function TransactionFormDialog({ type, open, onOpenChange, initialData, installments, paymentMethod }: TransactionFormDialogProps) {
   const { t, locale } = useI18n();
   const { token } = useAuth();
   const queryClient = useQueryClient();
   const [form, setForm] = useState<TransactionFormData>(emptyForm(type));
 
   useEffect(() => {
-    if (open) setForm({ ...emptyForm(type), ...(initialData || {}) });
+    if (open) {
+      setForm({
+        ...emptyForm(type),
+        ...(initialData || {}),
+        ...(installments && installments > 1 ? { installments: String(installments) } : {}),
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, type]);
+
 
   const { data: contas = [] } = useQuery<Conta[]>({
     queryKey: ['contas-list'],

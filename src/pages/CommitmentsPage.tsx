@@ -12,11 +12,19 @@ import { Badge } from '@/components/ui/badge';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
 } from '@/components/ui/dialog';
-import { Plus, Loader2, CalendarCheck2, CalendarDays, Link2, CheckCircle2 } from 'lucide-react';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Plus, Loader2, CalendarCheck2, CalendarDays, Link2, CheckCircle2, ChevronDown, Unlink } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import CommitmentItemRow, { type Compromisso } from '@/components/commitments/CommitmentItemRow';
+
 
 const CommitmentsPage = () => {
   const { telefone, token } = useAuth();

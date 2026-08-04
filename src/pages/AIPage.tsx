@@ -128,7 +128,7 @@ const AIPage = () => {
         <div className="mx-auto w-full max-w-3xl px-1 pb-6 sm:px-4">
           {isEmpty ? (
             <div className="flex min-h-[45vh] flex-col items-center justify-center text-center">
-              <img src={mooviLogo} alt="Moovi" className="mb-4 h-14 w-14 object-contain" />
+              <img src={mooviLogo} alt="Moovi" className="mb-4 h-20 w-20 rounded-2xl object-contain" style={{ backgroundColor: '#0E110F' }} />
               <h2 className="text-lg font-semibold sm:text-xl">Olá! Sou a Moovi 💚</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Como posso ajudar com suas finanças hoje?

@@ -1,6 +1,6 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
-const CATEGORIES = ['Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Lazer', 'Educação', 'Gastos Gerais'];
+const FALLBACK_CATEGORIES = ['Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Lazer', 'Educação', 'Gastos Gerais'];
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -13,20 +13,25 @@ const todayInSaoPaulo = () =>
     day: '2-digit',
   }).format(new Date());
 
-const buildSystemPrompt = (dataAtualISO: string) =>
-  `Você é um extrator de dados. Leia a mensagem do usuário e extraia as informações literais para JSON.
-NÃO faça cálculos matemáticos. NÃO divida valores. NÃO deduza regras de negócio (faturas, saldos, totais).
-DATA DE REFERÊNCIA PARA CÁLCULO DE DIAS: ${dataAtualISO}.
-Regras de Data: 'hoje' = data de referência, 'ontem' = -1 dia, 'anteontem' = -2 dias, 'amanhã' = +1 dia.
+const buildSystemPrompt = (dataAtualISO: string, categoriesStr: string) =>
+  `Você é um extrator de dados financeiros. NÃO faça cálculos matemáticos. DATA DE REFERÊNCIA (HOJE): ${dataAtualISO}.
+
+REGRAS MATEMÁTICAS TEMPORAIS (OBRIGATÓRIO):
+- "hoje", "agora" ou sem menção de data = ${dataAtualISO}
+- "ontem" = Subtraia exatamente 1 dia da DATA DE REFERÊNCIA.
+- "anteontem", "antes de ontem", "ante ontem" = Subtraia exatamente 2 dias da DATA DE REFERÊNCIA.
+- "amanhã" = Adicione exatamente 1 dia à DATA DE REFERÊNCIA.
+
+REGRAS DE CATEGORIA (OBRIGATÓRIO): Você DEVE classificar a transação ESCOLHENDO APENAS UMA das categorias desta lista exata do usuário: [ ${categoriesStr} ]. Exemplo: Se o gasto for "perfume", categorize como "Compras Pessoais" (se existir na lista). Nunca invente categorias. Se nenhuma se encaixar, use a mais genérica (como "Gastos Gerais").
 
 CHAVES DO JSON:
-- 'intent': 'expense' (gastos), 'income' (ganhos), 'support' (dúvidas de uso), 'report' (pedidos de resumo/extrato).
-- 'amount': Número decimal do valor TOTAL mencionado. Se o usuário disser "2000 em 10x", retorne 2000. NÃO divida.
-- 'installments': Número inteiro. Se disser "10x", retorne 10. Se não mencionar, retorne 1.
-- 'payment_method': Nome do banco/cartão mencionado. Se não houver, null.
-- 'description': O item comprado.
-- 'category': Classifique em 'Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Lazer', 'Educação' ou 'Gastos Gerais'.
-- 'date': String YYYY-MM-DD baseada na regra de data.
+- 'intent': 'expense', 'income', 'support', 'report'.
+- 'amount': Número decimal (total). Se o usuário disser "2000 em 10x", retorne 2000. NÃO divida.
+- 'installments': Número inteiro (padrão 1).
+- 'payment_method': Nome do banco/cartão ou null.
+- 'description': Nome do item comprado.
+- 'category': Nome EXATO extraído da lista de categorias fornecida.
+- 'date': String YYYY-MM-DD calculada com a regra de datas.
 - 'support_message': Apenas se 'intent' for 'support'. Ensine qual menu do painel usar. Caso contrário, null.`;
 
 Deno.serve(async (req) => {
@@ -51,6 +56,14 @@ Deno.serve(async (req) => {
     const clientToday = typeof body?.today === 'string' && DATE_RE.test(body.today) ? body.today : null;
     const today = clientToday ?? todayInSaoPaulo();
 
+    const rawUserCategories = Array.isArray(body?.userCategories) ? body.userCategories : [];
+    const userCategories = rawUserCategories
+      .filter((c: unknown): c is string => typeof c === 'string' && !!c.trim())
+      .map((c: string) => c.trim())
+      .slice(0, 100);
+    const availableCategories = userCategories.length ? userCategories : FALLBACK_CATEGORIES;
+    const categoriesStr = availableCategories.join(', ');
+
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -62,7 +75,7 @@ Deno.serve(async (req) => {
         response_format: { type: 'json_object' },
         temperature: 0,
         messages: [
-          { role: 'system', content: buildSystemPrompt(today) },
+          { role: 'system', content: buildSystemPrompt(today, categoriesStr) },
           { role: 'user', content: message },
         ],
       }),
@@ -109,7 +122,10 @@ Deno.serve(async (req) => {
         : null;
 
     const rawCategory = typeof parsed.category === 'string' ? parsed.category.trim() : '';
-    const category = CATEGORIES.find(c => c.toLowerCase() === rawCategory.toLowerCase()) ?? 'Gastos Gerais';
+    const category =
+      availableCategories.find(c => c.toLowerCase() === rawCategory.toLowerCase()) ??
+      availableCategories.find(c => c.toLowerCase() === 'gastos gerais') ??
+      (rawCategory || availableCategories[0] || 'Gastos Gerais');
 
     const rawDate = typeof parsed.date === 'string' ? parsed.date.trim() : '';
     const date = DATE_RE.test(rawDate) && !Number.isNaN(new Date(`${rawDate}T00:00:00`).getTime())

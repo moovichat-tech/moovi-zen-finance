@@ -1,11 +1,36 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
-const CATEGORIES = ['Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Lazer', 'Gastos Gerais'];
+const CATEGORIES = ['Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Lazer', 'Educação', 'Gastos Gerais'];
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-const buildSystemPrompt = (today: string) =>
-  `A DATA DE HOJE É: ${today}. Você é um classificador de intenções financeiras. Leia a mensagem do usuário e extraia os dados em um JSON estrito. Chaves obrigatórias: 'intent' ('expense', 'income' ou 'general'), 'amount' (número ou null), 'description' (string da compra/ganho em si, ex: 'pizza'), 'category' (string) e 'date' (string no formato 'YYYY-MM-DD'). Para a chave 'category', você DEVE classificar OBRIGATORIAMENTE em uma destas macro-categorias: 'Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Lazer' ou 'Gastos Gerais'. Sempre calcule a data da transação baseando-se na DATA DE HOJE. Se o usuário disser 'ontem', subtraia um dia. Se disser 'amanhã', adicione um dia. Se mencionar apenas um dia (ex: 'dia 15'), use o mês e ano atuais. Se não mencionar nenhuma data, utilize a DATA DE HOJE. Exemplo: Se 'gastei 40 com pizza ontem', retorne {"intent": "expense", "amount": 40, "description": "pizza", "category": "Alimentação", "date": "<data de ontem>"}.`;
+// Data de hoje no fuso America/Sao_Paulo (evita virada de dia prematura em UTC)
+const todayInSaoPaulo = () =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+
+const buildSystemPrompt = (dataAtualISO: string) =>
+  `Você é um classificador de intenções financeiras. Leia a mensagem e extraia os dados em JSON estrito. A DATA DE HOJE É: ${dataAtualISO} (Considere isso como o dia 0).
+
+REGRAS MATEMÁTICAS TEMPORAIS (OBRIGATÓRIO): Sempre calcule a chave 'date' (formato YYYY-MM-DD) baseando-se na DATA DE HOJE e nestas regras exatas:
+- "hoje", "agora" ou se não houver menção de data = DATA DE HOJE.
+- "ontem" = DATA DE HOJE menos 1 dia.
+- "anteontem" ou "antes de ontem" = DATA DE HOJE menos 2 dias.
+- "amanhã" = DATA DE HOJE mais 1 dia.
+- "semana passada" = DATA DE HOJE menos 7 dias.
+- "mês passado" = DATA DE HOJE menos 30 dias (ou exatamente 1 mês atrás).
+- Se mencionar apenas um dia (ex: "dia 15"), use o mês e ano atuais.
+
+CHAVES DO JSON:
+- 'intent': 'expense', 'income' ou 'general'.
+- 'amount': Número decimal ou null.
+- 'description': O nome do item/serviço (ex: 'caça niquel', 'janta').
+- 'category': Classifique OBRIGATORIAMENTE em: 'Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Lazer', 'Educação' ou 'Gastos Gerais'.
+- 'date': String YYYY-MM-DD calculada com as regras acima.`;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -27,7 +52,7 @@ Deno.serve(async (req) => {
     }
 
     const clientToday = typeof body?.today === 'string' && DATE_RE.test(body.today) ? body.today : null;
-    const today = clientToday ?? new Date().toISOString().slice(0, 10);
+    const today = clientToday ?? todayInSaoPaulo();
 
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',

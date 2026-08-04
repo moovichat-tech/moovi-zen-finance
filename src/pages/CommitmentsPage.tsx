@@ -73,6 +73,22 @@ const CommitmentsPage = () => {
     return data;
   };
 
+  const disconnectGoogle = useMutation({
+    mutationFn: async () => callFn('disconnect-google-calendar'),
+    onSuccess: () => {
+      queryClient.setQueryData(
+        ['google-status', telefone],
+        (old: { connected: boolean; auth_url: string | null } | undefined) =>
+          old ? { ...old, connected: false } : old,
+      );
+      queryClient.invalidateQueries({ queryKey: ['google-status'] });
+      setDisconnectOpen(false);
+      toast.success('Google Agendas desconectado.');
+    },
+    onError: (e: Error) => toast.error(e.message || 'Erro ao desconectar a agenda.'),
+  });
+
+
   const { data: compromissos = [], isLoading, isError } = useQuery<Compromisso[]>({
     queryKey: ['compromissos', telefone],
     queryFn: async () => {

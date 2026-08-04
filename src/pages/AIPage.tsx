@@ -101,14 +101,17 @@ const AIPage = () => {
       }
 
       const rawIntent = (data as any).intent;
-      if (rawIntent !== 'expense' && rawIntent !== 'income' && rawIntent !== 'general') {
+      if (rawIntent !== 'expense' && rawIntent !== 'income' && rawIntent !== 'support') {
         pushAssistant('Não consegui entender sua mensagem. Tente algo como: "Gastei 50 no posto".');
         return;
       }
 
-      if (rawIntent === 'general') {
+      if (rawIntent === 'support') {
+        const supportMessage = (data as any).support_message;
         pushAssistant(
-          "Ainda estou aprendendo a responder perguntas complexas, mas já consigo anotar seus gastos! Tente dizer: 'Gastei 50 no posto'."
+          typeof supportMessage === 'string' && supportMessage.trim()
+            ? supportMessage.trim()
+            : 'Posso te ajudar! Use o menu lateral esquerdo para acessar **Despesas**, **Receitas**, **Categorias**, **Contas** e **Cartões**.'
         );
         return;
       }
@@ -129,6 +132,14 @@ const AIPage = () => {
       const category =
         typeof rawCategory === 'string' && rawCategory.trim() ? rawCategory.trim() : 'Gastos Gerais';
 
+      const rawInstallments = Math.floor(Number((data as any).installments));
+      const installments =
+        Number.isFinite(rawInstallments) && rawInstallments >= 1 ? Math.min(rawInstallments, 72) : 1;
+
+      const rawPayment = (data as any).payment_method;
+      const paymentMethod =
+        typeof rawPayment === 'string' && rawPayment.trim() ? rawPayment.trim() : null;
+
       const rawDate = (data as any).date;
       const isValidDate =
         typeof rawDate === 'string' &&
@@ -138,11 +149,14 @@ const AIPage = () => {
       const dateStr = `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, '0')}-${String(parsedDate.getDate()).padStart(2, '0')}`;
 
       setTransactionType(rawIntent);
+      setTransactionInstallments(installments);
+      setTransactionPaymentMethod(paymentMethod);
       setTransactionInitialData({
         amount: String(amount).replace('.', ','),
         description,
         category,
         date: dateStr,
+        installments: String(installments),
       });
       setIsTransactionModalOpen(true);
     } catch (err) {

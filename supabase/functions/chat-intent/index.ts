@@ -76,7 +76,12 @@ Deno.serve(async (req) => {
     const rawCategory = typeof parsed.category === 'string' ? parsed.category.trim() : '';
     const category = CATEGORIES.find(c => c.toLowerCase() === rawCategory.toLowerCase()) ?? 'Gastos Gerais';
 
-    return json({ intent, amount, description, category });
+    const rawDate = typeof parsed.date === 'string' ? parsed.date.trim() : '';
+    const date = DATE_RE.test(rawDate) && !Number.isNaN(new Date(`${rawDate}T00:00:00`).getTime())
+      ? rawDate
+      : today;
+
+    return json({ intent, amount, description, category, date });
   } catch (err) {
     console.error('chat-intent error', err);
     return json({ error: 'Erro interno' }, 500);

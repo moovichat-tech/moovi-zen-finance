@@ -78,8 +78,8 @@ export const AppSidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose, isD
       className={`fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
       style={{ width: sidebarWidth }}
     >
-      <div className={`flex h-14 items-center justify-between ${!showLabels ? 'px-2' : 'px-4'} gap-2.5`}>
-        <div className="flex items-center gap-2.5">
+      <div className={`flex h-14 items-center ${!showLabels ? 'justify-center px-0' : 'justify-between px-4'} gap-2.5`}>
+        <div className={`flex items-center gap-2.5 ${!showLabels ? 'justify-center' : ''}`}>
           <div className="relative h-8 w-8 shrink-0">
             <img src={mooviLogoLight} alt="Moovi" className={`absolute inset-0 h-8 w-8 object-contain transition-opacity duration-200 ${theme === 'dark' ? 'opacity-0' : 'opacity-100'}`} />
             <img src={mooviLogoDark} alt="Moovi" className={`absolute inset-0 h-8 w-8 object-contain transition-opacity duration-200 ${theme === 'dark' ? 'opacity-100' : 'opacity-0'}`} />

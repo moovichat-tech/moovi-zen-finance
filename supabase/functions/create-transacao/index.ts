@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
-    const status = e.message.includes("Token") ? 401 : 500;
+    const status = e.message.includes("Token") ? 401 : e.message.includes("obrigatórios") ? 400 : 500;
     return new Response(JSON.stringify({ error: e.message }), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

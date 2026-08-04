@@ -5,7 +5,7 @@ import remarkGfm from 'remark-gfm';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowUp, TrendingDown, TrendingUp, CalendarRange } from 'lucide-react';
+import { ArrowUp, TrendingDown, TrendingUp, CalendarRange, Clock, CheckCheck, AlertCircle } from 'lucide-react';
 import mooviLogoAsset from '@/assets/moovi-logo-assistente.png.asset.json';
 
 const mooviLogo = mooviLogoAsset.url;
@@ -28,6 +28,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   report?: ReportData;
+  status?: 'sending' | 'success' | 'error';
 }
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -184,8 +185,11 @@ const AIPage = () => {
   const send = useCallback(async (text: string) => {
     const content = text.trim();
     if (!content || loading) return;
+    const msgId = `u-${Date.now()}`;
+    const setStatus = (status: Message['status']) =>
+      setMessages(prev => prev.map(m => (m.id === msgId ? { ...m, status } : m)));
     setInput('');
-    setMessages(prev => [...prev, { id: `u-${Date.now()}`, role: 'user', content }]);
+    setMessages(prev => [...prev, { id: msgId, role: 'user', content, status: 'sending' }]);
     setLoading(true);
 
     try {
@@ -195,6 +199,7 @@ const AIPage = () => {
         body: { message: content, today: todayStr, userCategories },
       });
       if (error) throw error;
+      setStatus('success');
 
       // Validação rigorosa do payload retornado
       if (!data || typeof data !== 'object' || Array.isArray(data)) {
@@ -300,6 +305,7 @@ const AIPage = () => {
       setIsTransactionModalOpen(true);
     } catch (err) {
       console.error(err);
+      setStatus('error');
       pushAssistant('Não consegui processar sua mensagem agora. Tente novamente em instantes.');
     } finally {
       setLoading(false);
@@ -336,8 +342,21 @@ const AIPage = () => {
               {messages.map(msg =>
                 msg.role === 'user' ? (
                   <div key={msg.id} className="flex justify-end">
-                    <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl bg-secondary px-4 py-2.5 text-sm text-secondary-foreground">
-                      {msg.content}
+                    <div className="max-w-[85%] rounded-2xl bg-secondary px-4 py-2.5 text-sm text-secondary-foreground">
+                      <div className="whitespace-pre-wrap">{msg.content}</div>
+                      {msg.status && (
+                        <div className="mt-1 flex justify-end">
+                          {msg.status === 'sending' && (
+                            <Clock className="h-3.5 w-3.5 text-muted-foreground opacity-60" aria-label="Enviando" />
+                          )}
+                          {msg.status === 'success' && (
+                            <CheckCheck className="h-3.5 w-3.5 text-primary" aria-label="Processado" />
+                          )}
+                          {msg.status === 'error' && (
+                            <AlertCircle className="h-3.5 w-3.5 text-destructive" aria-label="Erro" />
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (

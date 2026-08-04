@@ -26,6 +26,9 @@ Deno.serve(async (req) => {
       return json({ error: 'Mensagem inválida' }, 400);
     }
 
+    const clientToday = typeof body?.today === 'string' && DATE_RE.test(body.today) ? body.today : null;
+    const today = clientToday ?? new Date().toISOString().slice(0, 10);
+
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -37,7 +40,7 @@ Deno.serve(async (req) => {
         response_format: { type: 'json_object' },
         temperature: 0,
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: buildSystemPrompt(today) },
           { role: 'user', content: message },
         ],
       }),

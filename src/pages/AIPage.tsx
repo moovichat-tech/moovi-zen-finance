@@ -136,6 +136,36 @@ const AIPage = () => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
+  // Carrega histórico do dia
+  useEffect(() => {
+    historyLoadedRef.current = false;
+    const today = new Date().toISOString().split('T')[0];
+    try {
+      const raw = localStorage.getItem(historyKey);
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (parsed && parsed.date === today && Array.isArray(parsed.messages)) {
+        setMessages(parsed.messages as Message[]);
+      } else {
+        setMessages([]);
+        localStorage.setItem(historyKey, JSON.stringify({ date: today, messages: [] }));
+      }
+    } catch {
+      setMessages([]);
+    }
+    historyLoadedRef.current = true;
+  }, [historyKey]);
+
+  // Persiste histórico
+  useEffect(() => {
+    if (!historyLoadedRef.current) return;
+    const today = new Date().toISOString().split('T')[0];
+    try {
+      localStorage.setItem(historyKey, JSON.stringify({ date: today, messages }));
+    } catch {}
+  }, [messages, historyKey]);
+
+
+
   useEffect(() => {
     if (!isTransactionModalOpen) textareaRef.current?.focus();
   }, [loading, isTransactionModalOpen]);

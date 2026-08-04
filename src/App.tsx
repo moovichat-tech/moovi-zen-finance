@@ -24,6 +24,7 @@ import CommitmentsPage from "@/pages/CommitmentsPage";
 import OpenFinancePage from "@/pages/OpenFinancePage";
 import LoginPage from "@/pages/LoginPage";
 import HelpPage from "@/pages/HelpPage";
+import AIPage from "@/pages/AIPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +56,7 @@ const App = () => (
                   <Route path="/login" element={<LoginPage />} />
                   <Route element={<ProtectedLayout />}>
                     <Route path="/" element={<Dashboard />} />
+                    <Route path="/assistente" element={<AIPage />} />
                     <Route path="/income" element={<IncomePage />} />
                     <Route path="/expenses" element={<ExpensesPage />} />
                     <Route path="/cards" element={<CardsPage />} />

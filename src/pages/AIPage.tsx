@@ -5,7 +5,7 @@ import remarkGfm from 'remark-gfm';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowUp, TrendingDown, TrendingUp, CalendarRange } from 'lucide-react';
+import { ArrowUp, TrendingDown, TrendingUp, CalendarRange, Clock, CheckCheck, AlertCircle } from 'lucide-react';
 import mooviLogoAsset from '@/assets/moovi-logo-assistente.png.asset.json';
 
 const mooviLogo = mooviLogoAsset.url;
@@ -28,6 +28,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   report?: ReportData;
+  status?: 'sending' | 'success' | 'error';
 }
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;

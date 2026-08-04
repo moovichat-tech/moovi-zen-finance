@@ -9,6 +9,7 @@ import mooviLogoAsset from '@/assets/moovi-logo-assistente.png.asset.json';
 
 const mooviLogo = mooviLogoAsset.url;
 import { TransactionFormDialog, type TransactionFormData } from '@/components/TransactionFormDialog';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   id: string;

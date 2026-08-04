@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowUp, TrendingDown, TrendingUp, CalendarRange } from 'lucide-react';
-import mooviLogo from '@/assets/moovi-logo-transparent.png';
+import mooviLogoAsset from '@/assets/moovi-logo-assistente.png.asset.json';
+
+const mooviLogo = mooviLogoAsset.url;
 import { TransactionFormDialog, type TransactionFormData } from '@/components/TransactionFormDialog';
 
 interface Message {
@@ -34,8 +36,8 @@ const parseDescription = (text: string): string => {
 };
 
 const MooviAvatar = () => (
-  <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10">
-    <img src={mooviLogo} alt="Moovi" className="h-5 w-5 object-contain" />
+  <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full" style={{ backgroundColor: '#0E110F' }}>
+    <img src={mooviLogo} alt="Moovi" className="h-8 w-8 object-contain" />
   </div>
 );
 
@@ -126,7 +128,7 @@ const AIPage = () => {
         <div className="mx-auto w-full max-w-3xl px-1 pb-6 sm:px-4">
           {isEmpty ? (
             <div className="flex min-h-[45vh] flex-col items-center justify-center text-center">
-              <img src={mooviLogo} alt="Moovi" className="mb-4 h-14 w-14 object-contain" />
+              <img src={mooviLogo} alt="Moovi" className="mb-4 h-20 w-20 rounded-2xl object-contain" style={{ backgroundColor: '#0E110F' }} />
               <h2 className="text-lg font-semibold sm:text-xl">Olá! Sou a Moovi 💚</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Como posso ajudar com suas finanças hoje?

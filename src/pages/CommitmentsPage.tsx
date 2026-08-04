@@ -196,10 +196,24 @@ const CommitmentsPage = () => {
 
       <div className="flex flex-wrap items-center justify-end gap-2">
         {google?.connected ? (
-          <Badge variant="secondary" className="gap-1.5 py-1.5 px-3">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            Google Agendas conectado
-          </Badge>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="secondary" className="gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Google Agendas conectado
+                <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem
+                className="gap-2 text-destructive focus:text-destructive"
+                onSelect={(e) => { e.preventDefault(); setDisconnectOpen(true); }}
+              >
+                <Unlink className="h-4 w-4" />
+                Desconectar Agenda
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         ) : (
           <Button
             size="sm"
@@ -212,6 +226,30 @@ const CommitmentsPage = () => {
             Conectar Google Agendas
           </Button>
         )}
+
+        <AlertDialog open={disconnectOpen} onOpenChange={setDisconnectOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Desconectar Google Agendas?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja desconectar sua conta do Google Agendas? Novos compromissos
+                não serão mais sincronizados.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={disconnectGoogle.isPending}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                disabled={disconnectGoogle.isPending}
+                onClick={(e) => { e.preventDefault(); disconnectGoogle.mutate(); }}
+              >
+                {disconnectGoogle.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Desconectar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>

@@ -50,6 +50,8 @@ const AIPage = () => {
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [transactionType, setTransactionType] = useState<'income' | 'expense'>('expense');
   const [transactionInitialData, setTransactionInitialData] = useState<Partial<TransactionFormData>>({});
+  const [transactionInstallments, setTransactionInstallments] = useState(1);
+  const [transactionPaymentMethod, setTransactionPaymentMethod] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 

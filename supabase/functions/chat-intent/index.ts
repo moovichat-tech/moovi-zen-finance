@@ -122,7 +122,10 @@ Deno.serve(async (req) => {
         : null;
 
     const rawCategory = typeof parsed.category === 'string' ? parsed.category.trim() : '';
-    const category = CATEGORIES.find(c => c.toLowerCase() === rawCategory.toLowerCase()) ?? 'Gastos Gerais';
+    const category =
+      availableCategories.find(c => c.toLowerCase() === rawCategory.toLowerCase()) ??
+      availableCategories.find(c => c.toLowerCase() === 'gastos gerais') ??
+      (rawCategory || availableCategories[0] || 'Gastos Gerais');
 
     const rawDate = typeof parsed.date === 'string' ? parsed.date.trim() : '';
     const date = DATE_RE.test(rawDate) && !Number.isNaN(new Date(`${rawDate}T00:00:00`).getTime())

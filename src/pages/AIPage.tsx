@@ -80,8 +80,10 @@ const AIPage = () => {
     setLoading(true);
 
     try {
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       const { data, error } = await supabase.functions.invoke('chat-intent', {
-        body: { message: content },
+        body: { message: content, today: todayStr },
       });
       if (error) throw error;
 
@@ -125,11 +127,20 @@ const AIPage = () => {
       const category =
         typeof rawCategory === 'string' && rawCategory.trim() ? rawCategory.trim() : 'Gastos Gerais';
 
+      const rawDate = (data as any).date;
+      const isValidDate =
+        typeof rawDate === 'string' &&
+        /^\d{4}-\d{2}-\d{2}$/.test(rawDate) &&
+        !Number.isNaN(new Date(`${rawDate}T00:00:00`).getTime());
+      const parsedDate = isValidDate ? new Date(`${rawDate}T00:00:00`) : new Date();
+      const dateStr = `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, '0')}-${String(parsedDate.getDate()).padStart(2, '0')}`;
+
       setTransactionType(rawIntent);
       setTransactionInitialData({
         amount: String(amount).replace('.', ','),
         description,
         category,
+        date: dateStr,
       });
       setIsTransactionModalOpen(true);
     } catch (err) {

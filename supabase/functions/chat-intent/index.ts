@@ -2,8 +2,10 @@ import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
 const CATEGORIES = ['Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Lazer', 'Gastos Gerais'];
 
-const SYSTEM_PROMPT =
-  "Você é um classificador de intenções financeiras. Leia a mensagem do usuário e extraia os dados em um JSON estrito. Chaves obrigatórias: 'intent' ('expense', 'income' ou 'general'), 'amount' (número ou null), 'description' (string da compra/ganho em si, ex: 'pizza') e 'category' (string). Para a chave 'category', você DEVE classificar OBRIGATORIAMENTE em uma destas macro-categorias: 'Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Lazer' ou 'Gastos Gerais'. Exemplo: Se 'gastei 40 com pizza', retorne {\"intent\": \"expense\", \"amount\": 40, \"description\": \"pizza\", \"category\": \"Alimentação\"}.";
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+const buildSystemPrompt = (today: string) =>
+  `A DATA DE HOJE É: ${today}. Você é um classificador de intenções financeiras. Leia a mensagem do usuário e extraia os dados em um JSON estrito. Chaves obrigatórias: 'intent' ('expense', 'income' ou 'general'), 'amount' (número ou null), 'description' (string da compra/ganho em si, ex: 'pizza'), 'category' (string) e 'date' (string no formato 'YYYY-MM-DD'). Para a chave 'category', você DEVE classificar OBRIGATORIAMENTE em uma destas macro-categorias: 'Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Lazer' ou 'Gastos Gerais'. Sempre calcule a data da transação baseando-se na DATA DE HOJE. Se o usuário disser 'ontem', subtraia um dia. Se disser 'amanhã', adicione um dia. Se mencionar apenas um dia (ex: 'dia 15'), use o mês e ano atuais. Se não mencionar nenhuma data, utilize a DATA DE HOJE. Exemplo: Se 'gastei 40 com pizza ontem', retorne {"intent": "expense", "amount": 40, "description": "pizza", "category": "Alimentação", "date": "<data de ontem>"}.`;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -24,6 +26,9 @@ Deno.serve(async (req) => {
       return json({ error: 'Mensagem inválida' }, 400);
     }
 
+    const clientToday = typeof body?.today === 'string' && DATE_RE.test(body.today) ? body.today : null;
+    const today = clientToday ?? new Date().toISOString().slice(0, 10);
+
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -35,7 +40,7 @@ Deno.serve(async (req) => {
         response_format: { type: 'json_object' },
         temperature: 0,
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: buildSystemPrompt(today) },
           { role: 'user', content: message },
         ],
       }),
@@ -71,7 +76,12 @@ Deno.serve(async (req) => {
     const rawCategory = typeof parsed.category === 'string' ? parsed.category.trim() : '';
     const category = CATEGORIES.find(c => c.toLowerCase() === rawCategory.toLowerCase()) ?? 'Gastos Gerais';
 
-    return json({ intent, amount, description, category });
+    const rawDate = typeof parsed.date === 'string' ? parsed.date.trim() : '';
+    const date = DATE_RE.test(rawDate) && !Number.isNaN(new Date(`${rawDate}T00:00:00`).getTime())
+      ? rawDate
+      : today;
+
+    return json({ intent, amount, description, category, date });
   } catch (err) {
     console.error('chat-intent error', err);
     return json({ error: 'Erro interno' }, 500);

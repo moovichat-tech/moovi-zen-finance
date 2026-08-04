@@ -94,14 +94,27 @@ Deno.serve(async (req) => {
       parsed = {};
     }
 
-    const intent = ['expense', 'income', 'general'].includes(String(parsed.intent))
+    const intent = ['expense', 'income', 'support'].includes(String(parsed.intent))
       ? String(parsed.intent)
-      : 'general';
+      : 'support';
     const amountNum = Number(parsed.amount);
     const amount = Number.isFinite(amountNum) && amountNum > 0 ? amountNum : null;
     const description =
       typeof parsed.description === 'string' && parsed.description.trim()
         ? parsed.description.trim()
+        : null;
+
+    const instNum = Math.floor(Number(parsed.installments));
+    const installments = Number.isFinite(instNum) && instNum >= 1 ? Math.min(instNum, 72) : 1;
+
+    const paymentMethod =
+      typeof parsed.payment_method === 'string' && parsed.payment_method.trim()
+        ? parsed.payment_method.trim()
+        : null;
+
+    const supportMessage =
+      typeof parsed.support_message === 'string' && parsed.support_message.trim()
+        ? parsed.support_message.trim()
         : null;
 
     const rawCategory = typeof parsed.category === 'string' ? parsed.category.trim() : '';
@@ -112,7 +125,18 @@ Deno.serve(async (req) => {
       ? rawDate
       : today;
 
-    return json({ intent, amount, description, category, date });
+    return json({
+      intent,
+      amount,
+      installments,
+      payment_method: paymentMethod,
+      description,
+      category,
+      date,
+      support_message: intent === 'support'
+        ? (supportMessage ?? 'Posso te ajudar! Navegue pelo menu lateral esquerdo para acessar as abas de **Despesas**, **Receitas**, **Categorias**, **Contas** e **Cartões**.')
+        : null,
+    });
   } catch (err) {
     console.error('chat-intent error', err);
     return json({ error: 'Erro interno' }, 500);

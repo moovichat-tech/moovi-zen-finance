@@ -47,16 +47,18 @@ interface TransactionFormDialogProps {
   type: 'income' | 'expense';
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialData?: Partial<TransactionFormData>;
 }
 
-export function TransactionFormDialog({ type, open, onOpenChange }: TransactionFormDialogProps) {
+export function TransactionFormDialog({ type, open, onOpenChange, initialData }: TransactionFormDialogProps) {
   const { t, locale } = useI18n();
   const { token } = useAuth();
   const queryClient = useQueryClient();
   const [form, setForm] = useState<TransactionFormData>(emptyForm(type));
 
   useEffect(() => {
-    if (open) setForm(emptyForm(type));
+    if (open) setForm({ ...emptyForm(type), ...(initialData || {}) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, type]);
 
   const { data: contas = [] } = useQuery<Conta[]>({

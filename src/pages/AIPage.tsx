@@ -10,12 +10,64 @@ import mooviLogoAsset from '@/assets/moovi-logo-assistente.png.asset.json';
 const mooviLogo = mooviLogoAsset.url;
 import { TransactionFormDialog, type TransactionFormData } from '@/components/TransactionFormDialog';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+
+interface ReportData {
+  mes: number;
+  ano: number;
+  totalTransacoes: number;
+  totalReceitas: number;
+  totalDespesas: number;
+  resultado: number;
+  porCategoria: { name: string; value: number }[];
+}
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  report?: ReportData;
 }
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+
+const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+const brl = (v: number) =>
+  v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const ReportCard = ({ report }: { report: ReportData }) => (
+  <div className="mt-2 space-y-3 rounded-xl border border-border bg-card p-3">
+    <p className="text-xs font-medium text-muted-foreground">
+      {MONTHS[report.mes - 1]} de {report.ano} · {report.totalTransacoes} lançamento(s)
+    </p>
+    <div className="grid grid-cols-3 gap-2">
+      <div className="rounded-lg bg-primary/5 p-2">
+        <p className="text-[11px] text-muted-foreground">Receitas</p>
+        <p className="text-sm font-semibold tabular-nums text-primary">{brl(report.totalReceitas)}</p>
+      </div>
+      <div className="rounded-lg bg-destructive/5 p-2">
+        <p className="text-[11px] text-muted-foreground">Despesas</p>
+        <p className="text-sm font-semibold tabular-nums text-destructive">{brl(report.totalDespesas)}</p>
+      </div>
+      <div className="rounded-lg bg-secondary p-2">
+        <p className="text-[11px] text-muted-foreground">Resultado</p>
+        <p className="text-sm font-semibold tabular-nums text-foreground">{brl(report.resultado)}</p>
+      </div>
+    </div>
+    {report.porCategoria.length > 0 && (
+      <div className="space-y-1">
+        <p className="text-[11px] font-medium text-muted-foreground">Maiores gastos por categoria</p>
+        {report.porCategoria.map(c => (
+          <div key={c.name} className="flex items-center justify-between text-xs">
+            <span className="truncate pr-2">{c.name}</span>
+            <span className="shrink-0 font-medium tabular-nums">{brl(c.value)}</span>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+);
 
 
 const QUICK_ACTIONS = [
@@ -52,6 +104,7 @@ const AIPage = () => {
   const [transactionInitialData, setTransactionInitialData] = useState<Partial<TransactionFormData>>({});
   const [transactionInstallments, setTransactionInstallments] = useState(1);
   const [transactionPaymentMethod, setTransactionPaymentMethod] = useState<string | null>(null);
+  const { token } = useAuth();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -70,8 +123,8 @@ const AIPage = () => {
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, [input]);
 
-  const pushAssistant = useCallback((content: string) => {
-    setMessages(prev => [...prev, { id: `a-${Date.now()}-${Math.random().toString(36).slice(2)}`, role: 'assistant', content }]);
+  const pushAssistant = useCallback((content: string, report?: ReportData) => {
+    setMessages(prev => [...prev, { id: `a-${Date.now()}-${Math.random().toString(36).slice(2)}`, role: 'assistant', content, report }]);
   }, []);
 
   const send = useCallback(async (text: string) => {
@@ -101,7 +154,7 @@ const AIPage = () => {
       }
 
       const rawIntent = (data as any).intent;
-      if (rawIntent !== 'expense' && rawIntent !== 'income' && rawIntent !== 'support') {
+      if (rawIntent !== 'expense' && rawIntent !== 'income' && rawIntent !== 'support' && rawIntent !== 'report') {
         pushAssistant('Não consegui entender sua mensagem. Tente algo como: "Gastei 50 no posto".');
         return;
       }
@@ -112,6 +165,38 @@ const AIPage = () => {
           typeof supportMessage === 'string' && supportMessage.trim()
             ? supportMessage.trim()
             : 'Posso te ajudar! Use o menu lateral esquerdo para acessar **Despesas**, **Receitas**, **Categorias**, **Contas** e **Cartões**.'
+        );
+        return;
+      }
+
+      if (rawIntent === 'report') {
+        if (!token) {
+          pushAssistant('Preciso que você esteja autenticado para consultar seus lançamentos.');
+          return;
+        }
+        const rawReportDate = (data as any).date;
+        const refDate = typeof rawReportDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(rawReportDate)
+          ? new Date(`${rawReportDate}T00:00:00`)
+          : new Date();
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/chat-report`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ mes: refDate.getMonth() + 1, ano: refDate.getFullYear() }),
+        });
+        if (!res.ok) {
+          pushAssistant('Não consegui consultar seus lançamentos agora. Tente novamente em instantes.');
+          return;
+        }
+        const report = (await res.json()) as ReportData;
+        if (!report || typeof report.totalDespesas !== 'number') {
+          pushAssistant('Não consegui calcular seu resumo agora. Tente novamente em instantes.');
+          return;
+        }
+        pushAssistant(
+          report.totalTransacoes === 0
+            ? `Não encontrei lançamentos em ${MONTHS[report.mes - 1]} de ${report.ano}.`
+            : `Aqui está o resumo de **${MONTHS[report.mes - 1]} de ${report.ano}**:`,
+          report,
         );
         return;
       }
@@ -165,7 +250,7 @@ const AIPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [loading, pushAssistant]);
+  }, [loading, pushAssistant, token]);
 
 
 
@@ -208,6 +293,7 @@ const AIPage = () => {
                       <div className="prose prose-sm max-w-none break-words dark:prose-invert prose-p:my-1.5 prose-ul:my-1.5 prose-li:my-0.5 prose-headings:mt-2 prose-headings:mb-1">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                       </div>
+                      {msg.report && <ReportCard report={msg.report} />}
                     </div>
                   </div>
                 )

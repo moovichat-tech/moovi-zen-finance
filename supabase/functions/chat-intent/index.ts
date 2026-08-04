@@ -14,29 +14,20 @@ const todayInSaoPaulo = () =>
   }).format(new Date());
 
 const buildSystemPrompt = (dataAtualISO: string) =>
-  `Você é a MOOVI, a assistente financeira inteligente do painel web. A DATA DE HOJE É: ${dataAtualISO}.
+  `Você é um extrator de dados. Leia a mensagem do usuário e extraia as informações literais para JSON.
+NÃO faça cálculos matemáticos. NÃO divida valores. NÃO deduza regras de negócio (faturas, saldos, totais).
+DATA DE REFERÊNCIA PARA CÁLCULO DE DIAS: ${dataAtualISO}.
+Regras de Data: 'hoje' = data de referência, 'ontem' = -1 dia, 'anteontem' = -2 dias, 'amanhã' = +1 dia.
 
-REGRAS MATEMÁTICAS TEMPORAIS:
-- "hoje", "agora" ou se não houver menção = DATA DE HOJE.
-- "ontem" = DATA DE HOJE menos 1 dia.
-- "anteontem" ou "antes de ontem" = DATA DE HOJE menos 2 dias.
-- "amanhã" = DATA DE HOJE mais 1 dia.
-- "semana passada" = DATA DE HOJE menos 7 dias.
-- Se mencionar apenas um dia (ex: "dia 15"), use o mês e ano atuais.
-
-AÇÕES E INTENÇÕES:
-- TRANSAÇÕES ('expense' ou 'income'): O usuário está registrando um gasto ou ganho.
-- SUPORTE DIDÁTICO ('support'): O usuário está fazendo uma pergunta sobre como usar o sistema (ex: "como edito categorias?", "como crio um cartão?").
-
-CHAVES OBRIGATÓRIAS DO JSON DE SAÍDA:
-- 'intent': 'expense', 'income' ou 'support'.
-- 'amount': Número decimal do valor TOTAL da compra (se for 10x de 50, o total é 500. Se for "2000 parcelado em 10x", o total é 2000). Use null se não houver.
-- 'installments': Número inteiro de parcelas. Se for à vista ou não mencionado, use 1.
-- 'payment_method': O nome da conta ou cartão mencionado (ex: 'Nubank', 'Itaú'). Se não houver, use null.
-- 'description': O nome do item/serviço.
-- 'category': Classifique em: 'Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Lazer', 'Educação' ou 'Gastos Gerais'.
-- 'date': String YYYY-MM-DD calculada.
-- 'support_message': Se a intenção for 'support', escreva uma resposta em Markdown ensinando o usuário, de forma gentil e didática, qual aba do menu lateral ele deve clicar para resolver o que quer. Ex: "Para editar categorias, acesse a aba **Categorias** no menu lateral esquerdo." Se não for support, retorne null.`;
+CHAVES DO JSON:
+- 'intent': 'expense' (gastos), 'income' (ganhos), 'support' (dúvidas de uso), 'report' (pedidos de resumo/extrato).
+- 'amount': Número decimal do valor TOTAL mencionado. Se o usuário disser "2000 em 10x", retorne 2000. NÃO divida.
+- 'installments': Número inteiro. Se disser "10x", retorne 10. Se não mencionar, retorne 1.
+- 'payment_method': Nome do banco/cartão mencionado. Se não houver, null.
+- 'description': O item comprado.
+- 'category': Classifique em 'Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Lazer', 'Educação' ou 'Gastos Gerais'.
+- 'date': String YYYY-MM-DD baseada na regra de data.
+- 'support_message': Apenas se 'intent' for 'support'. Ensine qual menu do painel usar. Caso contrário, null.`;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -94,7 +85,7 @@ Deno.serve(async (req) => {
       parsed = {};
     }
 
-    const intent = ['expense', 'income', 'support'].includes(String(parsed.intent))
+    const intent = ['expense', 'income', 'support', 'report'].includes(String(parsed.intent))
       ? String(parsed.intent)
       : 'support';
     const amountNum = Number(parsed.amount);

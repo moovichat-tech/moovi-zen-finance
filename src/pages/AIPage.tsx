@@ -68,6 +68,10 @@ const AIPage = () => {
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, [input]);
 
+  const pushAssistant = useCallback((content: string) => {
+    setMessages(prev => [...prev, { id: `a-${Date.now()}-${Math.random().toString(36).slice(2)}`, role: 'assistant', content }]);
+  }, []);
+
   const send = useCallback(async (text: string) => {
     const content = text.trim();
     if (!content || loading) return;
@@ -81,41 +85,56 @@ const AIPage = () => {
       });
       if (error) throw error;
 
-      const intent = data?.intent as 'expense' | 'income' | 'general' | undefined;
-
-      if (intent === 'expense' || intent === 'income') {
-        setTransactionType(intent);
-        setTransactionInitialData({
-          amount: data?.amount != null ? String(data.amount).replace('.', ',') : '',
-          description: data?.description ?? '',
-        });
-        setIsTransactionModalOpen(true);
+      // Validação rigorosa do payload retornado
+      if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        pushAssistant('Recebi uma resposta inesperada do servidor. Pode tentar novamente?');
         return;
       }
 
-      setMessages(prev => [
-        ...prev,
-        {
-          id: `a-${Date.now()}`,
-          role: 'assistant',
-          content:
-            "Ainda estou aprendendo a responder perguntas complexas, mas já consigo anotar seus gastos! Tente dizer: 'Gastei 50 no posto'.",
-        },
-      ]);
+      if (typeof (data as any).error === 'string') {
+        pushAssistant((data as any).error);
+        return;
+      }
+
+      const rawIntent = (data as any).intent;
+      if (rawIntent !== 'expense' && rawIntent !== 'income' && rawIntent !== 'general') {
+        pushAssistant('Não consegui entender sua mensagem. Tente algo como: "Gastei 50 no posto".');
+        return;
+      }
+
+      if (rawIntent === 'general') {
+        pushAssistant(
+          "Ainda estou aprendendo a responder perguntas complexas, mas já consigo anotar seus gastos! Tente dizer: 'Gastei 50 no posto'."
+        );
+        return;
+      }
+
+      const rawAmount = (data as any).amount;
+      const amount = typeof rawAmount === 'number' ? rawAmount : Number(rawAmount);
+      const rawDescription = (data as any).description;
+      const description = typeof rawDescription === 'string' ? rawDescription.trim() : '';
+
+      if (!Number.isFinite(amount) || amount <= 0 || !description) {
+        pushAssistant(
+          'Entendi que é um lançamento, mas faltaram informações. Me diga o valor e a descrição, por exemplo: "Gastei 50 no posto".'
+        );
+        return;
+      }
+
+      setTransactionType(rawIntent);
+      setTransactionInitialData({
+        amount: String(amount).replace('.', ','),
+        description,
+      });
+      setIsTransactionModalOpen(true);
     } catch (err) {
       console.error(err);
-      setMessages(prev => [
-        ...prev,
-        {
-          id: `a-${Date.now()}`,
-          role: 'assistant',
-          content: 'Não consegui processar sua mensagem agora. Tente novamente em instantes.',
-        },
-      ]);
+      pushAssistant('Não consegui processar sua mensagem agora. Tente novamente em instantes.');
     } finally {
       setLoading(false);
     }
-  }, [loading]);
+  }, [loading, pushAssistant]);
+
 
 
   const handleQuickAction = (prompt: string) => {

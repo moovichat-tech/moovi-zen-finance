@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowUp, TrendingDown, TrendingUp, CalendarRange } from 'lucide-react';
-import mooviLogo from '@/assets/moovi-logo-transparent.png';
+import mooviLogoAsset from '@/assets/moovi-logo-assistente.png.asset.json';
+
+const mooviLogo = mooviLogoAsset.url;
 import { TransactionFormDialog, type TransactionFormData } from '@/components/TransactionFormDialog';
 
 interface Message {

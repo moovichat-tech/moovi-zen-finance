@@ -31,7 +31,9 @@ const CommitmentItemRow = ({ item, onDelete, onMarkDone, isDeleting }: Props) =>
 
   const dueDate = new Date(item.data_hora_limite);
   const now = new Date();
-  const isExpired = item.status === 'pendente' && dueDate.getTime() < now.getTime();
+  const isExpired =
+    item.status === 'expirado' ||
+    (item.status === 'pendente' && dueDate.getTime() < now.getTime());
   const isDone = item.status === 'concluido';
 
   const statusLabel = isDone ? 'Concluído' : isExpired ? 'Expirado' : 'Pendente';

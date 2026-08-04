@@ -32,6 +32,8 @@ const CommitmentsPage = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [form, setForm] = useState({ titulo: '', descricao: '', data: '', hora: '' });
+  const [disconnectOpen, setDisconnectOpen] = useState(false);
+
 
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
   const fnUrl = (name: string) => `https://${projectId}.supabase.co/functions/v1/${name}`;

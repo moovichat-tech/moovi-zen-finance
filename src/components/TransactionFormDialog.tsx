@@ -131,8 +131,8 @@ export function TransactionFormDialog({ type, open, onOpenChange, initialData }:
   };
 
   const labels = {
-    pt: { account: 'Conta', selectAccount: 'Selecionar conta', totalAmount: 'Valor Total' },
-    en: { account: 'Account', selectAccount: 'Select account', totalAmount: 'Total Amount' },
+    pt: { account: 'Conta (opcional)', selectAccount: 'Selecionar conta', totalAmount: 'Valor Total' },
+    en: { account: 'Account (optional)', selectAccount: 'Select account', totalAmount: 'Total Amount' },
     es: { account: 'Cuenta', selectAccount: 'Seleccionar cuenta', totalAmount: 'Valor Total' },
     fr: { account: 'Compte', selectAccount: 'Sélectionner un compte', totalAmount: 'Montant Total' },
     de: { account: 'Konto', selectAccount: 'Konto auswählen', totalAmount: 'Gesamtbetrag' },
@@ -172,6 +172,9 @@ export function TransactionFormDialog({ type, open, onOpenChange, initialData }:
               <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
+                  {form.category && !filteredCategorias.some(c => c.nome === form.category) && (
+                    <SelectItem value={form.category}>{form.category}</SelectItem>
+                  )}
                   {filteredCategorias.map(c => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
                 </SelectContent>
               </Select>

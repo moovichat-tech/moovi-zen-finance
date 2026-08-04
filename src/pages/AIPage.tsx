@@ -109,6 +109,27 @@ const AIPage = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  const { data: categorias = [] } = useQuery<{ nome: string; tipo: string }[]>({
+    queryKey: ['categorias'],
+    queryFn: async () => {
+      if (!token) return [];
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/get-categorias`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!token,
+  });
+
+  const userCategories = useMemo(
+    () => Array.from(new Set(categorias.map(c => c?.nome).filter((n): n is string => !!n && !!n.trim()))),
+    [categorias],
+  );
+
+
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);

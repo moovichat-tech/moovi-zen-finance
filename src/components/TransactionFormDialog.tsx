@@ -200,11 +200,11 @@ export function TransactionFormDialog({ type, open, onOpenChange, initialData, i
   };
 
   const labels = {
-    pt: { account: 'Conta (opcional)', selectAccount: 'Selecionar conta', totalAmount: 'Valor Total' },
-    en: { account: 'Account (optional)', selectAccount: 'Select account', totalAmount: 'Total Amount' },
-    es: { account: 'Cuenta', selectAccount: 'Seleccionar cuenta', totalAmount: 'Valor Total' },
-    fr: { account: 'Compte', selectAccount: 'Sélectionner un compte', totalAmount: 'Montant Total' },
-    de: { account: 'Konto', selectAccount: 'Konto auswählen', totalAmount: 'Gesamtbetrag' },
+    pt: { account: 'Conta (opcional)', selectAccount: 'Selecionar conta', totalAmount: 'Valor Total', installments: 'Parcelas' },
+    en: { account: 'Account (optional)', selectAccount: 'Select account', totalAmount: 'Total Amount', installments: 'Installments' },
+    es: { account: 'Cuenta', selectAccount: 'Seleccionar cuenta', totalAmount: 'Valor Total', installments: 'Cuotas' },
+    fr: { account: 'Compte', selectAccount: 'Sélectionner un compte', totalAmount: 'Montant Total', installments: 'Mensualités' },
+    de: { account: 'Konto', selectAccount: 'Konto auswählen', totalAmount: 'Gesamtbetrag', installments: 'Raten' },
   };
   const l = labels[locale] || labels.en;
 

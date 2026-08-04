@@ -4,8 +4,9 @@ import remarkGfm from 'remark-gfm';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowUp } from 'lucide-react';
+import { ArrowUp, TrendingDown, TrendingUp, CalendarRange } from 'lucide-react';
 import mooviLogo from '@/assets/moovi-logo-transparent.png';
+import { TransactionFormDialog, type TransactionFormData } from '@/components/TransactionFormDialog';
 
 interface Message {
   id: string;
@@ -13,7 +14,24 @@ interface Message {
   content: string;
 }
 
-const SUGGESTIONS = ['Resumo deste mês', 'Onde gastei mais?', 'Como economizar?'];
+const EXPENSE_WORDS = ['gastei', 'comprei', 'paguei'];
+const INCOME_WORDS = ['ganhei', 'recebi'];
+
+const QUICK_ACTIONS = [
+  { label: 'Adicionar Despesa Rápida', icon: TrendingDown, prompt: 'Gastei ' },
+  { label: 'Adicionar Receita', icon: TrendingUp, prompt: 'Recebi ' },
+  { label: 'Resumo do Mês', icon: CalendarRange, prompt: 'Resumo do mês' },
+];
+
+const parseAmount = (text: string): string => {
+  const m = text.match(/(\d+(?:[.,]\d{1,2})?)/);
+  return m ? m[1].replace('.', ',') : '';
+};
+
+const parseDescription = (text: string): string => {
+  const m = text.match(/(?:com|no|na|em|de|para)\s+(.{2,40})$/i);
+  return (m ? m[1] : text).trim();
+};
 
 const MooviAvatar = () => (
   <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10">
@@ -37,6 +55,9 @@ const AIPage = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+  const [transactionType, setTransactionType] = useState<'income' | 'expense'>('expense');
+  const [transactionInitialData, setTransactionInitialData] = useState<Partial<TransactionFormData>>({});
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -45,10 +66,9 @@ const AIPage = () => {
   }, [messages, loading]);
 
   useEffect(() => {
-    textareaRef.current?.focus();
-  }, [loading]);
+    if (!isTransactionModalOpen) textareaRef.current?.focus();
+  }, [loading, isTransactionModalOpen]);
 
-  // Auto-grow textarea
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -61,6 +81,21 @@ const AIPage = () => {
     if (!content || loading) return;
     setInput('');
     setMessages(prev => [...prev, { id: `u-${Date.now()}`, role: 'user', content }]);
+
+    const lower = content.toLowerCase();
+    const isExpense = EXPENSE_WORDS.some(w => lower.includes(w));
+    const isIncome = INCOME_WORDS.some(w => lower.includes(w));
+
+    if (isExpense || isIncome) {
+      setTransactionType(isExpense ? 'expense' : 'income');
+      setTransactionInitialData({
+        amount: parseAmount(content),
+        description: parseDescription(content),
+      });
+      setIsTransactionModalOpen(true);
+      return;
+    }
+
     setLoading(true);
     await new Promise(resolve => setTimeout(resolve, 2000));
     setMessages(prev => [
@@ -74,6 +109,15 @@ const AIPage = () => {
     setLoading(false);
   }, [loading]);
 
+  const handleQuickAction = (prompt: string) => {
+    if (prompt.trim().endsWith('mês')) {
+      send(prompt);
+      return;
+    }
+    setInput(prompt);
+    textareaRef.current?.focus();
+  };
+
   const isEmpty = messages.length === 0 && !loading;
 
   return (
@@ -81,27 +125,12 @@ const AIPage = () => {
       <ScrollArea className="flex-1">
         <div className="mx-auto w-full max-w-3xl px-1 pb-6 sm:px-4">
           {isEmpty ? (
-            <div className="flex min-h-[50vh] flex-col items-center justify-center text-center">
+            <div className="flex min-h-[45vh] flex-col items-center justify-center text-center">
               <img src={mooviLogo} alt="Moovi" className="mb-4 h-14 w-14 object-contain" />
-              <h2 className="text-lg font-semibold sm:text-xl">
-                Olá! Sou a Moovi 💚
-              </h2>
+              <h2 className="text-lg font-semibold sm:text-xl">Olá! Sou a Moovi 💚</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Como posso ajudar com suas finanças hoje?
               </p>
-              <div className="mt-6 flex flex-wrap justify-center gap-2">
-                {SUGGESTIONS.map(s => (
-                  <Button
-                    key={s}
-                    variant="outline"
-                    size="sm"
-                    className="rounded-full"
-                    onClick={() => send(s)}
-                  >
-                    {s}
-                  </Button>
-                ))}
-              </div>
             </div>
           ) : (
             <div className="space-y-4 py-4">
@@ -138,13 +167,27 @@ const AIPage = () => {
       </ScrollArea>
 
       <div className="mx-auto w-full max-w-3xl px-1 pb-1 pt-2 sm:px-4">
+        <div className="mb-2 flex flex-wrap justify-center gap-2">
+          {QUICK_ACTIONS.map(({ label, icon: Icon, prompt }) => (
+            <Button
+              key={label}
+              variant="outline"
+              size="sm"
+              className="gap-1.5 rounded-full text-xs"
+              onClick={() => handleQuickAction(prompt)}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {label}
+            </Button>
+          ))}
+        </div>
         <div className="relative flex items-end rounded-2xl border border-border bg-card p-2 shadow-sm focus-within:border-primary/50">
           <Textarea
             ref={textareaRef}
             rows={1}
             value={input}
             disabled={loading}
-            placeholder="Pergunte algo sobre suas finanças..."
+            placeholder="Pergunte algo ou registre: 'gastei 30 com almoço'"
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => {
               if (e.key === 'Enter' && !e.shiftKey) {
@@ -168,6 +211,13 @@ const AIPage = () => {
           A Moovi pode cometer erros. Confira informações importantes.
         </p>
       </div>
+
+      <TransactionFormDialog
+        type={transactionType}
+        open={isTransactionModalOpen}
+        onOpenChange={setIsTransactionModalOpen}
+        initialData={transactionInitialData}
+      />
     </div>
   );
 };

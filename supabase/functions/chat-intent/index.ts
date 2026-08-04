@@ -2,8 +2,10 @@ import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
 const CATEGORIES = ['Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Lazer', 'Gastos Gerais'];
 
-const SYSTEM_PROMPT =
-  "Você é um classificador de intenções financeiras. Leia a mensagem do usuário e extraia os dados em um JSON estrito. Chaves obrigatórias: 'intent' ('expense', 'income' ou 'general'), 'amount' (número ou null), 'description' (string da compra/ganho em si, ex: 'pizza') e 'category' (string). Para a chave 'category', você DEVE classificar OBRIGATORIAMENTE em uma destas macro-categorias: 'Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Lazer' ou 'Gastos Gerais'. Exemplo: Se 'gastei 40 com pizza', retorne {\"intent\": \"expense\", \"amount\": 40, \"description\": \"pizza\", \"category\": \"Alimentação\"}.";
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+const buildSystemPrompt = (today: string) =>
+  `A DATA DE HOJE É: ${today}. Você é um classificador de intenções financeiras. Leia a mensagem do usuário e extraia os dados em um JSON estrito. Chaves obrigatórias: 'intent' ('expense', 'income' ou 'general'), 'amount' (número ou null), 'description' (string da compra/ganho em si, ex: 'pizza'), 'category' (string) e 'date' (string no formato 'YYYY-MM-DD'). Para a chave 'category', você DEVE classificar OBRIGATORIAMENTE em uma destas macro-categorias: 'Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Lazer' ou 'Gastos Gerais'. Sempre calcule a data da transação baseando-se na DATA DE HOJE. Se o usuário disser 'ontem', subtraia um dia. Se disser 'amanhã', adicione um dia. Se mencionar apenas um dia (ex: 'dia 15'), use o mês e ano atuais. Se não mencionar nenhuma data, utilize a DATA DE HOJE. Exemplo: Se 'gastei 40 com pizza ontem', retorne {"intent": "expense", "amount": 40, "description": "pizza", "category": "Alimentação", "date": "<data de ontem>"}.`;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });

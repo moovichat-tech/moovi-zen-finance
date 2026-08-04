@@ -18,8 +18,13 @@ async function getTelefoneFromToken(req: Request): Promise<string> {
   const auth = req.headers.get("Authorization");
   if (!auth?.startsWith("Bearer ")) throw new Error("Token não fornecido");
   const key = await getKey();
-  const payload = await verify(auth.replace("Bearer ", ""), key);
-  if (!payload.telefone) throw new Error("Token inválido");
+  let payload;
+  try {
+    payload = await verify(auth.replace("Bearer ", ""), key);
+  } catch {
+    throw new Error("Token inválido");
+  }
+  if (!payload?.telefone) throw new Error("Token inválido");
   return payload.telefone as string;
 }
 

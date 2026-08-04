@@ -9,6 +9,7 @@ import mooviLogoAsset from '@/assets/moovi-logo-assistente.png.asset.json';
 
 const mooviLogo = mooviLogoAsset.url;
 import { TransactionFormDialog, type TransactionFormData } from '@/components/TransactionFormDialog';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   id: string;
@@ -16,8 +17,6 @@ interface Message {
   content: string;
 }
 
-const EXPENSE_WORDS = ['gastei', 'comprei', 'paguei'];
-const INCOME_WORDS = ['ganhei', 'recebi'];
 
 const QUICK_ACTIONS = [
   { label: 'Adicionar Despesa Rápida', icon: TrendingDown, prompt: 'Gastei ' },
@@ -25,15 +24,6 @@ const QUICK_ACTIONS = [
   { label: 'Resumo do Mês', icon: CalendarRange, prompt: 'Resumo do mês' },
 ];
 
-const parseAmount = (text: string): string => {
-  const m = text.match(/(\d+(?:[.,]\d{1,2})?)/);
-  return m ? m[1].replace('.', ',') : '';
-};
-
-const parseDescription = (text: string): string => {
-  const m = text.match(/(?:com|no|na|em|de|para)\s+(.{2,40})$/i);
-  return (m ? m[1] : text).trim();
-};
 
 const MooviAvatar = () => (
   <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full" style={{ backgroundColor: '#0E110F' }}>
@@ -83,33 +73,50 @@ const AIPage = () => {
     if (!content || loading) return;
     setInput('');
     setMessages(prev => [...prev, { id: `u-${Date.now()}`, role: 'user', content }]);
-
-    const lower = content.toLowerCase();
-    const isExpense = EXPENSE_WORDS.some(w => lower.includes(w));
-    const isIncome = INCOME_WORDS.some(w => lower.includes(w));
-
-    if (isExpense || isIncome) {
-      setTransactionType(isExpense ? 'expense' : 'income');
-      setTransactionInitialData({
-        amount: parseAmount(content),
-        description: parseDescription(content),
-      });
-      setIsTransactionModalOpen(true);
-      return;
-    }
-
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setMessages(prev => [
-      ...prev,
-      {
-        id: `a-${Date.now()}`,
-        role: 'assistant',
-        content: `Integração com o backend em desenvolvimento. Você disse: ${content}`,
-      },
-    ]);
-    setLoading(false);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('chat-intent', {
+        body: { message: content },
+      });
+      if (error) throw error;
+
+      const intent = data?.intent as 'expense' | 'income' | 'general' | undefined;
+
+      if (intent === 'expense' || intent === 'income') {
+        setTransactionType(intent);
+        setTransactionInitialData({
+          amount: data?.amount != null ? String(data.amount).replace('.', ',') : '',
+          description: data?.description ?? '',
+        });
+        setIsTransactionModalOpen(true);
+        return;
+      }
+
+      setMessages(prev => [
+        ...prev,
+        {
+          id: `a-${Date.now()}`,
+          role: 'assistant',
+          content:
+            "Ainda estou aprendendo a responder perguntas complexas, mas já consigo anotar seus gastos! Tente dizer: 'Gastei 50 no posto'.",
+        },
+      ]);
+    } catch (err) {
+      console.error(err);
+      setMessages(prev => [
+        ...prev,
+        {
+          id: `a-${Date.now()}`,
+          role: 'assistant',
+          content: 'Não consegui processar sua mensagem agora. Tente novamente em instantes.',
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   }, [loading]);
+
 
   const handleQuickAction = (prompt: string) => {
     if (prompt.trim().endsWith('mês')) {

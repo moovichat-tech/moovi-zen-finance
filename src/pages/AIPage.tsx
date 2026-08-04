@@ -105,7 +105,9 @@ const AIPage = () => {
   const [transactionInitialData, setTransactionInitialData] = useState<Partial<TransactionFormData>>({});
   const [transactionInstallments, setTransactionInstallments] = useState(1);
   const [transactionPaymentMethod, setTransactionPaymentMethod] = useState<string | null>(null);
-  const { token } = useAuth();
+  const { token, telefone } = useAuth();
+  const historyKey = `moovi_chat_history_${telefone ?? 'anon'}`;
+  const historyLoadedRef = useRef(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -133,6 +135,36 @@ const AIPage = () => {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
+
+  // Carrega histórico do dia
+  useEffect(() => {
+    historyLoadedRef.current = false;
+    const today = new Date().toISOString().split('T')[0];
+    try {
+      const raw = localStorage.getItem(historyKey);
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (parsed && parsed.date === today && Array.isArray(parsed.messages)) {
+        setMessages(parsed.messages as Message[]);
+      } else {
+        setMessages([]);
+        localStorage.setItem(historyKey, JSON.stringify({ date: today, messages: [] }));
+      }
+    } catch {
+      setMessages([]);
+    }
+    historyLoadedRef.current = true;
+  }, [historyKey]);
+
+  // Persiste histórico
+  useEffect(() => {
+    if (!historyLoadedRef.current) return;
+    const today = new Date().toISOString().split('T')[0];
+    try {
+      localStorage.setItem(historyKey, JSON.stringify({ date: today, messages }));
+    } catch {}
+  }, [messages, historyKey]);
+
+
 
   useEffect(() => {
     if (!isTransactionModalOpen) textareaRef.current?.focus();
@@ -349,7 +381,7 @@ const AIPage = () => {
             </Button>
           ))}
         </div>
-        <div className="relative flex items-end rounded-2xl border border-border bg-card p-2 shadow-sm focus-within:border-primary/50">
+        <div className="relative flex items-end rounded-2xl border border-border bg-card p-2 shadow-none">
           <Textarea
             ref={textareaRef}
             rows={1}
@@ -363,7 +395,7 @@ const AIPage = () => {
                 send(input);
               }
             }}
-            className="max-h-40 min-h-0 flex-1 resize-none border-0 bg-transparent px-2 py-1.5 text-sm shadow-none focus-visible:ring-0"
+            className="max-h-40 min-h-0 flex-1 resize-none border-0 bg-transparent px-2 py-1.5 text-sm shadow-none ring-0 outline-none focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none"
           />
           <Button
             size="icon"

@@ -21,6 +21,7 @@ REGRAS MATEMÁTICAS TEMPORAIS (OBRIGATÓRIO):
 - "ontem" = Subtraia exatamente 1 dia da DATA DE REFERÊNCIA.
 - "anteontem", "antes de ontem", "ante ontem" = Subtraia exatamente 2 dias da DATA DE REFERÊNCIA.
 - "amanhã" = Adicione exatamente 1 dia à DATA DE REFERÊNCIA.
+- REGRAS PARA RELATÓRIOS (intent: 'report'): Se o usuário pedir um mês específico (ex: 'junho', 'janeiro'), defina 'date' como o PRIMEIRO DIA daquele mês no ano atual (ex: '2026-06-01'). Se pedir 'mês passado', subtraia 1 mês da DATA DE REFERÊNCIA e use o primeiro dia (ex: se hoje é Agosto, retorne '2026-07-01'). Se pedir 'este mês'/'mês atual' ou não citar mês, use o primeiro dia do mês da DATA DE REFERÊNCIA. Se citar mês e ano (ex: 'junho de 2025'), use aquele ano.
 
 REGRAS DE CATEGORIA (OBRIGATÓRIO): Você DEVE classificar a transação ESCOLHENDO APENAS UMA das categorias desta lista exata do usuário: [ ${categoriesStr} ]. Exemplo: Se o gasto for "perfume", categorize como "Compras Pessoais" (se existir na lista). Nunca invente categorias. Se nenhuma se encaixar, use a mais genérica (como "Gastos Gerais").
 

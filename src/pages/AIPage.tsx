@@ -17,8 +17,6 @@ interface Message {
   content: string;
 }
 
-const EXPENSE_WORDS = ['gastei', 'comprei', 'paguei'];
-const INCOME_WORDS = ['ganhei', 'recebi'];
 
 const QUICK_ACTIONS = [
   { label: 'Adicionar Despesa Rápida', icon: TrendingDown, prompt: 'Gastei ' },

@@ -305,6 +305,7 @@ const AIPage = () => {
       setIsTransactionModalOpen(true);
     } catch (err) {
       console.error(err);
+      setStatus('error');
       pushAssistant('Não consegui processar sua mensagem agora. Tente novamente em instantes.');
     } finally {
       setLoading(false);

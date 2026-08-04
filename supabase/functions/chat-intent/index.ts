@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
         response_format: { type: 'json_object' },
         temperature: 0,
         messages: [
-          { role: 'system', content: buildSystemPrompt(today) },
+          { role: 'system', content: buildSystemPrompt(today, categoriesStr) },
           { role: 'user', content: message },
         ],
       }),

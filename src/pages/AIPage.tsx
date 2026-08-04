@@ -272,7 +272,7 @@ const AIPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [loading, pushAssistant, token]);
+  }, [loading, pushAssistant, token, userCategories]);
 
 
 

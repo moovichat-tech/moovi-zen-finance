@@ -160,7 +160,7 @@ const AIPage = () => {
       const now = new Date();
       const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       const { data, error } = await supabase.functions.invoke('chat-intent', {
-        body: { message: content, today: todayStr },
+        body: { message: content, today: todayStr, userCategories },
       });
       if (error) throw error;
 

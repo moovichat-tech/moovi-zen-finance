@@ -52,19 +52,28 @@ const CommitmentsPage = () => {
     enabled: !!token,
   });
 
+  const callFn = async (name: string, body?: unknown) => {
+    const res = await fetch(fnUrl(name), {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body ?? {}),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new Error((data as { error?: string })?.error || 'Erro na requisição');
+    return data;
+  };
+
   const { data: compromissos = [], isLoading, isError } = useQuery<Compromisso[]>({
     queryKey: ['compromissos', telefone],
     queryFn: async () => {
-      if (!telefone) return [];
-      const { data, error } = await supabase
-        .from('compromissos' as never)
-        .select('*')
-        .eq('telefone_usuario', telefone)
-        .order('data_hora_limite', { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as unknown as Compromisso[];
+      const res = await fetch(fnUrl('compromissos-list'), {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) throw new Error('Erro ao carregar compromissos');
+      const data = await res.json();
+      return (Array.isArray(data) ? data : []) as Compromisso[];
     },
-    enabled: !!telefone,
+    enabled: !!token,
   });
 
   const pendingDays = useMemo(
@@ -98,15 +107,8 @@ const CommitmentsPage = () => {
 
   const createMutation = useMutation({
     mutationFn: async (payload: { titulo: string; descricao: string; data_hora_limite: string }) => {
-      if (!telefone) throw new Error('Usuário não autenticado');
-      const { error } = await supabase.from('compromissos' as never).insert({
-        telefone_usuario: telefone,
-        titulo: payload.titulo,
-        descricao: payload.descricao || null,
-        data_hora_limite: payload.data_hora_limite,
-        status: 'pendente',
-      } as never);
-      if (error) throw error;
+      if (!token) throw new Error('Usuário não autenticado');
+      await callFn('compromissos-create', payload);
       await syncGoogle(payload);
     },
     onSuccess: () => {
@@ -119,10 +121,7 @@ const CommitmentsPage = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const { error } = await supabase.from('compromissos' as never).delete().eq('id', id);
-      if (error) throw error;
-    },
+    mutationFn: async (id: number) => { await callFn('compromissos-delete', { id }); },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['compromissos', telefone] });
       toast.success('Compromisso excluído!');
@@ -132,11 +131,7 @@ const CommitmentsPage = () => {
 
   const markDoneMutation = useMutation({
     mutationFn: async (id: number) => {
-      const { error } = await supabase
-        .from('compromissos' as never)
-        .update({ status: 'concluido' } as never)
-        .eq('id', id);
-      if (error) throw error;
+      await callFn('compromissos-update-status', { id, status: 'concluido' });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['compromissos', telefone] });
@@ -144,6 +139,7 @@ const CommitmentsPage = () => {
     },
     onError: (err: Error) => toast.error(err.message),
   });
+
 
   const handleSubmit = () => {
     if (!form.titulo.trim()) return toast.error('Informe um título');

@@ -33,28 +33,55 @@ Deno.serve(async (req) => {
   try {
     const telefone = await getTelefoneFromToken(req);
     const body = await req.json();
-    const { tipo, descricao, valor, categoria, data_transacao, status, conta } = body;
 
-    const contaValue = typeof conta === "string" && conta.trim() ? conta.trim() : null;
+    // Aceita um único objeto OU um lote (bulk insert) via { transactions: [...] }
+    const items = Array.isArray(body?.transactions) ? body.transactions : [body];
 
-    if (!tipo || !descricao || !valor || !categoria || !data_transacao || !status) {
-      return new Response(JSON.stringify({ error: "Campos obrigatórios faltando" }), {
+    if (items.length === 0) {
+      return new Response(JSON.stringify({ error: "Nenhuma transação enviada" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    const values = items.map((item: any) => {
+      const { tipo, descricao, valor, categoria, data_transacao, status, conta } = item ?? {};
+      if (!tipo || !descricao || !valor || !categoria || !data_transacao || !status) {
+        throw new Error("Campos obrigatórios faltando");
+      }
+      return {
+        telefone_usuario: telefone,
+        tipo,
+        descricao,
+        valor: Number(valor),
+        categoria,
+        data_transacao,
+        status,
+        conta: typeof conta === "string" && conta.trim() ? conta.trim() : null,
+      };
+    });
+
     const rows = await sql`
-      INSERT INTO transacoes (telefone_usuario, tipo, descricao, valor, categoria, data_transacao, status, conta)
-      VALUES (${telefone}, ${tipo}, ${descricao}, ${Number(valor)}, ${categoria}, ${data_transacao}, ${status}, ${contaValue})
+      INSERT INTO transacoes ${sql(
+        values,
+        "telefone_usuario",
+        "tipo",
+        "descricao",
+        "valor",
+        "categoria",
+        "data_transacao",
+        "status",
+        "conta"
+      )}
       RETURNING id
     `;
 
-    return new Response(JSON.stringify({ success: true, id: rows[0]?.id }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ success: true, id: rows[0]?.id, ids: rows.map((r: any) => r.id) }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (e) {
-    const status = e.message.includes("Token") ? 401 : 500;
+    const status = e.message.includes("Token") ? 401 : e.message.includes("obrigatórios") ? 400 : 500;
     return new Response(JSON.stringify({ error: e.message }), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

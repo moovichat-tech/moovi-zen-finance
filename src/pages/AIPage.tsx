@@ -105,7 +105,9 @@ const AIPage = () => {
   const [transactionInitialData, setTransactionInitialData] = useState<Partial<TransactionFormData>>({});
   const [transactionInstallments, setTransactionInstallments] = useState(1);
   const [transactionPaymentMethod, setTransactionPaymentMethod] = useState<string | null>(null);
-  const { token } = useAuth();
+  const { token, telefone } = useAuth();
+  const historyKey = `moovi_chat_history_${telefone ?? 'anon'}`;
+  const historyLoadedRef = useRef(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 

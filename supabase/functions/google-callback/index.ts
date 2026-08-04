@@ -53,6 +53,55 @@ Deno.serve(async (req) => {
       return Response.redirect(`${APP_URL}?google=erro`, 302);
     }
 
+    // Sincronização retroativa (não-bloqueante)
+    try {
+      const accessToken = tokens.access_token;
+      if (accessToken) {
+        const pendentes = await sql`
+          SELECT titulo, descricao, data_hora_limite
+          FROM compromissos
+          WHERE telefone_usuario = ${state}
+            AND status = 'pendente'
+            AND data_hora_limite >= NOW()
+          ORDER BY data_hora_limite ASC
+        `;
+
+        const results = await Promise.all(
+          pendentes.map(async (c: Record<string, unknown>) => {
+            const start = new Date(c.data_hora_limite as string);
+            const end = new Date(start.getTime() + 60 * 60_000);
+            const res = await fetch(
+              "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  summary: c.titulo,
+                  description: (c.descricao as string) || undefined,
+                  start: { dateTime: start.toISOString(), timeZone: "America/Sao_Paulo" },
+                  end: { dateTime: end.toISOString(), timeZone: "America/Sao_Paulo" },
+                }),
+              },
+            );
+            if (!res.ok) {
+              console.error(`retro sync failed [${res.status}]: ${await res.text()}`);
+              return false;
+            }
+            await res.text();
+            return true;
+          }),
+        );
+        console.log(
+          `retro sync: ${results.filter(Boolean).length}/${results.length} eventos criados`,
+        );
+      }
+    } catch (syncErr) {
+      console.error("retro sync error (ignorado):", syncErr);
+    }
+
     return Response.redirect(`${APP_URL}?google=ok`, 302);
   } catch (e) {
     console.error("google-callback error:", e);

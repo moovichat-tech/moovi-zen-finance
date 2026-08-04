@@ -152,7 +152,7 @@ const AIPage = () => {
       setTransactionInstallments(installments);
       setTransactionPaymentMethod(paymentMethod);
       setTransactionInitialData({
-        amount: String(amount).replace('.', ','),
+        amount: String(amount),
         description,
         category,
         date: dateStr,
@@ -277,6 +277,8 @@ const AIPage = () => {
         open={isTransactionModalOpen}
         onOpenChange={setIsTransactionModalOpen}
         initialData={transactionInitialData}
+        installments={transactionInstallments}
+        paymentMethod={transactionPaymentMethod}
       />
     </div>
   );

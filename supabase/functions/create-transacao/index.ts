@@ -35,7 +35,9 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { tipo, descricao, valor, categoria, data_transacao, status, conta } = body;
 
-    if (!tipo || !descricao || !valor || !categoria || !data_transacao || !status || !conta) {
+    const contaValue = typeof conta === "string" && conta.trim() ? conta.trim() : null;
+
+    if (!tipo || !descricao || !valor || !categoria || !data_transacao || !status) {
       return new Response(JSON.stringify({ error: "Campos obrigatórios faltando" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -44,7 +46,7 @@ Deno.serve(async (req) => {
 
     const rows = await sql`
       INSERT INTO transacoes (telefone_usuario, tipo, descricao, valor, categoria, data_transacao, status, conta)
-      VALUES (${telefone}, ${tipo}, ${descricao}, ${Number(valor)}, ${categoria}, ${data_transacao}, ${status}, ${conta})
+      VALUES (${telefone}, ${tipo}, ${descricao}, ${Number(valor)}, ${categoria}, ${data_transacao}, ${status}, ${contaValue})
       RETURNING id
     `;
 

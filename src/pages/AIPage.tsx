@@ -381,7 +381,7 @@ const AIPage = () => {
             </Button>
           ))}
         </div>
-        <div className="relative flex items-end rounded-2xl border border-border bg-card p-2 shadow-sm focus-within:border-primary/50">
+        <div className="relative flex items-end rounded-2xl border border-border bg-card p-2 shadow-none">
           <Textarea
             ref={textareaRef}
             rows={1}

@@ -14,23 +14,29 @@ const todayInSaoPaulo = () =>
   }).format(new Date());
 
 const buildSystemPrompt = (dataAtualISO: string) =>
-  `Você é um classificador de intenções financeiras. Leia a mensagem e extraia os dados em JSON estrito. A DATA DE HOJE É: ${dataAtualISO} (Considere isso como o dia 0).
+  `Você é a MOOVI, a assistente financeira inteligente do painel web. A DATA DE HOJE É: ${dataAtualISO}.
 
-REGRAS MATEMÁTICAS TEMPORAIS (OBRIGATÓRIO): Sempre calcule a chave 'date' (formato YYYY-MM-DD) baseando-se na DATA DE HOJE e nestas regras exatas:
-- "hoje", "agora" ou se não houver menção de data = DATA DE HOJE.
+REGRAS MATEMÁTICAS TEMPORAIS:
+- "hoje", "agora" ou se não houver menção = DATA DE HOJE.
 - "ontem" = DATA DE HOJE menos 1 dia.
 - "anteontem" ou "antes de ontem" = DATA DE HOJE menos 2 dias.
 - "amanhã" = DATA DE HOJE mais 1 dia.
 - "semana passada" = DATA DE HOJE menos 7 dias.
-- "mês passado" = DATA DE HOJE menos 30 dias (ou exatamente 1 mês atrás).
 - Se mencionar apenas um dia (ex: "dia 15"), use o mês e ano atuais.
 
-CHAVES DO JSON:
-- 'intent': 'expense', 'income' ou 'general'.
-- 'amount': Número decimal ou null.
-- 'description': O nome do item/serviço (ex: 'caça niquel', 'janta').
-- 'category': Classifique OBRIGATORIAMENTE em: 'Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Lazer', 'Educação' ou 'Gastos Gerais'.
-- 'date': String YYYY-MM-DD calculada com as regras acima.`;
+AÇÕES E INTENÇÕES:
+- TRANSAÇÕES ('expense' ou 'income'): O usuário está registrando um gasto ou ganho.
+- SUPORTE DIDÁTICO ('support'): O usuário está fazendo uma pergunta sobre como usar o sistema (ex: "como edito categorias?", "como crio um cartão?").
+
+CHAVES OBRIGATÓRIAS DO JSON DE SAÍDA:
+- 'intent': 'expense', 'income' ou 'support'.
+- 'amount': Número decimal do valor TOTAL da compra (se for 10x de 50, o total é 500. Se for "2000 parcelado em 10x", o total é 2000). Use null se não houver.
+- 'installments': Número inteiro de parcelas. Se for à vista ou não mencionado, use 1.
+- 'payment_method': O nome da conta ou cartão mencionado (ex: 'Nubank', 'Itaú'). Se não houver, use null.
+- 'description': O nome do item/serviço.
+- 'category': Classifique em: 'Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Lazer', 'Educação' ou 'Gastos Gerais'.
+- 'date': String YYYY-MM-DD calculada.
+- 'support_message': Se a intenção for 'support', escreva uma resposta em Markdown ensinando o usuário, de forma gentil e didática, qual aba do menu lateral ele deve clicar para resolver o que quer. Ex: "Para editar categorias, acesse a aba **Categorias** no menu lateral esquerdo." Se não for support, retorne null.`;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -88,14 +94,27 @@ Deno.serve(async (req) => {
       parsed = {};
     }
 
-    const intent = ['expense', 'income', 'general'].includes(String(parsed.intent))
+    const intent = ['expense', 'income', 'support'].includes(String(parsed.intent))
       ? String(parsed.intent)
-      : 'general';
+      : 'support';
     const amountNum = Number(parsed.amount);
     const amount = Number.isFinite(amountNum) && amountNum > 0 ? amountNum : null;
     const description =
       typeof parsed.description === 'string' && parsed.description.trim()
         ? parsed.description.trim()
+        : null;
+
+    const instNum = Math.floor(Number(parsed.installments));
+    const installments = Number.isFinite(instNum) && instNum >= 1 ? Math.min(instNum, 72) : 1;
+
+    const paymentMethod =
+      typeof parsed.payment_method === 'string' && parsed.payment_method.trim()
+        ? parsed.payment_method.trim()
+        : null;
+
+    const supportMessage =
+      typeof parsed.support_message === 'string' && parsed.support_message.trim()
+        ? parsed.support_message.trim()
         : null;
 
     const rawCategory = typeof parsed.category === 'string' ? parsed.category.trim() : '';
@@ -106,7 +125,18 @@ Deno.serve(async (req) => {
       ? rawDate
       : today;
 
-    return json({ intent, amount, description, category, date });
+    return json({
+      intent,
+      amount,
+      installments,
+      payment_method: paymentMethod,
+      description,
+      category,
+      date,
+      support_message: intent === 'support'
+        ? (supportMessage ?? 'Posso te ajudar! Navegue pelo menu lateral esquerdo para acessar as abas de **Despesas**, **Receitas**, **Categorias**, **Contas** e **Cartões**.')
+        : null,
+    });
   } catch (err) {
     console.error('chat-intent error', err);
     return json({ error: 'Erro interno' }, 500);

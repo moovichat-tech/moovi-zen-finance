@@ -19,6 +19,12 @@ interface Conta {
   tipo: string;
 }
 
+interface Cartao {
+  id: string;
+  nome: string;
+  dia_fechamento?: number | string | null;
+}
+
 interface Categoria {
   id: string;
   nome: string;
@@ -32,6 +38,7 @@ export interface TransactionFormData {
   date: string;
   status: 'PAGO' | 'PENDENTE';
   conta: string;
+  installments: string;
 }
 
 const emptyForm = (type: 'income' | 'expense'): TransactionFormData => ({
@@ -41,31 +48,66 @@ const emptyForm = (type: 'income' | 'expense'): TransactionFormData => ({
   date: new Date().toISOString().split('T')[0],
   status: type === 'income' ? 'PAGO' : 'PAGO',
   conta: '',
+  installments: '1',
 });
+
+const normalize = (v: string) =>
+  v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
+const addMonths = (dateStr: string, months: number) => {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const base = new Date(y, m - 1 + months, 1);
+  const lastDay = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+  base.setDate(Math.min(d, lastDay));
+  return `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, '0')}-${String(base.getDate()).padStart(2, '0')}`;
+};
 
 interface TransactionFormDialogProps {
   type: 'income' | 'expense';
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialData?: Partial<TransactionFormData>;
+  installments?: number;
+  paymentMethod?: string | null;
 }
 
-export function TransactionFormDialog({ type, open, onOpenChange, initialData }: TransactionFormDialogProps) {
+export function TransactionFormDialog({ type, open, onOpenChange, initialData, installments, paymentMethod }: TransactionFormDialogProps) {
   const { t, locale } = useI18n();
   const { token } = useAuth();
   const queryClient = useQueryClient();
   const [form, setForm] = useState<TransactionFormData>(emptyForm(type));
 
   useEffect(() => {
-    if (open) setForm({ ...emptyForm(type), ...(initialData || {}) });
+    if (open) {
+      setForm({
+        ...emptyForm(type),
+        ...(initialData || {}),
+        ...(installments && installments > 1 ? { installments: String(installments) } : {}),
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, type]);
+
 
   const { data: contas = [] } = useQuery<Conta[]>({
     queryKey: ['contas-list'],
     queryFn: async () => {
       if (!token) return [];
       const res = await fetch(`${SUPABASE_URL}/functions/v1/get-contas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!token && open,
+  });
+
+  const { data: cartoes = [] } = useQuery<Cartao[]>({
+    queryKey: ['cartoes-list'],
+    queryFn: async () => {
+      if (!token) return [];
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/get-cartoes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       });
@@ -89,26 +131,53 @@ export function TransactionFormDialog({ type, open, onOpenChange, initialData }:
     enabled: !!token && open,
   });
 
+  // Pré-preenche a conta a partir do método de pagamento sugerido pela IA (match por nome, sem case/acentos)
+  useEffect(() => {
+    if (!open || !paymentMethod || form.conta) return;
+    const target = normalize(paymentMethod);
+    const match = contas.find(c => normalize(c.nome) === target)
+      ?? contas.find(c => normalize(c.nome).includes(target) || target.includes(normalize(c.nome)));
+    if (match) setForm(prev => ({ ...prev, conta: match.nome }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, paymentMethod, contas]);
+
   const filteredCategorias = categorias.filter(c =>
     c.tipo === (type === 'income' ? 'receita' : 'despesa')
   );
 
   const createMutation = useMutation({
     mutationFn: async (data: TransactionFormData) => {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/create-transacao`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          tipo: type === 'income' ? 'receita' : 'despesa',
-          descricao: data.description,
-          valor: Number(data.amount),
-          categoria: data.category,
-          data_transacao: data.date,
-          status: data.status,
-          conta: data.conta?.trim() ? data.conta : null,
-        }),
-      });
-      if (!res.ok) throw new Error('Erro ao criar transação');
+      const total = Number(data.amount);
+      const parcels = Math.max(1, Math.floor(Number(data.installments) || 1));
+      const valorParcela = Number((total / parcels).toFixed(2));
+
+      // Data da primeira parcela: se o método for um cartão e a compra passou do fechamento, joga pro mês seguinte
+      let startDate = data.date;
+      if (parcels > 1 && data.conta) {
+        const card = cartoes.find(c => normalize(c.nome) === normalize(data.conta));
+        const fechamento = Number(card?.dia_fechamento);
+        const dia = Number(data.date.split('-')[2]);
+        if (Number.isFinite(fechamento) && fechamento > 0 && dia > fechamento) {
+          startDate = addMonths(data.date, 1);
+        }
+      }
+
+      for (let i = 0; i < parcels; i++) {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/create-transacao`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            tipo: type === 'income' ? 'receita' : 'despesa',
+            descricao: parcels > 1 ? `${data.description} (${i + 1}/${parcels})` : data.description,
+            valor: parcels > 1 ? valorParcela : total,
+            categoria: data.category,
+            data_transacao: parcels > 1 ? addMonths(startDate, i) : data.date,
+            status: parcels > 1 && i > 0 ? 'PENDENTE' : data.status,
+            conta: data.conta?.trim() ? data.conta : null,
+          }),
+        });
+        if (!res.ok) throw new Error('Erro ao criar transação');
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: type === 'income' ? ['receitas'] : ['despesas'] });
@@ -131,11 +200,11 @@ export function TransactionFormDialog({ type, open, onOpenChange, initialData }:
   };
 
   const labels = {
-    pt: { account: 'Conta (opcional)', selectAccount: 'Selecionar conta', totalAmount: 'Valor Total' },
-    en: { account: 'Account (optional)', selectAccount: 'Select account', totalAmount: 'Total Amount' },
-    es: { account: 'Cuenta', selectAccount: 'Seleccionar cuenta', totalAmount: 'Valor Total' },
-    fr: { account: 'Compte', selectAccount: 'Sélectionner un compte', totalAmount: 'Montant Total' },
-    de: { account: 'Konto', selectAccount: 'Konto auswählen', totalAmount: 'Gesamtbetrag' },
+    pt: { account: 'Conta (opcional)', selectAccount: 'Selecionar conta', totalAmount: 'Valor Total', installments: 'Parcelas' },
+    en: { account: 'Account (optional)', selectAccount: 'Select account', totalAmount: 'Total Amount', installments: 'Installments' },
+    es: { account: 'Cuenta', selectAccount: 'Seleccionar cuenta', totalAmount: 'Valor Total', installments: 'Cuotas' },
+    fr: { account: 'Compte', selectAccount: 'Sélectionner un compte', totalAmount: 'Montant Total', installments: 'Mensualités' },
+    de: { account: 'Konto', selectAccount: 'Konto auswählen', totalAmount: 'Gesamtbetrag', installments: 'Raten' },
   };
   const l = labels[locale] || labels.en;
 
@@ -191,16 +260,37 @@ export function TransactionFormDialog({ type, open, onOpenChange, initialData }:
             </div>
           </div>
 
-          {/* Account */}
-          <div className="space-y-1.5">
-            <Label>{l.account}</Label>
-            <Select value={form.conta} onValueChange={v => setForm({ ...form, conta: v })}>
-              <SelectTrigger><SelectValue placeholder={l.selectAccount} /></SelectTrigger>
-              <SelectContent>
-                {contas.map(c => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
-              </SelectContent>
-            </Select>
+          {/* Account + Installments */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>{l.account}</Label>
+              <Select value={form.conta} onValueChange={v => setForm({ ...form, conta: v })}>
+                <SelectTrigger><SelectValue placeholder={l.selectAccount} /></SelectTrigger>
+                <SelectContent>
+                  {form.conta && !contas.some(c => c.nome === form.conta) && (
+                    <SelectItem value={form.conta}>{form.conta}</SelectItem>
+                  )}
+                  {contas.map(c => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>{l.installments}</Label>
+              <Input
+                type="number"
+                min="1"
+                step="1"
+                value={form.installments}
+                onChange={e => setForm({ ...form, installments: e.target.value })}
+              />
+            </div>
           </div>
+
+          {Number(form.installments) > 1 && Number(form.amount) > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {Number(form.installments)}x de {(Number(form.amount) / Number(form.installments)).toFixed(2)}
+            </p>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>{t.common.cancel}</Button>

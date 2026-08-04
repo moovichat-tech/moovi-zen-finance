@@ -1,7 +1,7 @@
 import { useI18n } from '@/i18n/context';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { LayoutDashboard, TrendingUp, TrendingDown, CreditCard, Landmark, Target, BarChart3, Settings, LogOut, Crown, Tag, PanelLeftClose, PanelLeft, ClipboardList, X, CalendarDays, Building2, LineChart, HelpCircle } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, TrendingDown, CreditCard, Landmark, Target, BarChart3, Settings, LogOut, Crown, Tag, PanelLeftClose, PanelLeft, ClipboardList, X, CalendarDays, Building2, LineChart, HelpCircle, Sparkles } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import mooviLogoLight from '@/assets/moovi-logo-light.png';
 import mooviLogoDark from '@/assets/moovi-logo-dark.png';
@@ -9,6 +9,7 @@ import { useTheme } from '@/hooks/use-theme';
 
 const navItems = [
   { key: 'dashboard', path: '/', icon: LayoutDashboard },
+  { key: 'assistente', path: '/assistente', icon: Sparkles },
   { key: 'income', path: '/income', icon: TrendingUp },
   { key: 'expenses', path: '/expenses', icon: TrendingDown },
   { key: 'payables', path: '/payables', icon: ClipboardList },
@@ -35,6 +36,7 @@ export const AppSidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose, isD
 
   const navLabels: Record<string, string> = {
     dashboard: t.nav.dashboard, income: t.nav.income, expenses: t.nav.expenses,
+    assistente: 'Assistente Moovi',
     payables: locale === 'pt' ? 'A Pagar/Receber' : locale === 'en' ? 'Payables' : locale === 'es' ? 'Por Pagar' : locale === 'fr' ? 'À Payer' : 'Forderungen',
     cards: t.nav.cards, accounts: t.nav.accounts, budget: t.nav.budget,
     categories: locale === 'pt' ? 'Categorias' : locale === 'en' ? 'Categories' : locale === 'es' ? 'Categorías' : locale === 'fr' ? 'Catégories' : 'Kategorien',

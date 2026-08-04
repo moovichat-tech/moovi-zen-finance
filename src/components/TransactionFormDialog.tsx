@@ -149,11 +149,32 @@ export function TransactionFormDialog({ type, open, onOpenChange, initialData, i
     mutationFn: async (data: TransactionFormData) => {
       const total = Number(data.amount);
       const parcels = Math.max(1, Math.floor(Number(data.installments) || 1));
+
+      // Fluxo simples: 1 parcela
+      if (parcels === 1) {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/create-transacao`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            tipo: type === 'income' ? 'receita' : 'despesa',
+            descricao: data.description,
+            valor: total,
+            categoria: data.category,
+            data_transacao: data.date,
+            status: data.status,
+            conta: data.conta?.trim() ? data.conta : null,
+          }),
+        });
+        if (!res.ok) throw new Error('Erro ao criar transação');
+        return;
+      }
+
+      // Fatiamento de parcelas
       const valorParcela = Number((total / parcels).toFixed(2));
 
       // Data da primeira parcela: se o método for um cartão e a compra passou do fechamento, joga pro mês seguinte
       let startDate = data.date;
-      if (parcels > 1 && data.conta) {
+      if (data.conta) {
         const card = cartoes.find(c => normalize(c.nome) === normalize(data.conta));
         const fechamento = Number(card?.dia_fechamento);
         const dia = Number(data.date.split('-')[2]);
@@ -162,22 +183,28 @@ export function TransactionFormDialog({ type, open, onOpenChange, initialData, i
         }
       }
 
-      for (let i = 0; i < parcels; i++) {
-        const res = await fetch(`${SUPABASE_URL}/functions/v1/create-transacao`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({
-            tipo: type === 'income' ? 'receita' : 'despesa',
-            descricao: parcels > 1 ? `${data.description} (${i + 1}/${parcels})` : data.description,
-            valor: parcels > 1 ? valorParcela : total,
-            categoria: data.category,
-            data_transacao: parcels > 1 ? addMonths(startDate, i) : data.date,
-            status: parcels > 1 && i > 0 ? 'PENDENTE' : data.status,
-            conta: data.conta?.trim() ? data.conta : null,
-          }),
-        });
-        if (!res.ok) throw new Error('Erro ao criar transação');
-      }
+      const todayStr = new Date().toISOString().split('T')[0];
+      const transactionsToInsert = Array.from({ length: parcels }, (_, i) => {
+        const dataParcela = addMonths(startDate, i);
+        const isFutura = dataParcela > todayStr;
+        return {
+          tipo: type === 'income' ? 'receita' : 'despesa',
+          descricao: `${data.description} (${i + 1}/${parcels})`,
+          valor: valorParcela,
+          categoria: data.category,
+          data_transacao: dataParcela,
+          status: i === 0 && !isFutura ? data.status : 'PENDENTE',
+          conta: data.conta?.trim() ? data.conta : null,
+        };
+      });
+
+      // Bulk insert: uma única chamada
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/create-transacao`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ transactions: transactionsToInsert }),
+      });
+      if (!res.ok) throw new Error('Erro ao criar transações');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: type === 'income' ? ['receitas'] : ['despesas'] });

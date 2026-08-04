@@ -68,7 +68,10 @@ Deno.serve(async (req) => {
         ? parsed.description.trim()
         : null;
 
-    return json({ intent, amount, description });
+    const rawCategory = typeof parsed.category === 'string' ? parsed.category.trim() : '';
+    const category = CATEGORIES.find(c => c.toLowerCase() === rawCategory.toLowerCase()) ?? 'Gastos Gerais';
+
+    return json({ intent, amount, description, category });
   } catch (err) {
     console.error('chat-intent error', err);
     return json({ error: 'Erro interno' }, 500);

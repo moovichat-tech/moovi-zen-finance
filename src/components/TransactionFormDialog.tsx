@@ -260,16 +260,37 @@ export function TransactionFormDialog({ type, open, onOpenChange, initialData, i
             </div>
           </div>
 
-          {/* Account */}
-          <div className="space-y-1.5">
-            <Label>{l.account}</Label>
-            <Select value={form.conta} onValueChange={v => setForm({ ...form, conta: v })}>
-              <SelectTrigger><SelectValue placeholder={l.selectAccount} /></SelectTrigger>
-              <SelectContent>
-                {contas.map(c => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
-              </SelectContent>
-            </Select>
+          {/* Account + Installments */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>{l.account}</Label>
+              <Select value={form.conta} onValueChange={v => setForm({ ...form, conta: v })}>
+                <SelectTrigger><SelectValue placeholder={l.selectAccount} /></SelectTrigger>
+                <SelectContent>
+                  {form.conta && !contas.some(c => c.nome === form.conta) && (
+                    <SelectItem value={form.conta}>{form.conta}</SelectItem>
+                  )}
+                  {contas.map(c => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>{l.installments}</Label>
+              <Input
+                type="number"
+                min="1"
+                step="1"
+                value={form.installments}
+                onChange={e => setForm({ ...form, installments: e.target.value })}
+              />
+            </div>
           </div>
+
+          {Number(form.installments) > 1 && Number(form.amount) > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {Number(form.installments)}x de {(Number(form.amount) / Number(form.installments)).toFixed(2)}
+            </p>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>{t.common.cancel}</Button>

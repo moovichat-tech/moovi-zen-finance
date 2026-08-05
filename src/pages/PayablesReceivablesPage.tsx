@@ -70,16 +70,31 @@ const PayablesReceivablesPage = () => {
       const res = await fetch(`${supabaseUrl}/functions/v1/marcar-pago`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
+        body: JSON.stringify({ id, data: new Date().toISOString().split('T')[0] }),
       });
       if (!res.ok) throw new Error('Erro ao marcar como pago');
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: ['pendentes-payables'] });
+      const previous = queryClient.getQueryData<PendingTransaction[]>(['pendentes-payables']);
+      queryClient.setQueryData<PendingTransaction[]>(['pendentes-payables'], (old = []) =>
+        old.filter(tr => tr.id !== id)
+      );
+      return { previous };
+    },
+    onError: (_err, _id, context: any) => {
+      if (context?.previous) queryClient.setQueryData(['pendentes-payables'], context.previous);
+      toast.error('Erro ao registrar pagamento');
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['pendentes-payables'] });
       queryClient.invalidateQueries({ queryKey: ['pendentes'] });
       queryClient.invalidateQueries({ queryKey: ['contas'] });
       queryClient.invalidateQueries({ queryKey: ['cartoes'] });
+      queryClient.invalidateQueries({ queryKey: ['despesas'] });
+      queryClient.invalidateQueries({ queryKey: ['receitas'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 

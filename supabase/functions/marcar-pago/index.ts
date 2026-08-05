@@ -32,15 +32,20 @@ Deno.serve(async (req) => {
 
   try {
     const telefone = await getTelefoneFromToken(req);
-    const { id } = await req.json();
+    const body = await req.json();
+    const { id, data } = body;
 
     if (!id) throw new Error("ID da transação é obrigatório");
 
+    const hoje = typeof data === "string" && /^\d{4}-\d{2}-\d{2}$/.test(data)
+      ? data
+      : new Date().toISOString().split("T")[0];
+
     const result = await sql`
       UPDATE transacoes
-      SET status = 'PAGO'
+      SET status = 'PAGO', data_transacao = ${hoje}::date
       WHERE id = ${id} AND telefone_usuario = ${telefone}
-      RETURNING id
+      RETURNING id, TO_CHAR(data_transacao, 'YYYY-MM-DD') AS data_transacao
     `;
 
     if (result.length === 0) {

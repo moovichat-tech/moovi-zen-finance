@@ -142,17 +142,19 @@ const SubscriptionPage = () => {
         return;
       }
       if (data.status === "downgrade") {
-        toast.success(data.mensagem || "Downgrade realizado com sucesso!");
+        toast.success(data.mensagem || data.message || "Downgrade realizado com sucesso!");
         setDowngradeTarget(null);
+        setUpgradeTarget(null);
+        refreshPlano();
         return;
       }
-      toast.error("Erro ao processar sua solicitação. Tente novamente.");
+      toast.error(data.mensagem || data.message || "Erro ao processar sua solicitação. Tente novamente.");
     } catch {
       toast.error("Erro ao processar sua solicitação. Tente novamente.");
     } finally {
       setLoadingPlan(null);
     }
-  }, [telefone]);
+  }, [telefone, refreshPlano]);
 
   const handleStartCancel = () => setCancelStep(1);
   const handleCancelClose = () => {

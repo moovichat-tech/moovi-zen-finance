@@ -545,34 +545,10 @@ const SubscriptionPage = () => {
             <AlertDialogCancel disabled={!!loadingPlan}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               disabled={!!loadingPlan}
-              onClick={async () => {
+              onClick={async (e) => {
+                e.preventDefault();
                 if (!upgradeTarget) return;
-                const planoKey = getPlanKey(upgradeTarget).toUpperCase();
-                setLoadingPlan(getPlanKey(upgradeTarget));
-                try {
-                  const res = await fetch("https://n8n.fisherai.shop/webhook/gerar-link-upgrade", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      "x-moovi-token": "moovi-secreto-2026",
-                    },
-                    body: JSON.stringify({
-                      telefone: telefone?.replace(/\D/g, "") || "",
-                      plano_destino: planoKey,
-                    }),
-                  });
-                  if (!res.ok) throw new Error("Erro");
-                  const data = await res.json();
-                  if (data.invoiceUrl) {
-                    window.location.href = data.invoiceUrl;
-                    return;
-                  }
-                  toast.error("Não foi possível gerar o link de pagamento.");
-                } catch {
-                  toast.error("Erro ao processar sua solicitação. Tente novamente.");
-                } finally {
-                  setLoadingPlan(null);
-                }
+                await handlePlanChange(upgradeTarget);
               }}
             >
               {loadingPlan ? (

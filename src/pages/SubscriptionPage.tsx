@@ -142,17 +142,19 @@ const SubscriptionPage = () => {
         return;
       }
       if (data.status === "downgrade") {
-        toast.success(data.mensagem || "Downgrade realizado com sucesso!");
+        toast.success(data.mensagem || data.message || "Downgrade realizado com sucesso!");
         setDowngradeTarget(null);
+        setUpgradeTarget(null);
+        refreshPlano();
         return;
       }
-      toast.error("Erro ao processar sua solicitação. Tente novamente.");
+      toast.error(data.mensagem || data.message || "Erro ao processar sua solicitação. Tente novamente.");
     } catch {
       toast.error("Erro ao processar sua solicitação. Tente novamente.");
     } finally {
       setLoadingPlan(null);
     }
-  }, [telefone]);
+  }, [telefone, refreshPlano]);
 
   const handleStartCancel = () => setCancelStep(1);
   const handleCancelClose = () => {
@@ -545,34 +547,10 @@ const SubscriptionPage = () => {
             <AlertDialogCancel disabled={!!loadingPlan}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               disabled={!!loadingPlan}
-              onClick={async () => {
+              onClick={async (e) => {
+                e.preventDefault();
                 if (!upgradeTarget) return;
-                const planoKey = getPlanKey(upgradeTarget).toUpperCase();
-                setLoadingPlan(getPlanKey(upgradeTarget));
-                try {
-                  const res = await fetch("https://n8n.fisherai.shop/webhook/gerar-link-upgrade", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      "x-moovi-token": "moovi-secreto-2026",
-                    },
-                    body: JSON.stringify({
-                      telefone: telefone?.replace(/\D/g, "") || "",
-                      plano_destino: planoKey,
-                    }),
-                  });
-                  if (!res.ok) throw new Error("Erro");
-                  const data = await res.json();
-                  if (data.invoiceUrl) {
-                    window.location.href = data.invoiceUrl;
-                    return;
-                  }
-                  toast.error("Não foi possível gerar o link de pagamento.");
-                } catch {
-                  toast.error("Erro ao processar sua solicitação. Tente novamente.");
-                } finally {
-                  setLoadingPlan(null);
-                }
+                await handlePlanChange(upgradeTarget);
               }}
             >
               {loadingPlan ? (
@@ -598,32 +576,10 @@ const SubscriptionPage = () => {
             <AlertDialogCancel disabled={!!loadingPlan}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               disabled={!!loadingPlan}
-              onClick={async () => {
+              onClick={async (e) => {
+                e.preventDefault();
                 if (!downgradeTarget) return;
-                const planoKey = getPlanKey(downgradeTarget).toUpperCase();
-                setLoadingPlan(getPlanKey(downgradeTarget));
-                try {
-                  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-                  const res = await fetch(
-                    `https://${projectId}.supabase.co/functions/v1/agendar-downgrade`,
-                    {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                      },
-                      body: JSON.stringify({ plano_futuro: planoKey }),
-                    }
-                  );
-                  if (!res.ok) throw new Error("Erro");
-                  toast.success("Downgrade agendado com sucesso para a próxima renovação!");
-                  refreshPlano();
-                  setDowngradeTarget(null);
-                } catch {
-                  toast.error("Erro ao processar sua solicitação. Tente novamente.");
-                } finally {
-                  setLoadingPlan(null);
-                }
+                await handlePlanChange(downgradeTarget);
               }}
             >
               {loadingPlan ? (

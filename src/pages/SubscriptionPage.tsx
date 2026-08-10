@@ -574,32 +574,10 @@ const SubscriptionPage = () => {
             <AlertDialogCancel disabled={!!loadingPlan}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               disabled={!!loadingPlan}
-              onClick={async () => {
+              onClick={async (e) => {
+                e.preventDefault();
                 if (!downgradeTarget) return;
-                const planoKey = getPlanKey(downgradeTarget).toUpperCase();
-                setLoadingPlan(getPlanKey(downgradeTarget));
-                try {
-                  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-                  const res = await fetch(
-                    `https://${projectId}.supabase.co/functions/v1/agendar-downgrade`,
-                    {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                      },
-                      body: JSON.stringify({ plano_futuro: planoKey }),
-                    }
-                  );
-                  if (!res.ok) throw new Error("Erro");
-                  toast.success("Downgrade agendado com sucesso para a próxima renovação!");
-                  refreshPlano();
-                  setDowngradeTarget(null);
-                } catch {
-                  toast.error("Erro ao processar sua solicitação. Tente novamente.");
-                } finally {
-                  setLoadingPlan(null);
-                }
+                await handlePlanChange(downgradeTarget);
               }}
             >
               {loadingPlan ? (

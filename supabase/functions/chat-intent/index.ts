@@ -69,14 +69,14 @@ Deno.serve(async (req) => {
     const availableCategories = userCategories.length ? userCategories : FALLBACK_CATEGORIES;
     const categoriesStr = availableCategories.join(', ');
 
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const res = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: 'google/gemini-2.5-flash',
         response_format: { type: 'json_object' },
         temperature: 0,
         messages: [
@@ -88,8 +88,9 @@ Deno.serve(async (req) => {
 
     if (!res.ok) {
       const detail = await res.text();
-      console.error('Groq error', res.status, detail);
+      console.error('AI gateway error', res.status, detail);
       if (res.status === 429) return json({ error: 'Muitas requisições. Tente novamente em instantes.' }, 429);
+      if (res.status === 402) return json({ error: 'Créditos de IA esgotados. Adicione créditos para continuar.' }, 402);
       return json({ error: 'Falha ao consultar a IA' }, 502);
     }
 

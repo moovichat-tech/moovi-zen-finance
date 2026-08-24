@@ -49,8 +49,8 @@ Deno.serve(async (req) => {
     });
 
   try {
-    const apiKey = Deno.env.get('GROQ_API_KEY');
-    if (!apiKey) return json({ error: 'GROQ_API_KEY não configurada' }, 500);
+    const apiKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!apiKey) return json({ error: 'LOVABLE_API_KEY não configurada' }, 500);
 
     const body = await req.json().catch(() => null);
     const message = typeof body?.message === 'string' ? body.message.trim() : '';
